@@ -9,6 +9,7 @@
 #include <inttypes.h>
 #include <stdlib.h>
 #include <errno.h>
+#include <math.h>
 #include <algorithm>
 #include <iostream>
 #define YY_DECL int yylex()
@@ -123,6 +124,8 @@ yield           {_print("Contextual keyword YIELD: " + yytext_str());}
         //ВОПРОС: на практике -9223372036854775808 считается целочисленным литералом (помещается в 64 бита),
         //однако согласно документации "-" это унарный операнд, и его положение относительно числа должно учитываться только на этапе парсинга,
         //т.е. должен обнаружиться литерал 9223372036854775808, не помещающийся в 64 бита
+        //Варианты решения: 1) оставить проверку значения численных литералов до этапа парсинга, 2) Допустить невозможность записать -9223372036854775808 в целочисленную константу,
+        // 3) Искать "-" на этапе лексинга (скорее всего, наименее корректный вариант)
     }
     else
     {
@@ -144,6 +147,79 @@ yield           {_print("Contextual keyword YIELD: " + yytext_str());}
     }
 }
 
+({DIGIT}*\.{DIGIT}+{EXPONENT}?|{DIGIT}+{EXPONENT})  {
+    double value = strtod(yytext, NULL);
+    if(errno == ERANGE)
+    {
+        //Не уверен насчет всех этих условий
+        if(isinf(value)){
+            _print("DECIMAL DOUBLE LITERAL: " + yytext_str() + " (Value = Infinity)");
+        }
+        else if(isnan(value)){
+            _print("DECIMAL DOUBLE LITERAL: " + yytext_str() + " (Value = NaN)");
+        }
+        else if(!isnormal(value)){
+            _print("DECIMAL DOUBLE LITERAL: " + yytext_str() + " (Value = de-/subnormal)");
+        }
+        else{
+            _print("DECIMAL DOUBLE LITERAL: " + yytext_str() + "(ERR: The double literal " + yytext_str() + " can't be represented in 64 bits.)");
+        }
+    }
+    else
+    {   
+        char buf[1000];
+        sprintf(buf, "%f", value);
+        _print("DECIMAL DOUBLE LITERAL: " + yytext_str() + " (Value = " + buf + ")");
+    }
+}
+
+\*\=        {_print("MULASSIGN LEXEM *=: " + yytext_str());}
+\/\=        {_print("DIVASSIGN LEXEM /=: " + yytext_str());}
+\~\/\=      {_print("TRUNCDIVASSIGN LEXEM ~/=: " + yytext_str());}
+\%\=        {_print("MODASSIGN LEXEM %=: " + yytext_str());}
+\+\=        {_print("ADDASSIGN LEXEM +=: " + yytext_str());}
+\-\=        {_print("SUBASSIGN LEXEM -=: " + yytext_str());}
+\<\<\=      {_print("SHIFTLASSIGN LEXEM <<=: " + yytext_str());}
+\>\>\>\=    {_print("TSHIFTRASSIGN LEXEM >>>=: " + yytext_str());}
+\>\>\=      {_print("SHIFTRASSIGN LEXEM >>=: " + yytext_str());}
+\&\=        {_print("ANDASSIGN LEXEM &=: " + yytext_str());}
+\^\=        {_print("XORASSIGN LEXEM ^=: " + yytext_str());}
+\|\=        {_print("ORASSIGN LEXEM |=: " + yytext_str());}
+\?\?\=      {_print("IFNULLASSIGN LEXEM ??=: " + yytext_str());}
+
+\=\=        {_print("EQUALITY LEXEM ==: " + yytext_str());}
+\!\=        {_print("INEQUALITY LEXEM !=: " + yytext_str());}
+
+\&\&        {_print("BOOLAND LEXEM &&: " + yytext_str());}
+\|\|        {_print("BOOLOR LEXEM ||: " + yytext_str());}
+
+\>\=         {_print("GREATEREQ LEXEM >=: " + yytext_str());}
+\>           {_print("ARROWRIGHT LEXEM >: " + yytext_str());}
+\<\=         {_print("LESSEQ LEXEM <=: " + yytext_str());}
+\<           {_print("ARROWLEFT LEXEM <: " + yytext_str());}
+
+\?\?         {_print("IFNULL LEXEM ??: " + yytext_str());}
+
+\+\+         {_print("UNARY INCREMENT LEXEM ++: " + yytext_str());}    
+\-\-         {_print("UNARY DENCREMENT LEXEM --: " + yytext_str());}
+
+\+           {_print("PLUS LEXEM +: " + yytext_str());}    
+\-           {_print("MINUS LEXEM -: " + yytext_str());}
+
+\*           {_print("MUL LEXEM *: " + yytext_str());}
+\/           {_print("DIV LEXEM /: " + yytext_str());}
+\%           {_print("MOD LEXEM %: " + yytext_str());}
+\~\/         {_print("TRUNCDIV LEXEM ~/: " + yytext_str());}
+
+\=           {_print("EQ LEXEM =: " + yytext_str());}
+
+\&           {_print("AMPERSAND LEXEM &: " + yytext_str());}
+\^           {_print("CIRCUMFLEX LEXEM ^: " + yytext_str());}
+\|           {_print("BAR LEXEM |: " + yytext_str());}
+
+\!           {_print("EXCLAMATION LEXEM !: " + yytext_str());}
+\?           {_print("QUESTION LEXEM ?: " + yytext_str());}
+\~           {_print("TILDE LEXEM ~: " + yytext_str());}
 
 .           {_print("UNKNOWN SYMBOL: " + yytext_str());}
 
