@@ -24,6 +24,7 @@ std::string yytext_str() {
 
 %}
 
+%x MULTI_LINE_COMMENT 
 LETTER[A-Za-z]
 DIGIT[0-9]
 HEX_DIGIT[0-9A-Fa-f]
@@ -34,11 +35,28 @@ EXPONENT[eE][+-]?[0-9]+
 
 %{
 std::string stringLiteral;
-std::string cuurentComment;
+std::string currentComment;
+int multiLineCommentNesting;
 int currentInteger;
 double floatingPoint;
 %}
 
+
+\/\*                                {multiLineCommentNesting = 1; currentComment[0] = 0; BEGIN(MULTI_LINE_COMMENT); currentComment+=yytext;}
+<MULTI_LINE_COMMENT>\/+\*            {multiLineCommentNesting++; currentComment+=yytext;}
+<MULTI_LINE_COMMENT>[^*/]*          {currentComment+=yytext;}
+<MULTI_LINE_COMMENT>\/+[^*/]*       {currentComment+=yytext;}
+<MULTI_LINE_COMMENT>\*+[^*/]*       {currentComment+=yytext;}
+<MULTI_LINE_COMMENT>\*+\/           {
+    multiLineCommentNesting--;
+    currentComment+=yytext;
+    if(multiLineCommentNesting == 0)
+    {
+        _print("MULTI LINE COMMENT: " + currentComment); BEGIN(INITIAL);
+    }
+}
+
+\/\/[^\n\r]*[\n\r]?         {_print("SINGLE LINE COMMENT: " + yytext_str());}
 
 assert          {_print("Keyword ASSERT: " + yytext_str());}
 break           {_print("Keyword BREAK: " + yytext_str());}
