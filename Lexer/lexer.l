@@ -29,7 +29,13 @@ LETTER[A-Za-z]
 DIGIT[0-9]
 HEX_DIGIT[0-9A-Fa-f]
 EXPONENT[eE][+-]?[0-9]+
-
+IDENTIFIER_NO_DOLLAR[A-Za-z]|'_'[A-Za-z]|'_'|[0-9]
+BUILT_IN_IDENTIFIER[ abstract | as | covariant | deferred | dynamic | export | external | extension | factory | Function | get | implements | import | interface | late | library | mixin | operator | part | required | set | static | typedef ]
+SIMPLE_STRING_INTERPOLATION(\$({IDENTIFIER_NO_DOLLAR}){BUILT_IN_IDENTIFIER}|this)
+HEX_DIGIT_SEQUENCE({HEX_DIGIT}{HEX_DIGIT}?{HEX_DIGIT}?{HEX_DIGIT}?{HEX_DIGIT}?{HEX_DIGIT}?)
+ESCAPE_SEQUANCE([\n\r\f\b\\\v]|\\x{HEX_DIGITHEX_DIGIT}|\\u{HEX_DIGIT}{4}|\\u{HEX_DIGIT_SEQUENCE})
+STRING_CONTENT_COMMON([^\\\'\"\$\r\n]{ESCAPE_SEQUANCE}|\'[^nrbtvxu\r\n]|{SIMPLE_STRING_INTERPOLATION})
+SINGLE_LINE_STRING_SQ_BEGIN_END(\'({STRING_CONTENT_COMMON}|\")*)
 
 %%
 
@@ -56,7 +62,13 @@ double floatingPoint;
     }
 }
 
-\/\/[^\n\r]*[\n\r]?         {_print("SINGLE LINE COMMENT: " + yytext_str());}
+SINGLE_LINE_STRING_SQ_BEGIN_END {_print("SINGLE LINE STRING SQ BEGIN END : " + yytext_str());}
+
+\/\/[^\n\r]*[\n\r]?         {std::string tmp; tmp = yytext_str().erase(0, 2); tmp = tmp.erase(tmp.length() - 1, 1); _print("SINGLE LINE COMMENT: " + tmp);}
+
+
+r\'[^\'\r\n]*\'|r\"[^\"\r\r\n]*\" {_print("RAW SINGLE LINE STRING: " + yytext_str());}
+
 
 assert          {_print("Keyword ASSERT: " + yytext_str());}
 break           {_print("Keyword BREAK: " + yytext_str());}
