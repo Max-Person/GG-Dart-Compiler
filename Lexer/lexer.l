@@ -374,6 +374,19 @@ yield           {_print("Contextual keyword YIELD: " + yytext_str());}
 \?           {_print("QUESTION LEXEM ?: " + yytext_str());}
 \~           {_print("TILDE LEXEM ~: " + yytext_str());}
 
+\(           {_print("PARL LEXEM (: " + yytext_str());}
+\)           {_print("PARR LEXEM ): " + yytext_str());}
+
+\{           {_print("BRACEL LEXEM {: " + yytext_str());}
+\}           {_print("BRACER LEXEM }: " + yytext_str());}
+
+\[           {_print("BRACKETL LEXEM [: " + yytext_str());}
+\]           {_print("BRACKETR LEXEM ]: " + yytext_str());}
+
+\.           {_print("DOT LEXEM .: " + yytext_str());}
+\;           {_print("SEMICOLON LEXEM .: " + yytext_str());}
+\:           {_print("COLON LEXEM .: " + yytext_str());}
+
 .           {_print("UNKNOWN SYMBOL: " + yytext_str());}
 
 
