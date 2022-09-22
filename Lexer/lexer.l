@@ -85,9 +85,9 @@ char* processEsc(const char* str) {
 	return fin;
 }
 
-char* deleteFirstAndLastSymbols(char* str){
-    char* content = str+1; //не использовать первый символ (кавычку)
-    content[strlen(content)-1] = 0; //удалить последний символ (закрывающую кавычку)
+char* trimAndProcess(int trimStart, int trimEnd, char* str){
+    char* content = str+trimStart; //не использовать первый символ (кавычку)
+    content[strlen(content)-trimEnd] = 0; //удалить последний символ (закрывающую кавычку)
     char* fin = processEsc(content); //превратить спецсимволы в символы
     return fin;
 }
@@ -146,43 +146,43 @@ double floatingPoint;
 
 
 {SINGLE_LINE_STRING_SQ_MID_END}      {
-    char* fin = deleteFirstAndLastSymbols(yytext); //превратить спецсимволы в символы
+    char* fin = trimAndProcess(1, 1, yytext); //превратить спецсимволы в символы
     _print("SINGLE LINE STRING SQ MID END : " + std::string(fin));
     free(fin); //Освободить память
 }
 {SINGLE_LINE_STRING_SQ_MID_MID}      {
-    char* fin = deleteFirstAndLastSymbols(yytext); //превратить спецсимволы в символы
+    char* fin = trimAndProcess(1, 2, yytext); //превратить спецсимволы в символы
     _print("SINGLE LINE STRING SQ MID MID : " + std::string(fin));
     free(fin); //Освободить память
 }
 {SINGLE_LINE_STRING_SQ_BEGIN_MID}    {
-    char* fin = deleteFirstAndLastSymbols(yytext); //превратить спецсимволы в символы
+    char* fin = trimAndProcess(1, 2, yytext); //превратить спецсимволы в символы
     _print("SINGLE LINE STRING SQ BEGIN MID : " + std::string(fin));
     free(fin); //Освободить память
 }
 {SINGLE_LINE_STRING_SQ_BEGIN_END}    {
-    char* fin = deleteFirstAndLastSymbols(yytext); //превратить спецсимволы в символы
+    char* fin = trimAndProcess(1, 1, yytext); //превратить спецсимволы в символы
     _print("SINGLE LINE STRING SQ BEGIN END : " + std::string(fin));
     free(fin); //Освободить память
 }
 
 {SINGLE_LINE_STRING_DQ_MID_END}      {
-    char* fin = deleteFirstAndLastSymbols(yytext); //превратить спецсимволы в символы
+    char* fin = trimAndProcess(1, 1, yytext); //превратить спецсимволы в символы
     _print("SINGLE LINE STRING DQ MID END : " + std::string(fin));
     free(fin); //Освободить память
 }
 {SINGLE_LINE_STRING_DQ_MID_MID}      {
-    char* fin = deleteFirstAndLastSymbols(yytext); //превратить спецсимволы в символы
+    char* fin = trimAndProcess(1, 2, yytext); //превратить спецсимволы в символы
     _print("SINGLE LINE STRING DQ MID MID : " + std::string(fin));
     free(fin); //Освободить память
 }
 {SINGLE_LINE_STRING_DQ_BEGIN_MID}    {
-    char* fin = deleteFirstAndLastSymbols(yytext); //превратить спецсимволы в символы
+    char* fin = trimAndProcess(1, 2, yytext); //превратить спецсимволы в символы
     _print("SINGLE LINE STRING DQ BEGIN MID : " + std::string(fin));
     free(fin); //Освободить память
 }
 {SINGLE_LINE_STRING_DQ_BEGIN_END}    {
-    char* fin = deleteFirstAndLastSymbols(yytext); //превратить спецсимволы в символы
+    char* fin = trimAndProcess(1, 1, yytext); //превратить спецсимволы в символы
     _print("SINGLE LINE STRING DQ BEGIN END : " + std::string(fin));
     free(fin); //Освободить память
 }
