@@ -85,6 +85,13 @@ char* processEsc(const char* str) {
 	return fin;
 }
 
+char* deleteFirstAndLastSymbols(char* str){
+    char* content = str+1; //не использовать первый символ (кавычку)
+    content[strlen(content)-1] = 0; //удалить последний символ (закрывающую кавычку)
+    char* fin = processEsc(content); //превратить спецсимволы в символы
+    return fin;
+}
+
 %}
 
 %x MULTI_LINE_COMMENT 
@@ -106,6 +113,11 @@ SINGLE_LINE_STRING_SQ_BEGIN_MID(\'{STRING_CONTENT_SQ}*\$\{)
 SINGLE_LINE_STRING_SQ_MID_MID(\}{STRING_CONTENT_SQ}*\$\{)
 SINGLE_LINE_STRING_SQ_MID_END(\}{STRING_CONTENT_SQ}*\')
 
+STRING_CONTENT_DQ({STRING_CONTENT_COMMON}|\')
+SINGLE_LINE_STRING_DQ_BEGIN_END(\"STRING_CONTENT_DQ\")
+SINGLE_LINE_STRING_DQ_BEGIN_MID(\"{STRING_CONTENT_DQ}*\$\{)
+SINGLE_LINE_STRING_DQ_MID_MID(\}{STRING_CONTENT_DQ}*\$\{)
+SINGLE_LINE_STRING_DQ_MID_END(\}{STRING_CONTENT_SQ}*\")
 
 %%
 
@@ -132,21 +144,53 @@ double floatingPoint;
     }
 }
 
-{SINGLE_LINE_STRING_SQ_MID_END}      {_print("SINGLE LINE STRING SQ MID END : " + yytext_str());}
-{SINGLE_LINE_STRING_SQ_MID_MID}     {_print("SINGLE LINE STRING SQ MID MID : " + yytext_str());}
-{SINGLE_LINE_STRING_SQ_BEGIN_MID}    {_print("SINGLE LINE STRING SQ BEGIN MID : " + yytext_str());}
-{SINGLE_LINE_STRING_SQ_BEGIN_END}   {
-    char* content = yytext+1; //не использовать первый символ (кавычку)
-    content[strlen(content)-1] = 0; //удалить последний символ (закрывающую кавычку)
-    char* fin = processEsc(content); //превратить спецсимволы в символы
+
+{SINGLE_LINE_STRING_SQ_MID_END}      {
+    char* fin = deleteFirstAndLastSymbols(yytext); //превратить спецсимволы в символы
+    _print("SINGLE LINE STRING SQ MID END : " + std::string(fin));
+    free(fin); //Освободить память
+}
+{SINGLE_LINE_STRING_SQ_MID_MID}      {
+    char* fin = deleteFirstAndLastSymbols(yytext); //превратить спецсимволы в символы
+    _print("SINGLE LINE STRING SQ MID MID : " + std::string(fin));
+    free(fin); //Освободить память
+}
+{SINGLE_LINE_STRING_SQ_BEGIN_MID}    {
+    char* fin = deleteFirstAndLastSymbols(yytext); //превратить спецсимволы в символы
+    _print("SINGLE LINE STRING SQ BEGIN MID : " + std::string(fin));
+    free(fin); //Освободить память
+}
+{SINGLE_LINE_STRING_SQ_BEGIN_END}    {
+    char* fin = deleteFirstAndLastSymbols(yytext); //превратить спецсимволы в символы
     _print("SINGLE LINE STRING SQ BEGIN END : " + std::string(fin));
     free(fin); //Освободить память
 }
 
-\/\/[^\n\r]*[\n\r]?         {std::string tmp = yytext_str(); tmp.erase(0, 2); tmp.erase(tmp.size() - 1, 1); _print("SINGLE LINE COMMENT: " + tmp);}
+{SINGLE_LINE_STRING_DQ_MID_END}      {
+    char* fin = deleteFirstAndLastSymbols(yytext); //превратить спецсимволы в символы
+    _print("SINGLE LINE STRING DQ MID END : " + std::string(fin));
+    free(fin); //Освободить память
+}
+{SINGLE_LINE_STRING_DQ_MID_MID}      {
+    char* fin = deleteFirstAndLastSymbols(yytext); //превратить спецсимволы в символы
+    _print("SINGLE LINE STRING DQ MID MID : " + std::string(fin));
+    free(fin); //Освободить память
+}
+{SINGLE_LINE_STRING_DQ_BEGIN_MID}    {
+    char* fin = deleteFirstAndLastSymbols(yytext); //превратить спецсимволы в символы
+    _print("SINGLE LINE STRING DQ BEGIN MID : " + std::string(fin));
+    free(fin); //Освободить память
+}
+{SINGLE_LINE_STRING_DQ_BEGIN_END}    {
+    char* fin = deleteFirstAndLastSymbols(yytext); //превратить спецсимволы в символы
+    _print("SINGLE LINE STRING DQ BEGIN END : " + std::string(fin));
+    free(fin); //Освободить память
+}
+
+\/\/[^\n\r]*[\n\r]?         { _print("SINGLE LINE COMMENT: " + yytext_str());}
 
 
-r\'[^\'\r\n]*\'|r\"[^\"\r\r\n]*\" {_print("RAW SINGLE LINE STRING: " + yytext_str());}
+r\'[^\'\r\n]*\'|r\"[^\"\r\r\n]*\" {std::string tmp = yytext_str(); tmp.erase(0, 2); tmp.erase(tmp.size() - 1, 1); _print("RAW SINGLE LINE STRING: " + tmp);}
 
 
 assert          {_print("Keyword ASSERT: " + yytext_str());}
