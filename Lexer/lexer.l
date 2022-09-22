@@ -22,6 +22,69 @@ std::string yytext_str() {
     return std::string(yytext);
 }
 
+char* processEsc(const char* str) {
+	int len = strlen(str) + 1;
+	char* fin = (char*)malloc(sizeof(char) * len);
+
+	for (int i = 0; i < len; ++i) {
+		fin[i] = 0;
+	}
+
+	const char* end = str + strlen(str);
+	const char* start = str;
+	while (start != end) {
+		char* slash = strchr((char*)start, '\\');
+		if (slash == NULL) {
+			strcat(fin, start);
+			return fin;
+		}
+		else {
+			strncat(fin, start, slash - start);
+		}
+
+		start = slash;
+		char esc = start[1];
+		switch (esc) {
+		case 'n':
+			fin[strlen(fin)] = '\n';
+			start += 2;
+			break;
+		case 'r':
+			fin[strlen(fin)] = '\r';
+			start += 2;
+			break;
+		case 'f':
+			fin[strlen(fin)] = '\f';
+			start += 2;
+			break;
+		case 'b':
+			fin[strlen(fin)] = '\b';
+			start += 2;
+			break;
+		case 't':
+			fin[strlen(fin)] = '\t';
+			start += 2;
+			break;
+		case 'v':
+			fin[strlen(fin)] = '\v';
+			start += 2;
+			break;
+		case 'x':
+			char hex[3];
+			hex[0] = start[2];
+			hex[1] = start[3];
+			hex[2] = 0;
+			fin[strlen(fin)] = strtol(hex, NULL, 16);
+			start += 4;
+			break;
+		default:
+			fin[strlen(fin)] = esc;
+			start += 2;
+		}
+	}
+	return fin;
+}
+
 %}
 
 %x MULTI_LINE_COMMENT 
@@ -72,7 +135,13 @@ double floatingPoint;
 {SINGLE_LINE_STRING_SQ_MID_END}      {_print("SINGLE LINE STRING SQ MID END : " + yytext_str());}
 {SINGLE_LINE_STRING_SQ_MID_MID}     {_print("SINGLE LINE STRING SQ MID MID : " + yytext_str());}
 {SINGLE_LINE_STRING_SQ_BEGIN_MID}    {_print("SINGLE LINE STRING SQ BEGIN MID : " + yytext_str());}
-{SINGLE_LINE_STRING_SQ_BEGIN_END}   {_print("SINGLE LINE STRING SQ BEGIN END : " + yytext_str());}
+{SINGLE_LINE_STRING_SQ_BEGIN_END}   {
+    char* content = yytext+1; //не использовать первый символ (кавычку)
+    content[strlen(content)-1] = 0; //удалить последний символ (закрывающую кавычку)
+    char* fin = processEsc(content); //превратить спецсимволы в символы
+    _print("SINGLE LINE STRING SQ BEGIN END : " + std::string(fin));
+    free(fin); //Освободить память
+}
 
 \/\/[^\n\r]*[\n\r]?         {std::string tmp = yytext_str(); tmp.erase(0, 2); tmp.erase(tmp.size() - 1, 1); _print("SINGLE LINE COMMENT: " + tmp);}
 
