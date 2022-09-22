@@ -29,17 +29,19 @@ LETTER[A-Za-z]
 DIGIT[0-9]
 HEX_DIGIT[0-9A-Fa-f]
 EXPONENT[eE][+-]?[0-9]+
+
 IDENTIFIER_NO_DOLLAR[A-Za-z]|'_'[A-Za-z]|'_'|[0-9]
 BUILT_IN_IDENTIFIER[ abstract | as | covariant | deferred | dynamic | export | external | extension | factory | Function | get | implements | import | interface | late | library | mixin | operator | part | required | set | static | typedef ]
 SIMPLE_STRING_INTERPOLATION(\$({IDENTIFIER_NO_DOLLAR}){BUILT_IN_IDENTIFIER}|this)
 HEX_DIGIT_SEQUENCE({HEX_DIGIT}{HEX_DIGIT}?{HEX_DIGIT}?{HEX_DIGIT}?{HEX_DIGIT}?{HEX_DIGIT}?)
 ESCAPE_SEQUANCE([\n\r\f\b\\\v]|\\x{HEX_DIGITHEX_DIGIT}|\\u{HEX_DIGIT}{4}|\\u{HEX_DIGIT_SEQUENCE})
+
 STRING_CONTENT_COMMON([^$"'\n\r]|\\\$)
 STRING_CONTENT_SQ({STRING_CONTENT_COMMON}|\")
-SINGLE_LINE_STRING_SQ_BEGIN_END(\'({STRING_CONTENT_SQ})*)
-SINGLE_LINE_STRING_SQ_BEGIN_MID(\'{STRING_CONTENT_SQ}*\${')
-SINGLE_LINE_STRING_SQ_MID_MID(}{STRING_CONTENT_SQ}*\${)
-SINGLE_LINE_STRING_SQ_MID_END(}{STRING_CONTENT_SQ}*\')
+SINGLE_LINE_STRING_SQ_BEGIN_END(\'({STRING_CONTENT_SQ})*\')
+SINGLE_LINE_STRING_SQ_BEGIN_MID(\'{STRING_CONTENT_SQ}*\$\{)
+SINGLE_LINE_STRING_SQ_MID_MID(\}{STRING_CONTENT_SQ}*\$\{)
+SINGLE_LINE_STRING_SQ_MID_END(\}{STRING_CONTENT_SQ}*\')
 
 
 %%
@@ -67,10 +69,10 @@ double floatingPoint;
     }
 }
 
-SINGLE_LINE_STRING_SQ_MID_END      {_print("SINGLE LINE STRING SQ MID END : " + yytext_str());}
-SINGLE_LINE_STRING_SQ_MID_MID*     {_print("SINGLE LINE STRING SQ MID MID : " + yytext_str());}
-SINGLE_LINE_STRING_SQ_BEGIN_MID    {_print("SINGLE LINE STRING SQ BEGIN MID : " + yytext_str());}
-SINGLE_LINE_STRING_SQ_BEGIN_END    {_print("SINGLE LINE STRING SQ BEGIN END : " + yytext_str());}
+{SINGLE_LINE_STRING_SQ_MID_END}      {_print("SINGLE LINE STRING SQ MID END : " + yytext_str());}
+{SINGLE_LINE_STRING_SQ_MID_MID}     {_print("SINGLE LINE STRING SQ MID MID : " + yytext_str());}
+{SINGLE_LINE_STRING_SQ_BEGIN_MID}    {_print("SINGLE LINE STRING SQ BEGIN MID : " + yytext_str());}
+{SINGLE_LINE_STRING_SQ_BEGIN_END}   {_print("SINGLE LINE STRING SQ BEGIN END : " + yytext_str());}
 
 \/\/[^\n\r]*[\n\r]?         {std::string tmp = yytext_str(); tmp.erase(0, 2); tmp.erase(tmp.size() - 1, 1); _print("SINGLE LINE COMMENT: " + tmp);}
 
