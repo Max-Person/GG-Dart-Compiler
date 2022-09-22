@@ -108,6 +108,7 @@ ESCAPE_SEQUANCE([\n\r\f\b\\\v]|\\x{HEX_DIGITHEX_DIGIT}|\\u{HEX_DIGIT}{4}|\\u{HEX
 
 STRING_CONTENT_COMMON([^$"'\n\r]|\\\$)
 STRING_CONTENT_SQ({STRING_CONTENT_COMMON}|\")
+SINGLE_LINE_STRING_BOTH_MID_MID(\}{STRING_CONTENT_COMMON}*\$\{)
 SINGLE_LINE_STRING_SQ_BEGIN_END(\'({STRING_CONTENT_SQ})*\')
 SINGLE_LINE_STRING_SQ_BEGIN_MID(\'{STRING_CONTENT_SQ}*\$\{)
 SINGLE_LINE_STRING_SQ_MID_MID(\}{STRING_CONTENT_SQ}*\$\{)
@@ -142,6 +143,13 @@ double floatingPoint;
     {
         _print("MULTI LINE COMMENT: " + currentComment); BEGIN(INITIAL);
     }
+}
+
+
+{SINGLE_LINE_STRING_BOTH_MID_MID}      {
+    char* fin = trimAndProcess(1, 2, yytext); //превратить спецсимволы в символы
+    _print("SINGLE LINE STRING BOTH MID MID : " + std::string(fin));
+    free(fin); //Освободить память
 }
 
 
