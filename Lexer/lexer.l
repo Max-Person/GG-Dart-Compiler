@@ -49,7 +49,7 @@ double floatingPoint;
 
 
 \/\*                                {multiLineCommentNesting = 1; currentComment[0] = 0; BEGIN(MULTI_LINE_COMMENT); currentComment+=yytext;}
-<MULTI_LINE_COMMENT>\/+\*            {multiLineCommentNesting++; currentComment+=yytext;}
+<MULTI_LINE_COMMENT>\/+\*           {multiLineCommentNesting++; currentComment+=yytext;}
 <MULTI_LINE_COMMENT>[^*/]*          {currentComment+=yytext;}
 <MULTI_LINE_COMMENT>\/+[^*/]*       {currentComment+=yytext;}
 <MULTI_LINE_COMMENT>\*+[^*/]*       {currentComment+=yytext;}
@@ -64,7 +64,7 @@ double floatingPoint;
 
 SINGLE_LINE_STRING_SQ_BEGIN_END {_print("SINGLE LINE STRING SQ BEGIN END : " + yytext_str());}
 
-\/\/[^\n\r]*[\n\r]?         {std::string tmp; tmp = yytext_str().erase(0, 2); tmp = tmp.erase(tmp.length() - 1, 1); _print("SINGLE LINE COMMENT: " + tmp);}
+\/\/[^\n\r]*[\n\r]?         {std::string tmp = yytext_str(); tmp.erase(0, 2); tmp.erase(tmp.size() - 1, 1); _print("SINGLE LINE COMMENT: " + tmp);}
 
 
 r\'[^\'\r\n]*\'|r\"[^\"\r\r\n]*\" {_print("RAW SINGLE LINE STRING: " + yytext_str());}
