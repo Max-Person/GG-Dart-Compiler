@@ -94,7 +94,9 @@ char* trimAndProcess(int trimStart, int trimEnd, char* str){
 
 %}
 
-%x MULTI_LINE_COMMENT 
+%x MULTI_LINE_COMMENT
+%x MULTI_LINE_RAW_STR_SQ
+%x MULTI_LINE_RAW_STR_DQ
 LETTER[A-Za-z]
 DIGIT[0-9]
 HEX_DIGIT[0-9A-Fa-f]
@@ -118,10 +120,10 @@ STRING_CONTENT_DQ({STRING_CONTENT_COMMON}|\')
 SINGLE_LINE_STRING_DQ_BEGIN_END(\"STRING_CONTENT_DQ\")
 SINGLE_LINE_STRING_DQ_BEGIN_MID(\"{STRING_CONTENT_DQ}*\$\{)
 SINGLE_LINE_STRING_DQ_MID_MID(\}{STRING_CONTENT_DQ}*\$\{)
-SINGLE_LINE_STRING_DQ_MID_END(\}{STRING_CONTENT_SQ}*\") AAAAAAAAAAAAAAAAAA
+SINGLE_LINE_STRING_DQ_MID_END(\}{STRING_CONTENT_DQ}*\")
 
 QUOTES_SQ(\'|\'\')?
-MULTI_LINE_STRING_BOTH_MID_MID(\}([^$"'\r]|\\\$|\")*\$\{)
+MULTI_LINE_STRING_BOTH_MID_MID(\}(({QUOTES_SQ}|{QUOTES_DQ})({STRING_CONTENT_COMMON}|[\r\n]))*({QUOTES_SQ}|{QUOTES_DQ})\$\{)
 STRING_CONTENT_TSQ({QUOTES_SQ}({STRING_CONTENT_COMMON}|[\"\r\n]))
 MULTI_LINE_STRING_SQ_BEGIN_END(\'\'\'{STRING_CONTENT_TSQ}*\'\'\')
 MULTI_LINE_STRING_SQ_BEGIN_MID(\'\'\'{STRING_CONTENT_TSQ}*{QUOTES_SQ}\$\{)
@@ -140,11 +142,12 @@ MULTI_LINE_STRING_DQ_MID_END(\}{STRING_CONTENT_TDQ}*\"\"\")
 %{
 std::string stringLiteral;
 std::string currentComment;
+std::string currentMultilineRaw;
 int multiLineCommentNesting;
-int currentInteger;
-double floatingPoint;
 %}
 
+
+\/\/[^\n\r]*[\n\r]?         { _print("SINGLE LINE COMMENT: " + yytext_str());}
 
 \/\*                                {multiLineCommentNesting = 1; currentComment[0] = 0; BEGIN(MULTI_LINE_COMMENT); currentComment+=yytext;}
 <MULTI_LINE_COMMENT>\/+\*           {multiLineCommentNesting++; currentComment+=yytext;}
@@ -158,55 +161,6 @@ double floatingPoint;
     {
         _print("MULTI LINE COMMENT: " + currentComment); BEGIN(INITIAL);
     }
-}
-
-
-{MULTI_LINE_STRING_BOTH_MID_MID}      {
-    char* fin = trimAndProcess(1, 2, yytext); //превратить спецсимволы в символы
-    _print("MULTI LINE STRING BOTH MID MID : " + std::string(fin));
-    free(fin); //Освободить память
-}
-
-{MULTI_LINE_STRING_SQ_MID_END}      {
-    char* fin = trimAndProcess(1, 3, yytext); //превратить спецсимволы в символы
-    _print("MULTI LINE STRING DQ MID END : " + std::string(fin));
-    free(fin); //Освободить память
-}
-{MULTI_LINE_STRING_SQ_MID_MID}      {
-    char* fin = trimAndProcess(1, 2, yytext); //превратить спецсимволы в символы
-    _print("MULTI LINE STRING SQ MID MID : " + std::string(fin));
-    free(fin); //Освободить память
-}
-{MULTI_LINE_STRING_SQ_BEGIN_MID}    {
-    char* fin = trimAndProcess(3, 2, yytext); //превратить спецсимволы в символы
-    _print("MULTI LINE STRING SQ BEGIN MID : " + std::string(fin));
-    free(fin); //Освободить память
-}
-{MULTI_LINE_STRING_SQ_BEGIN_END}    {
-    char* fin = trimAndProcess(3, 3, yytext); //превратить спецсимволы в символы
-    _print("MULTI LINE STRING SQ BEGIN END : " + std::string(fin));
-    free(fin); //Освободить память
-}
-
-{MULTI_LINE_STRING_DQ_MID_END}      {
-    char* fin = trimAndProcess(1, 3, yytext); //превратить спецсимволы в символы
-    _print("MULTI LINE STRING DQ MID END : " + std::string(fin));
-    free(fin); //Освободить память
-}
-{MULTI_LINE_STRING_DQ_MID_MID}      {
-    char* fin = trimAndProcess(1, 2, yytext); //превратить спецсимволы в символы
-    _print("MULTI LINE STRING DQ MID MID : " + std::string(fin));
-    free(fin); //Освободить память
-}
-{MULTI_LINE_STRING_DQ_BEGIN_MID}    {
-    char* fin = trimAndProcess(3, 2, yytext); //превратить спецсимволы в символы
-    _print("MULTI LINE STRING DQ BEGIN MID : " + std::string(fin));
-    free(fin); //Освободить память
-}
-{MULTI_LINE_STRING_DQ_BEGIN_END}    {
-    char* fin = trimAndProcess(3, 3, yytext); //превратить спецсимволы в символы
-    _print("MULTI LINE STRING DQ BEGIN END : " + std::string(fin));
-    free(fin); //Освободить память
 }
 
 
@@ -259,9 +213,63 @@ double floatingPoint;
     free(fin); //Освободить память
 }
 
-\/\/[^\n\r]*[\n\r]?         { _print("SINGLE LINE COMMENT: " + yytext_str());}
+{MULTI_LINE_STRING_BOTH_MID_MID}      {
+    char* fin = trimAndProcess(1, 2, yytext); //превратить спецсимволы в символы
+    _print("MULTI LINE STRING BOTH MID MID : " + std::string(fin));
+    free(fin); //Освободить память
+}
+
+{MULTI_LINE_STRING_SQ_MID_END}      {
+    char* fin = trimAndProcess(1, 3, yytext); //превратить спецсимволы в символы
+    _print("MULTI LINE STRING DQ MID END : " + std::string(fin));
+    free(fin); //Освободить память
+}
+{MULTI_LINE_STRING_SQ_MID_MID}      {
+    char* fin = trimAndProcess(1, 2, yytext); //превратить спецсимволы в символы
+    _print("MULTI LINE STRING SQ MID MID : " + std::string(fin));
+    free(fin); //Освободить память
+}
+{MULTI_LINE_STRING_SQ_BEGIN_MID}    {
+    char* fin = trimAndProcess(3, 2, yytext); //превратить спецсимволы в символы
+    _print("MULTI LINE STRING SQ BEGIN MID : " + std::string(fin));
+    free(fin); //Освободить память
+}
+{MULTI_LINE_STRING_SQ_BEGIN_END}    {
+    char* fin = trimAndProcess(3, 3, yytext); //превратить спецсимволы в символы
+    _print("MULTI LINE STRING SQ BEGIN END : " + std::string(fin));
+    free(fin); //Освободить память
+}
+
+{MULTI_LINE_STRING_DQ_MID_END}      {
+    char* fin = trimAndProcess(1, 3, yytext); //превратить спецсимволы в символы
+    _print("MULTI LINE STRING DQ MID END : " + std::string(fin));
+    free(fin); //Освободить память
+}
+{MULTI_LINE_STRING_DQ_MID_MID}      {
+    char* fin = trimAndProcess(1, 2, yytext); //превратить спецсимволы в символы
+    _print("MULTI LINE STRING DQ MID MID : " + std::string(fin));
+    free(fin); //Освободить память
+}
+{MULTI_LINE_STRING_DQ_BEGIN_MID}    {
+    char* fin = trimAndProcess(3, 2, yytext); //превратить спецсимволы в символы
+    _print("MULTI LINE STRING DQ BEGIN MID : " + std::string(fin));
+    free(fin); //Освободить память
+}
+{MULTI_LINE_STRING_DQ_BEGIN_END}    {
+    char* fin = trimAndProcess(3, 3, yytext); //превратить спецсимволы в символы
+    _print("MULTI LINE STRING DQ BEGIN END : " + std::string(fin));
+    free(fin); //Освободить память
+}
 
 r\'\'\'.*?\'\'\'|r\"\"\".*?\"\"\"     {std::string tmp = yytext_str(); tmp.erase(0, 2); tmp.erase(tmp.size() - 1, 1); _print("RAW MULTI LINE STRING: " + tmp);}
+r\'\'\'                               {currentMultilineRaw[0] = 0; BEGIN(MULTI_LINE_RAW_STR_SQ);}
+<MULTI_LINE_RAW_STR_SQ>\'\'\'         {_print("RAW MULTI LINE STRING: " + currentMultilineRaw); BEGIN(INITIAL);}
+<MULTI_LINE_RAW_STR_SQ>.              {currentMultilineRaw += yytext;}
+
+r\"\"\"                               {currentMultilineRaw[0] = 0; BEGIN(MULTI_LINE_RAW_STR_DQ);}
+<MULTI_LINE_RAW_STR_DQ>\"\"\"         {_print("RAW MULTI LINE STRING: " + currentMultilineRaw); BEGIN(INITIAL);}
+<MULTI_LINE_RAW_STR_DQ>.              {currentMultilineRaw += yytext;}
+
 r\'[^\'\r\n]*\'|r\"[^\"\r\r\n]*\"     {std::string tmp = yytext_str(); tmp.erase(0, 2); tmp.erase(tmp.size() - 1, 1); _print("RAW SINGLE LINE STRING: " + tmp);}
 
 
@@ -456,8 +464,8 @@ yield           {_print("Contextual keyword YIELD: " + yytext_str());}
 \]           {_print("BRACKETR LEXEM ]: " + yytext_str());}
 
 \.           {_print("DOT LEXEM .: " + yytext_str());}
-\;           {_print("SEMICOLON LEXEM .: " + yytext_str());}
-\:           {_print("COLON LEXEM .: " + yytext_str());}
+\;           {_print("SEMICOLON LEXEM ;: " + yytext_str());}
+\:           {_print("COLON LEXEM :: " + yytext_str());}
 
 .           {_print("UNKNOWN SYMBOL: " + yytext_str());}
 
