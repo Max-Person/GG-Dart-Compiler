@@ -86,8 +86,8 @@ char* processEsc(const char* str) {
 }
 
 char* trimAndProcess(int trimStart, int trimEnd, char* str){
-    char* content = str+trimStart; //не использовать первый символ (кавычку)
-    content[strlen(content)-trimEnd] = 0; //удалить последний символ (закрывающую кавычку)
+    char* content = str+trimStart; //не использовать несколько первых символов
+    content[strlen(content)-trimEnd] = 0; //удалить несколько последних символов 
     char* fin = processEsc(content); //превратить спецсимволы в символы
     return fin;
 }
