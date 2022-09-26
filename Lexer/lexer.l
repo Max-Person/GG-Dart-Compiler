@@ -23,75 +23,6 @@ std::string yytext_str() {
     return std::string(yytext);
 }
 
-char* processEsc(const char* str) {
-	int len = strlen(str) + 1;
-	char* fin = (char*)malloc(sizeof(char) * len);
-
-	for (int i = 0; i < len; ++i) {
-		fin[i] = 0;
-	}
-
-	const char* end = str + strlen(str);
-	const char* start = str;
-	while (start != end) {
-		char* slash = strchr((char*)start, '\\');
-		if (slash == NULL) {
-			strcat(fin, start);
-			return fin;
-		}
-		else {
-			strncat(fin, start, slash - start);
-		}
-
-		start = slash;
-		char esc = start[1];
-		switch (esc) {
-		case 'n':
-			fin[strlen(fin)] = '\n';
-			start += 2;
-			break;
-		case 'r':
-			fin[strlen(fin)] = '\r';
-			start += 2;
-			break;
-		case 'f':
-			fin[strlen(fin)] = '\f';
-			start += 2;
-			break;
-		case 'b':
-			fin[strlen(fin)] = '\b';
-			start += 2;
-			break;
-		case 't':
-			fin[strlen(fin)] = '\t';
-			start += 2;
-			break;
-		case 'v':
-			fin[strlen(fin)] = '\v';
-			start += 2;
-			break;
-		case 'x':
-			char hex[3];
-			hex[0] = start[2];
-			hex[1] = start[3];
-			hex[2] = 0;
-			fin[strlen(fin)] = strtol(hex, NULL, 16);
-			start += 4;
-			break;
-		default:
-			fin[strlen(fin)] = esc;
-			start += 2;
-		}
-	}
-	return fin;
-}
-
-char* trimAndProcess(int trimStart, int trimEnd, char* str){
-    char* content = str+trimStart; //не использовать несколько первых символов
-    content[strlen(content)-trimEnd] = 0; //удалить несколько последних символов 
-    char* fin = processEsc(content); //превратить спецсимволы в символы
-    return fin;
-}
 
 %}
 
@@ -103,7 +34,6 @@ DIGIT[0-9]
 HEX_DIGIT[0-9A-Fa-f]
 EXPONENT[eE][+-]?[0-9]+
 
-STRING_CONTENT_COMMON([^$"'\n\r]|\\\$)
 %x SINGLE_LINE_STR_SQ
 %x SINGLE_LINE_STR_DQ
 %x MULTI_LINE_STR_SQ
@@ -115,7 +45,6 @@ STRING_CONTENT_COMMON([^$"'\n\r]|\\\$)
 %{
 std::string stringLiteral;
 std::string currentComment;
-std::string currentMultilineRaw;
 int multiLineCommentNesting;
 %}
 
@@ -136,62 +65,77 @@ int multiLineCommentNesting;
     }
 }
 
-\'                                                                          {stringLiteral.clear(); yy_push_state(SINGLE_LINE_STR_SQ);}
-\"                                                                          {stringLiteral.clear(); yy_push_state(SINGLE_LINE_STR_DQ);}
-<SINGLE_LINE_STR_SQ,SINGLE_LINE_STR_DQ>[^$"'\n\r\\]*                        {stringLiteral += yytext;}
-<SINGLE_LINE_STR_SQ>\"*                                                     {stringLiteral += yytext;}
-<SINGLE_LINE_STR_DQ>\'*                                                     {stringLiteral += yytext;}
-<SINGLE_LINE_STR_SQ,SINGLE_LINE_STR_DQ>\\n                                  {stringLiteral += '\n';}
-<SINGLE_LINE_STR_SQ,SINGLE_LINE_STR_DQ>\\r                                  {stringLiteral += '\r';}
-<SINGLE_LINE_STR_SQ,SINGLE_LINE_STR_DQ>\\f                                  {stringLiteral += '\f';}
-<SINGLE_LINE_STR_SQ,SINGLE_LINE_STR_DQ>\\b                                  {stringLiteral += '\b';}
-<SINGLE_LINE_STR_SQ,SINGLE_LINE_STR_DQ>\\t                                  {stringLiteral += '\t';}
-<SINGLE_LINE_STR_SQ,SINGLE_LINE_STR_DQ>\\v                                  {stringLiteral += '\v';}
-<SINGLE_LINE_STR_SQ,SINGLE_LINE_STR_DQ>\\x{HEX_DIGIT}{2}                    {
+\'                                                                                                  {stringLiteral.clear(); yy_push_state(SINGLE_LINE_STR_SQ);}
+\"                                                                                                  {stringLiteral.clear(); yy_push_state(SINGLE_LINE_STR_DQ);}
+\'\'\'                                                                                              {stringLiteral.clear(); yy_push_state(MULTI_LINE_STR_SQ);}
+\"\"\"                                                                                              {stringLiteral.clear(); yy_push_state(MULTI_LINE_STR_DQ);}
+<SINGLE_LINE_STR_SQ,SINGLE_LINE_STR_DQ,MULTI_LINE_STR_SQ,MULTI_LINE_STR_DQ>[^$"'\n\r\\]*            {stringLiteral += yytext;}
+<MULTI_LINE_STR_DQ,SINGLE_LINE_STR_DQ>\'*                                                           {stringLiteral += yytext;}
+<MULTI_LINE_STR_SQ,SINGLE_LINE_STR_SQ>\"*                                                           {stringLiteral += yytext;}
+<MULTI_LINE_STR_SQ,MULTI_LINE_STR_DQ>[\n\r]*                                                        {stringLiteral += yytext;}
+<MULTI_LINE_STR_SQ>\'{1,2}                                                                          {stringLiteral += yytext;}
+<MULTI_LINE_STR_DQ>\"{1,2}                                                                          {stringLiteral += yytext;}
+<SINGLE_LINE_STR_SQ,SINGLE_LINE_STR_DQ,MULTI_LINE_STR_SQ,MULTI_LINE_STR_DQ>\\n                      {stringLiteral += '\n';}
+<SINGLE_LINE_STR_SQ,SINGLE_LINE_STR_DQ,MULTI_LINE_STR_SQ,MULTI_LINE_STR_DQ>\\r                      {stringLiteral += '\r';}
+<SINGLE_LINE_STR_SQ,SINGLE_LINE_STR_DQ,MULTI_LINE_STR_SQ,MULTI_LINE_STR_DQ>\\f                      {stringLiteral += '\f';}
+<SINGLE_LINE_STR_SQ,SINGLE_LINE_STR_DQ,MULTI_LINE_STR_SQ,MULTI_LINE_STR_DQ>\\b                      {stringLiteral += '\b';}
+<SINGLE_LINE_STR_SQ,SINGLE_LINE_STR_DQ,MULTI_LINE_STR_SQ,MULTI_LINE_STR_DQ>\\t                      {stringLiteral += '\t';}
+<SINGLE_LINE_STR_SQ,SINGLE_LINE_STR_DQ,MULTI_LINE_STR_SQ,MULTI_LINE_STR_DQ>\\v                      {stringLiteral += '\v';}
+<SINGLE_LINE_STR_SQ,SINGLE_LINE_STR_DQ,MULTI_LINE_STR_SQ,MULTI_LINE_STR_DQ>\\x{HEX_DIGIT}{2}        {
     char hex[3];
     hex[0] = yytext[2];
     hex[1] = yytext[3];
     hex[2] = 0;
     stringLiteral += strtol(hex, NULL, 16);
 }
-<SINGLE_LINE_STR_SQ,SINGLE_LINE_STR_DQ>\\.                                  {stringLiteral += yytext[1];}
+<SINGLE_LINE_STR_SQ,SINGLE_LINE_STR_DQ,MULTI_LINE_STR_SQ,MULTI_LINE_STR_DQ>\\.                      {stringLiteral += yytext[1];}
 
 
-<SINGLE_LINE_STR_SQ>\$\{                                                    {
-    _print("SINGLE LINE STRING SQ: " + stringLiteral);
+<SINGLE_LINE_STR_SQ,SINGLE_LINE_STR_DQ,MULTI_LINE_STR_SQ,MULTI_LINE_STR_DQ>\$\{                     {
+    _print("STRING LITERAL: " + stringLiteral);
     _print("STR INTERPOLATION CONCAT (START)");
     yy_push_state(STR_INTERPOLATION);
 }
-<SINGLE_LINE_STR_DQ>\$\{                                                    {
-    _print("SINGLE LINE STRING DQ: " + stringLiteral);
-    _print("STR INTERPOLATION CONCAT (START)");
-    yy_push_state(STR_INTERPOLATION);
+<SINGLE_LINE_STR_SQ,SINGLE_LINE_STR_DQ,MULTI_LINE_STR_SQ,MULTI_LINE_STR_DQ>\$                       {
+    _print("ERR: Interpolation expected at: " + stringLiteral);
 }
 
-<STR_INTERPOLATION>\}                                                       {
+<STR_INTERPOLATION>\}                                                                               {
     stringLiteral.clear(); 
     _print("STR INTERPOLATION CONCAT (END)");
     yy_pop_state();
 }
 
 
-<SINGLE_LINE_STR_SQ>\'                                                      {
-    _print("SINGLE LINE STRING SQ: " + stringLiteral);
+<SINGLE_LINE_STR_SQ>\'                                                         {
+    _print("STRING LITERAL: " + stringLiteral);
     yy_pop_state();
 }
-<SINGLE_LINE_STR_DQ>\"                                                      {
-    _print("SINGLE LINE STRING DQ: " + stringLiteral);
+<SINGLE_LINE_STR_DQ>\"                                                         {
+    _print("STRING LITERAL: " + stringLiteral);
+    yy_pop_state();
+}
+<SINGLE_LINE_STR_SQ,SINGLE_LINE_STR_DQ>[\n\r]                                  {
+    _print("ERR: Single line string isn't properly enclosed: " + stringLiteral);
+    yy_pop_state();
+}
+<MULTI_LINE_STR_SQ>\'\'\'                                                      {
+    _print("STRING LITERAL: " + stringLiteral);
+    yy_pop_state();
+}
+<MULTI_LINE_STR_DQ>\"\"\"                                                      {
+    _print("STRING LITERAL: " + stringLiteral);
     yy_pop_state();
 }
 
 
-r\'\'\'                               {currentMultilineRaw[0] = 0; BEGIN(MULTI_LINE_RAW_STR_SQ);}
-<MULTI_LINE_RAW_STR_SQ>\'\'\'         {_print("RAW MULTI LINE STRING: " + currentMultilineRaw); BEGIN(INITIAL);}
-<MULTI_LINE_RAW_STR_SQ>.              {currentMultilineRaw += yytext;}
+r\'\'\'                               {stringLiteral.clear(); BEGIN(MULTI_LINE_RAW_STR_SQ);}
+<MULTI_LINE_RAW_STR_SQ>\'\'\'         {_print("STRING LITERAL: " + stringLiteral); BEGIN(INITIAL);}
+<MULTI_LINE_RAW_STR_SQ>.              {stringLiteral += yytext;}
 
-r\"\"\"                               {currentMultilineRaw[0] = 0; BEGIN(MULTI_LINE_RAW_STR_DQ);}
-<MULTI_LINE_RAW_STR_DQ>\"\"\"         {_print("RAW MULTI LINE STRING: " + currentMultilineRaw); BEGIN(INITIAL);}
-<MULTI_LINE_RAW_STR_DQ>.              {currentMultilineRaw += yytext;}
+r\"\"\"                               {stringLiteral.clear(); BEGIN(MULTI_LINE_RAW_STR_DQ);}
+<MULTI_LINE_RAW_STR_DQ>\"\"\"         {_print("STRING LITERAL: " + stringLiteral); BEGIN(INITIAL);}
+<MULTI_LINE_RAW_STR_DQ>.              {stringLiteral += yytext;}
 
 r\'[^\'\r\n]*\'|r\"[^\"\r\r\n]*\"     {std::string tmp = yytext_str(); tmp.erase(0, 2); tmp.erase(tmp.size() - 1, 1); _print("RAW SINGLE LINE STRING: " + tmp);}
 
