@@ -1,6 +1,7 @@
 %option noyywrap
 %option never-interactive
 %option yylineno
+%option stack
 
 %{
 #include <string>
@@ -102,40 +103,12 @@ DIGIT[0-9]
 HEX_DIGIT[0-9A-Fa-f]
 EXPONENT[eE][+-]?[0-9]+
 
-IDENTIFIER_NO_DOLLAR[A-Za-z]|'_'[A-Za-z]|'_'|[0-9]
-BUILT_IN_IDENTIFIER[ abstract | as | covariant | deferred | dynamic | export | external | extension | factory | Function | get | implements | import | interface | late | library | mixin | operator | part | required | set | static | typedef ]
-SIMPLE_STRING_INTERPOLATION(\$({IDENTIFIER_NO_DOLLAR}){BUILT_IN_IDENTIFIER}|this)
-HEX_DIGIT_SEQUENCE({HEX_DIGIT}{HEX_DIGIT}?{HEX_DIGIT}?{HEX_DIGIT}?{HEX_DIGIT}?{HEX_DIGIT}?)
-ESCAPE_SEQUANCE([\n\r\f\b\\\v]|\\x{HEX_DIGITHEX_DIGIT}|\\u{HEX_DIGIT}{4}|\\u{HEX_DIGIT_SEQUENCE})
-
 STRING_CONTENT_COMMON([^$"'\n\r]|\\\$)
-STRING_CONTENT_SQ({STRING_CONTENT_COMMON}|\")
-SINGLE_LINE_STRING_BOTH_MID_MID(\}{STRING_CONTENT_COMMON}*\$\{)
-SINGLE_LINE_STRING_SQ_BEGIN_END(\'({STRING_CONTENT_SQ})*\')
-SINGLE_LINE_STRING_SQ_BEGIN_MID(\'{STRING_CONTENT_SQ}*\$\{)
-SINGLE_LINE_STRING_SQ_MID_MID(\}{STRING_CONTENT_SQ}*\$\{)
-SINGLE_LINE_STRING_SQ_MID_END(\}{STRING_CONTENT_SQ}*\')
-
-STRING_CONTENT_DQ({STRING_CONTENT_COMMON}|\')
-SINGLE_LINE_STRING_DQ_BEGIN_END(\"STRING_CONTENT_DQ\")
-SINGLE_LINE_STRING_DQ_BEGIN_MID(\"{STRING_CONTENT_DQ}*\$\{)
-SINGLE_LINE_STRING_DQ_MID_MID(\}{STRING_CONTENT_DQ}*\$\{)
-SINGLE_LINE_STRING_DQ_MID_END(\}{STRING_CONTENT_DQ}*\")
-
-QUOTES_SQ(\'|\'\')?
-MULTI_LINE_STRING_BOTH_MID_MID(\}(({QUOTES_SQ}|{QUOTES_DQ})({STRING_CONTENT_COMMON}|[\r\n]))*({QUOTES_SQ}|{QUOTES_DQ})\$\{)
-STRING_CONTENT_TSQ({QUOTES_SQ}({STRING_CONTENT_COMMON}|[\"\r\n]))
-MULTI_LINE_STRING_SQ_BEGIN_END(\'\'\'{STRING_CONTENT_TSQ}*\'\'\')
-MULTI_LINE_STRING_SQ_BEGIN_MID(\'\'\'{STRING_CONTENT_TSQ}*{QUOTES_SQ}\$\{)
-MULTI_LINE_STRING_SQ_MID_MID(\}{STRING_CONTENT_TSQ}*{QUOTES_SQ}\$\{)
-MULTI_LINE_STRING_SQ_MID_END(\}{STRING_CONTENT_TSQ}*\'\'\')
-
-QUOTES_DQ(\"|\"\")?
-STRING_CONTENT_TDQ({QUOTES_DQ}({STRING_CONTENT_COMMON}|[\'\r\n]))
-MULTI_LINE_STRING_DQ_BEGIN_END(\"\"\"{STRING_CONTENT_TDQ}*\"\"\")
-MULTI_LINE_STRING_DQ_BEGIN_MID(\"\"\"{STRING_CONTENT_TDQ}*{QUOTES_DQ}\$\{)
-MULTI_LINE_STRING_DQ_MID_MID(\}{STRING_CONTENT_TDQ}*{QUOTES_DQ}\$\{)
-MULTI_LINE_STRING_DQ_MID_END(\}{STRING_CONTENT_TDQ}*\"\"\")
+%x SINGLE_LINE_STR_SQ
+%x SINGLE_LINE_STR_DQ
+%x MULTI_LINE_STR_SQ
+%x MULTI_LINE_STR_DQ
+%s STR_INTERPOLATION
 
 %%
 
@@ -163,105 +136,55 @@ int multiLineCommentNesting;
     }
 }
 
+\'                                                                          {stringLiteral.clear(); yy_push_state(SINGLE_LINE_STR_SQ);}
+\"                                                                          {stringLiteral.clear(); yy_push_state(SINGLE_LINE_STR_DQ);}
+<SINGLE_LINE_STR_SQ,SINGLE_LINE_STR_DQ>[^$"'\n\r\\]*                        {stringLiteral += yytext;}
+<SINGLE_LINE_STR_SQ>\"*                                                     {stringLiteral += yytext;}
+<SINGLE_LINE_STR_DQ>\'*                                                     {stringLiteral += yytext;}
+<SINGLE_LINE_STR_SQ,SINGLE_LINE_STR_DQ>\\n                                  {stringLiteral += '\n';}
+<SINGLE_LINE_STR_SQ,SINGLE_LINE_STR_DQ>\\r                                  {stringLiteral += '\r';}
+<SINGLE_LINE_STR_SQ,SINGLE_LINE_STR_DQ>\\f                                  {stringLiteral += '\f';}
+<SINGLE_LINE_STR_SQ,SINGLE_LINE_STR_DQ>\\b                                  {stringLiteral += '\b';}
+<SINGLE_LINE_STR_SQ,SINGLE_LINE_STR_DQ>\\t                                  {stringLiteral += '\t';}
+<SINGLE_LINE_STR_SQ,SINGLE_LINE_STR_DQ>\\v                                  {stringLiteral += '\v';}
+<SINGLE_LINE_STR_SQ,SINGLE_LINE_STR_DQ>\\x{HEX_DIGIT}{2}                    {
+    char hex[3];
+    hex[0] = yytext[2];
+    hex[1] = yytext[3];
+    hex[2] = 0;
+    stringLiteral += strtol(hex, NULL, 16);
+}
+<SINGLE_LINE_STR_SQ,SINGLE_LINE_STR_DQ>\\.                                  {stringLiteral += yytext[1];}
 
-{SINGLE_LINE_STRING_BOTH_MID_MID}      {
-    char* fin = trimAndProcess(1, 2, yytext); //превратить спецсимволы в символы
-    _print("SINGLE LINE STRING BOTH MID MID : " + std::string(fin));
-    free(fin); //Освободить память
-}
 
-
-{SINGLE_LINE_STRING_SQ_MID_END}      {
-    char* fin = trimAndProcess(1, 1, yytext); //превратить спецсимволы в символы
-    _print("SINGLE LINE STRING SQ MID END : " + std::string(fin));
-    free(fin); //Освободить память
+<SINGLE_LINE_STR_SQ>\$\{                                                    {
+    _print("SINGLE LINE STRING SQ: " + stringLiteral);
+    _print("STR INTERPOLATION CONCAT (START)");
+    yy_push_state(STR_INTERPOLATION);
 }
-{SINGLE_LINE_STRING_SQ_MID_MID}      {
-    char* fin = trimAndProcess(1, 2, yytext); //превратить спецсимволы в символы
-    _print("SINGLE LINE STRING SQ MID MID : " + std::string(fin));
-    free(fin); //Освободить память
-}
-{SINGLE_LINE_STRING_SQ_BEGIN_MID}    {
-    char* fin = trimAndProcess(1, 2, yytext); //превратить спецсимволы в символы
-    _print("SINGLE LINE STRING SQ BEGIN MID : " + std::string(fin));
-    free(fin); //Освободить память
-}
-{SINGLE_LINE_STRING_SQ_BEGIN_END}    {
-    char* fin = trimAndProcess(1, 1, yytext); //превратить спецсимволы в символы
-    _print("SINGLE LINE STRING SQ BEGIN END : " + std::string(fin));
-    free(fin); //Освободить память
-}
-
-{SINGLE_LINE_STRING_DQ_MID_END}      {
-    char* fin = trimAndProcess(1, 1, yytext); //превратить спецсимволы в символы
-    _print("SINGLE LINE STRING DQ MID END : " + std::string(fin));
-    free(fin); //Освободить память
-}
-{SINGLE_LINE_STRING_DQ_MID_MID}      {
-    char* fin = trimAndProcess(1, 2, yytext); //превратить спецсимволы в символы
-    _print("SINGLE LINE STRING DQ MID MID : " + std::string(fin));
-    free(fin); //Освободить память
-}
-{SINGLE_LINE_STRING_DQ_BEGIN_MID}    {
-    char* fin = trimAndProcess(1, 2, yytext); //превратить спецсимволы в символы
-    _print("SINGLE LINE STRING DQ BEGIN MID : " + std::string(fin));
-    free(fin); //Освободить память
-}
-{SINGLE_LINE_STRING_DQ_BEGIN_END}    {
-    char* fin = trimAndProcess(1, 1, yytext); //превратить спецсимволы в символы
-    _print("SINGLE LINE STRING DQ BEGIN END : " + std::string(fin));
-    free(fin); //Освободить память
+<SINGLE_LINE_STR_DQ>\$\{                                                    {
+    _print("SINGLE LINE STRING DQ: " + stringLiteral);
+    _print("STR INTERPOLATION CONCAT (START)");
+    yy_push_state(STR_INTERPOLATION);
 }
 
-{MULTI_LINE_STRING_BOTH_MID_MID}      {
-    char* fin = trimAndProcess(1, 2, yytext); //превратить спецсимволы в символы
-    _print("MULTI LINE STRING BOTH MID MID : " + std::string(fin));
-    free(fin); //Освободить память
+<STR_INTERPOLATION>\}                                                       {
+    stringLiteral.clear(); 
+    _print("STR INTERPOLATION CONCAT (END)");
+    yy_pop_state();
 }
 
-{MULTI_LINE_STRING_SQ_MID_END}      {
-    char* fin = trimAndProcess(1, 3, yytext); //превратить спецсимволы в символы
-    _print("MULTI LINE STRING DQ MID END : " + std::string(fin));
-    free(fin); //Освободить память
+
+<SINGLE_LINE_STR_SQ>\'                                                      {
+    _print("SINGLE LINE STRING SQ: " + stringLiteral);
+    yy_pop_state();
 }
-{MULTI_LINE_STRING_SQ_MID_MID}      {
-    char* fin = trimAndProcess(1, 2, yytext); //превратить спецсимволы в символы
-    _print("MULTI LINE STRING SQ MID MID : " + std::string(fin));
-    free(fin); //Освободить память
-}
-{MULTI_LINE_STRING_SQ_BEGIN_MID}    {
-    char* fin = trimAndProcess(3, 2, yytext); //превратить спецсимволы в символы
-    _print("MULTI LINE STRING SQ BEGIN MID : " + std::string(fin));
-    free(fin); //Освободить память
-}
-{MULTI_LINE_STRING_SQ_BEGIN_END}    {
-    char* fin = trimAndProcess(3, 3, yytext); //превратить спецсимволы в символы
-    _print("MULTI LINE STRING SQ BEGIN END : " + std::string(fin));
-    free(fin); //Освободить память
+<SINGLE_LINE_STR_DQ>\"                                                      {
+    _print("SINGLE LINE STRING DQ: " + stringLiteral);
+    yy_pop_state();
 }
 
-{MULTI_LINE_STRING_DQ_MID_END}      {
-    char* fin = trimAndProcess(1, 3, yytext); //превратить спецсимволы в символы
-    _print("MULTI LINE STRING DQ MID END : " + std::string(fin));
-    free(fin); //Освободить память
-}
-{MULTI_LINE_STRING_DQ_MID_MID}      {
-    char* fin = trimAndProcess(1, 2, yytext); //превратить спецсимволы в символы
-    _print("MULTI LINE STRING DQ MID MID : " + std::string(fin));
-    free(fin); //Освободить память
-}
-{MULTI_LINE_STRING_DQ_BEGIN_MID}    {
-    char* fin = trimAndProcess(3, 2, yytext); //превратить спецсимволы в символы
-    _print("MULTI LINE STRING DQ BEGIN MID : " + std::string(fin));
-    free(fin); //Освободить память
-}
-{MULTI_LINE_STRING_DQ_BEGIN_END}    {
-    char* fin = trimAndProcess(3, 3, yytext); //превратить спецсимволы в символы
-    _print("MULTI LINE STRING DQ BEGIN END : " + std::string(fin));
-    free(fin); //Освободить память
-}
 
-r\'\'\'.*?\'\'\'|r\"\"\".*?\"\"\"     {std::string tmp = yytext_str(); tmp.erase(0, 2); tmp.erase(tmp.size() - 1, 1); _print("RAW MULTI LINE STRING: " + tmp);}
 r\'\'\'                               {currentMultilineRaw[0] = 0; BEGIN(MULTI_LINE_RAW_STR_SQ);}
 <MULTI_LINE_RAW_STR_SQ>\'\'\'         {_print("RAW MULTI LINE STRING: " + currentMultilineRaw); BEGIN(INITIAL);}
 <MULTI_LINE_RAW_STR_SQ>.              {currentMultilineRaw += yytext;}
