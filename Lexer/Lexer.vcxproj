@@ -146,6 +146,13 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="lexer.flex.cpp" />
+    <ClCompile Include="parser.tab.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <Bison Include="parser.y" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="parser.tab.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
