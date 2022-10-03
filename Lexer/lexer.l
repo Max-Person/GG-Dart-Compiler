@@ -39,6 +39,7 @@ EXPONENT[eE][+-]?[0-9]+
 %x MULTI_LINE_STR_SQ
 %x MULTI_LINE_STR_DQ
 %s STR_INTERPOLATION
+%x SIMPLE_INTERPOLATION
 
 %%
 
@@ -106,6 +107,17 @@ int multiLineCommentNesting;
     yy_pop_state();
 }
 
+<SINGLE_LINE_STR_SQ,SINGLE_LINE_STR_DQ,MULTI_LINE_STR_SQ,MULTI_LINE_STR_DQ>\$/((_|{LETTER})([_$]|{LETTER}|{DIGIT})*)                       {
+    _print("STRING LITERAL: " + stringLiteral);
+    _print("STR INTERPOLATION CONCAT (START)");
+    yy_push_state(SIMPLE_INTERPOLATION);
+}
+<SIMPLE_INTERPOLATION>((_|{LETTER})([_$]|{LETTER}|{DIGIT})*)                                                                               {
+    stringLiteral.clear(); 
+    _print("IDENTIFIER: " + yytext_str());
+    _print("STR INTERPOLATION CONCAT (END)");
+    yy_pop_state();
+}
 
 <SINGLE_LINE_STR_SQ>\'                                                         {
     _print("STRING LITERAL: " + stringLiteral);
@@ -127,7 +139,10 @@ int multiLineCommentNesting;
     _print("STRING LITERAL: " + stringLiteral);
     yy_pop_state();
 }
-
+<SINGLE_LINE_STR_SQ,SINGLE_LINE_STR_DQ,MULTI_LINE_STR_SQ,MULTI_LINE_STR_DQ><<EOF>>                                                      {
+    _print("ERR: String isn't properly enclosed: " + stringLiteral);
+    yy_pop_state();
+}
 
 r\'\'\'                               {stringLiteral.clear(); BEGIN(MULTI_LINE_RAW_STR_SQ);}
 <MULTI_LINE_RAW_STR_SQ>\'\'\'         {_print("STRING LITERAL: " + stringLiteral); BEGIN(INITIAL);}
@@ -324,8 +339,8 @@ yield           {_print("Contextual keyword YIELD: " + yytext_str());}
 \(           {_print("PARL LEXEM (: " + yytext_str());}
 \)           {_print("PARR LEXEM ): " + yytext_str());}
 
-\{           {_print("BRACEL LEXEM {: " + yytext_str());}
-\}           {_print("BRACER LEXEM }: " + yytext_str());}
+\{           {yy_push_state(INITIAL); _print("BRACEL LEXEM {: " + yytext_str());}
+\}           {yy_pop_state(); _print("BRACER LEXEM }: " + yytext_str());}
 
 \[           {_print("BRACKETL LEXEM [: " + yytext_str());}
 \]           {_print("BRACKETR LEXEM ]: " + yytext_str());}
