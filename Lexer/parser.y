@@ -17,87 +17,115 @@ void yyerror(char const *s) {
 
 %union {
     long long intval;
-    double floatval;
-    char *runeval;
+    double doubleval;
     char *stringval;
     char *identifier;
+    bool boolval;
 }
 
-%token <intval> tIntLit
-%token <floatval>  tFloatLit
-%token <runeval> tRuneLit
-%token <stringval> tStringLit
-%token <boolval> tBooleanLit
-%token <identifier> tIdentifier
+%right '=' AND_ASSIGN OR_ASSIGN XOR_ASSIGN SHIFTL_ASSIGN SHIFTR_ASSIGN TSHIFTR_ASSIGN MUL_ASSIGN DIV_ASSIGN TRUNC_DIV_ASSIGN MOD_ASSIGN ADD_ASSIGN SUB_ASSIGN IFNULL_ASSIGN
+%left IFNULL
+%left OR
+%left AND
+%nonassoc EQ NEQ
+%nonassoc '>' '<' GREATER_EQ LESS_EQ
+%left '|'
+%left '^'
+%left '&'
+// ШИФТЫ
+%left '+' '-'
+%left '*' '/' '%' TRUNCDIV
+%nonassoc UMINUS '!' '~' PREFIX_INC PREFIX_DEC AWAIT
+%nonassoc '.' '(' ')' '[' ']' POSTFIX_INC POSTFIX_DEC
+
+
+%token <intval>INTEGER_LITERAL
+%token <doubleval>DOUBLE_LITERAL
+%token <stringval>STRING_LITERAL
+%token <boolval> BOOLEAN_LITERAL
+%token <identifier>IDENTIFIER
 %token END
 
-%left tAnd                          // &&
-%left tOr                           // ||
-%left tIncrement                    // ++
-%left tDecrement                    // --
+%token INC                          // ++
+%token DEC                          // --
 
-%right tAndAssignment               // &=
-%right tBitclearAssignment          // &^=
-%right tOrAssignment                // |=
-%right tXorAssignment               // ^=
-%right tLeftShiftAssignment         // <<=
-%right tRightShiftAssignment        // >>=
+%right '?'
+%right ';'
+%right ':'
 
-%left tBitwiseAnd                   // &
-%left tBitclear                     // &^
-%left tBitwiseOr                    // |
-%left tBitwiseXor                   // ^
-%left tLeftShift                    // <<
-%left tRightShift                   // >>
+%token ASSERT
+%token BREAK
+%token CASE
+%token CATCH
+%token CLASS
+%token CONST
+%token CONTINUE
+%token DEFAULT
+%token DO
+%token ELSE
+%token ENUM
+%token EXTENDS
+%token FALSE
+%token FINAL
+%token FINALLY
+%token FOR
+%token IF
+%token IN
+%token IS
+%token NEW
+%token NULL_
+%token RETHROW
+%token RETURN
+%token SUPER
+%token SWITCH
+%token THIS
+%token THROW
+%token TRUE
+%token TRY
+%token VAR
+%token VOID
+%token WHILE
+%token WITH
 
-%right tPlusAssignment              // +=
-%right tMinusAssignment             // -=
-%right tMulAssignment               // *=
-%right tDivAssignment               // /=
-%right tModAssignment               // %=
+%token ABSTRACT
+%token AS
+%token COVARIANT
+%token DEFERRED
+%token DYNAMIC
+%token EXPORT
+%token EXTERNAL
+%token EXTENSION
+%token FACTORY
+%token FUNCTION
+%token GET
+%token IMPLEMENTS
+%token IMPORT
+%token INTERFACE
+%token LATE
+%token LIBRARY
+%token MIXIN
+%token OPERATOR
+%token PART
+%token REQUIRED
+%token SET
+%token STATIC
+%token TYPEDEF
 
-%left tEqual                        // ==
-%left tNotEqual                     // !=
-%left tGreaterOrEqual               // >=
-%left tLessOrEqual                  // <=
+%token ASYNC
+%token HIDE
+%token OF
+%token ON
+%token SHOW
+%token SYNC
+// AWAIT жив
+%token YIELD
 
-%left tUnderlying                   // ~
-%right tShortDeclarationOperator    // :=
-%right tUnaryPlus                   // +
-%right tUnaryMinus                  // -
-%token tVariadic                    // ...
+%token COMMENT
 
-%token tBreak
-%token tDefault
-%token tFunc
-%token tInterface
-%token tSelect
-%token tCase
-%token tDefer
-%token tGo
-%token tMap
-%token tStruct
-%token tChan
-%token tElse
-%token tGoto
-%token tPackage
-%token tSwitch
-%token tConst
-%token tFallthrough
-%token tIf
-%token tRange
-%token tType
-%token tContinue
-%token tFor
-%token tImport
-%token tReturn
-%token tVar
+%left INTERPOLATION_CONCAT
 
 %%
-    expr: tIdentifier                       {  }
-        | tIntLit                           {  }
-        | tFloatLit                         {  }
-        | tStringLit                        {  }
+    expr: IDENTIFIER    { }
         | expr '+' expr                     {  }
         | expr '-' expr                     {  }
         | expr '*' expr                     {  }
@@ -105,20 +133,12 @@ void yyerror(char const *s) {
         | expr '=' expr                     {  }
         | expr '<' expr                     {  }
         | expr '>' expr                     {  }
-        | expr tEqual expr                  {  }
-        | expr tNotEqual expr               {  }
-        | expr tLessOrEqual expr            {  }
-        | expr tGreaterOrEqual expr         {  }
-        | expr tAnd expr                    {  }
-        | expr tOr expr                     {  }
         | '!' expr                          {  }
-        | '+' expr %prec tUnaryPlus         {  }
-        | '-' expr %prec tUnaryMinus        {  }
     ;
     
 %%
 
-int main(int argc, char** argv) {
+/* int main(int argc, char** argv) {
     if (argc > 1) {
         yyin = fopen(argv[1], "r");
         yyparse();
@@ -127,4 +147,4 @@ int main(int argc, char** argv) {
     else {
         yyerror("Not found file");
     }
-}
+} */
