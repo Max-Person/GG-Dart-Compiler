@@ -32,7 +32,7 @@ void yyerror(char const *s) {
 %left '|'
 %left '^'
 %left '&'
-// ШИФТЫ
+%left SHIFTL SHIFTR TSHIFTR
 %left '+' '-'
 %left '*' '/' '%' TRUNCDIV
 %nonassoc UMINUS '!' '~' PREFIX_INC PREFIX_DEC AWAIT
@@ -125,17 +125,163 @@ void yyerror(char const *s) {
 %left INTERPOLATION_CONCAT
 
 %%
-    expr: IDENTIFIER    { }
-        | expr '+' expr                     {  }
-        | expr '-' expr                     {  }
-        | expr '*' expr                     {  }
-        | expr '/' expr                     {  }
-        | expr '=' expr                     {  }
-        | expr '<' expr                     {  }
-        | expr '>' expr                     {  }
-        | '!' expr                          {  }
+    builtInIdentifier: ABSTRACT            {}
+        | AS                               {}
+        | COVARIANT                        {}
+        | DEFERRED                         {}
+        | DYNAMIC                          {}
+        | EXPORT                           {}
+        | EXTERNAL                         {}
+        | EXTENSION                        {}
+        | FACTORY                          {}
+        | FUNCTION                         {}
+        | GET                              {}
+        | IMPLEMENTS                       {}
+        | IMPORT                           {}
+        | INTERFACE                        {}
+        | LATE                             {}
+        | LIBRARY                          {}
+        | MIXIN                            {}
+        | OPERATOR                         {}
+        | PART                             {}
+        | REQUIRED                         {}
+        | SET                              {}
+        | STATIC                           {}
+        | TYPEDEF                          {}
     ;
+
+    otherIdentifier: ASYNC                 {}
+        | HIDE                             {}
+        | OF                               {}
+        | ON                               {}
+        | SHOW                             {}
+        | SYNC                             {}
+        | AWAIT                            {} 
+        | YIELD                            {}
+    ;
+
+    identifier: IDENTIFIER                 {}
+        | builtInIdentifier                {}
+        | otherIdentifier                  {}
+    ;
+
+    primary: THIS                          {}
+        | INTEGER_LITERAL                  {}
+        | DOUBLE_LITERAL                   {}
+        | STRING_LITERAL                   {}
+        | BOOLEAN_LITERAL                  {}
+        | identifier                       {}
+    ;
+    expr: primary                          {}
+        | expr '=' expr                    {}
+        | expr AND_ASSIGN expr             {} 
+        | expr OR_ASSIGN expr              {}
+        | expr XOR_ASSIGN expr             {}
+        | expr SHIFTL_ASSIGN expr          {}
+        | expr SHIFTR_ASSIGN expr          {}
+        | expr TSHIFTR_ASSIGN expr         {}
+        | expr MUL_ASSIGN expr             {}
+        | expr DIV_ASSIGN expr             {}
+        | expr TRUNC_DIV_ASSIGN expr       {}
+        | expr MOD_ASSIGN expr             {}
+        | expr ADD_ASSIGN expr             {}
+        | expr SUB_ASSIGN expr             {}
+        | expr IFNULL_ASSIGN expr          {}
+        | expr '?' expr ':' expr           {}
+        | expr IFNULL expr                 {}
+        | expr OR expr                     {}
+        | expr AND expr                    {}
+        | expr EQ expr                     {}
+        | expr NEQ expr                    {}
+        | expr '>' expr                    {}
+        | expr '<' expr                    {}
+        | expr GREATER_EQ expr             {}
+        | expr LESS_EQ expr                {}
+        | expr '|' expr                    {}
+        | expr '^' expr                    {}
+        | expr '&' expr                    {}
+        | expr '<' '<' expr  %prec SHIFTL               {} //!ШИФТЫ И ГЕНЕРИКИ - НЕ БРАТЬЯ НАВЕК??
+        | expr '>' '>' expr  %prec SHIFTR               {}
+        | expr '>' '>' '>' expr  %prec TSHIFTR          {}
+        | expr '+' expr                                 {}
+        | expr '-' expr                                 {}
+        | expr '*' expr                                 {}
+        | expr '/' expr                                 {}
+        | expr '%' expr                                 {}
+        | expr TRUNCDIV  expr                           {}
+        | '-'  expr %prec UMINUS                        {}
+        | '!'  expr                                     {}
+        | '~'  expr                                     {}
+        | INC expr %prec PREFIX_INC                     {}
+        | DEC expr %prec PREFIX_DEC                     {}
+        | AWAIT  expr                                   {}
+        | expr '.'                                      {}
+        | expr INC %prec POSTFIX_INC                    {}
+        | expr DEC %prec POSTFIX_DEC                    {}
+        | expr '[' expr ']'                             {}
+        | STRING_LITERAL INTERPOLATION_CONCAT expr INTERPOLATION_CONCAT STRING_LITERAL {}
+    ;
+
+    statementList: statement statement                  {}
+        | statementList statement                       {}
+    ;
+
+    statementBlock: '{' statementList '}'               {}
+    ;
+
+    exprStatement: ';'                                  {}
+        | expr ';'                                      {}
+    ;
+
     
+
+    typeIdentifier: IDENTIFIER                          {}
+        | otherIdentifier                               {}
+        | DYNAMIC                                       {}
+    ;
+
+    typeName: typeIdentifier                            {}
+        | typeName '.' typeIdentifier                   {}
+    ;
+
+    typeList: type                                      {}
+        | typeList ',' type                             {}
+    ;
+
+    type: VOID                                          {}
+        | typeName                                      {}
+        | typeName '<' typeList '>'                     {}
+    ;
+
+    //finalConstVarOrType
+    declarator: LATE FINAL type                         {}
+        | LATE FINAL                                    {}
+        | FINAL type                                    {}
+        | FINAL                                         {}
+        | CONST type                                    {}
+        | CONST                                         {}
+        | LATE VAR                                      {}
+        | LATE type                                     {}
+        | VAR                                           {}
+        | type                                          {}
+    ;
+
+    declaredIdentifier: COVARIANT declarator identifier     {}
+        | declarator identifier                             {}
+    ;
+
+    variableDeclaration: declaredIdentifier                 {}
+        | declaredIdentifier '=' expr                       {}
+        | variableDeclaration ',' identifier                {}
+        | variableDeclaration ',' identifier '=' expr       {}
+    ;
+
+    variableDeclarationStatement: variableDeclaration ';'   {}
+    ;
+
+
+    statement: exprStatement    {}
+    ;
 %%
 
 /* int main(int argc, char** argv) {
