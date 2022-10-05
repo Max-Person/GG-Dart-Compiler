@@ -165,13 +165,19 @@ void yyerror(char const *s) {
         | otherIdentifier                  {}
     ;
 
+    string: STRING_LITERAL INTERPOLATION_CONCAT expr INTERPOLATION_CONCAT STRING_LITERAL {}
+        | string INTERPOLATION_CONCAT expr INTERPOLATION_CONCAT STRING_LITERAL {}
+        | STRING_LITERAL                    {}
+    ;
+
     primary: THIS                          {}
         | INTEGER_LITERAL                  {}
         | DOUBLE_LITERAL                   {}
-        | STRING_LITERAL                   {}
         | BOOLEAN_LITERAL                  {}
+        | string                       {}
         | identifier                       {}
     ;
+
     expr: primary                          {}
         | expr '=' expr                    {}
         | expr AND_ASSIGN expr             {} 
@@ -219,7 +225,6 @@ void yyerror(char const *s) {
         | expr INC %prec POSTFIX_INC                    {}
         | expr DEC %prec POSTFIX_DEC                    {}
         | expr '[' expr ']'                             {}
-        | STRING_LITERAL INTERPOLATION_CONCAT expr INTERPOLATION_CONCAT STRING_LITERAL {}
     ;
 
     statementList: statement statement                  {}
@@ -240,16 +245,20 @@ void yyerror(char const *s) {
         | DYNAMIC                                       {}
     ;
 
-    typeName: typeIdentifier                            {}
+    typeName: typeIdentifier '.' typeIdentifier                           {}
         | typeName '.' typeIdentifier                   {}
     ;
 
-    typeList: type                                      {}
+    typeList: type ',' type                                    {}
         | typeList ',' type                             {}
     ;
 
     type: VOID                                          {}
+        | typeIdentifier                                      {}
         | typeName                                      {}
+        | typeIdentifier '<' type '>'                     {}
+        | typeName '<' type '>'                     {}
+        | typeIdentifier '<' typeList '>'                     {}
         | typeName '<' typeList '>'                     {}
     ;
 
@@ -279,10 +288,23 @@ void yyerror(char const *s) {
     variableDeclarationStatement: variableDeclaration ';'   {}
     ;
 
-    enumType: ENUM identifier '{'             {}       //подумать о метаданных (что-то было написано в документации)
-            | enumType identifier ','         {}
-            | enumType identifier '}'         {}
-        ;
+    identifierList: identifier ',' identifier
+        | identifierList ',' identifier
+    ;
+
+    enumType: ENUM identifier '{' identifier '}'            {}       //подумать о метаданных (что-то было написано в документации)
+            | ENUM identifier '{' identifierList '}'         {}
+    ;
+
+    forStatement: AWAIT FOR '(' ')' statement // в скобках должно быть forLoopParts
+        | FOR '(' ')' statement
+    ;
+
+    whileStatement: WHILE '(' expr ')' statement
+    ;
+
+    doStatement: DO statement WHILE '(' expr ')' ';'
+    ;
 
     statement: exprStatement    {}
     ;
