@@ -65,11 +65,16 @@ int multiLineCommentNesting;
         _print("MULTI LINE COMMENT: " + currentComment); BEGIN(INITIAL);
     }
 }
+<MULTI_LINE_COMMENT><<EOF>>                                                      {
+    _print("ERR: Comment isn't properly enclosed: " + currentComment);
+}
 
 \'                                                                                                  {stringLiteral.clear(); yy_push_state(SINGLE_LINE_STR_SQ);}
 \"                                                                                                  {stringLiteral.clear(); yy_push_state(SINGLE_LINE_STR_DQ);}
 \'\'\'                                                                                              {stringLiteral.clear(); yy_push_state(MULTI_LINE_STR_SQ);}
+\'\'\'(\\?[\t \r])+\\?\n                                                                            {stringLiteral.clear(); yy_push_state(MULTI_LINE_STR_SQ);}
 \"\"\"                                                                                              {stringLiteral.clear(); yy_push_state(MULTI_LINE_STR_DQ);}
+\"\"\"(\\?[\t \r])+\\?\n                                                                            {stringLiteral.clear(); yy_push_state(MULTI_LINE_STR_DQ);}
 <SINGLE_LINE_STR_SQ,SINGLE_LINE_STR_DQ,MULTI_LINE_STR_SQ,MULTI_LINE_STR_DQ>[^$"'\n\r\\]*            {stringLiteral += yytext;}
 <MULTI_LINE_STR_DQ,SINGLE_LINE_STR_DQ>\'*                                                           {stringLiteral += yytext;}
 <MULTI_LINE_STR_SQ,SINGLE_LINE_STR_SQ>\"*                                                           {stringLiteral += yytext;}
@@ -89,6 +94,7 @@ int multiLineCommentNesting;
     hex[2] = 0;
     stringLiteral += strtol(hex, NULL, 16);
 }
+<SINGLE_LINE_STR_SQ,SINGLE_LINE_STR_DQ,MULTI_LINE_STR_SQ,MULTI_LINE_STR_DQ>\\x                      {_print("ERR: \\x escape sequence should be followed by two hexadecimal digits; Just the 'x' char will be used.");stringLiteral += yytext[1];}
 <SINGLE_LINE_STR_SQ,SINGLE_LINE_STR_DQ,MULTI_LINE_STR_SQ,MULTI_LINE_STR_DQ>\\.                      {stringLiteral += yytext[1];}
 
 
@@ -128,7 +134,7 @@ int multiLineCommentNesting;
     yy_pop_state();
 }
 <SINGLE_LINE_STR_SQ,SINGLE_LINE_STR_DQ>[\n\r]                                  {
-    _print("ERR: Single line string isn't properly enclosed: " + stringLiteral);
+    _print("ERR: String isn't properly enclosed: " + stringLiteral);
     yy_pop_state();
 }
 <MULTI_LINE_STR_SQ>\'\'\'                                                      {
@@ -139,20 +145,21 @@ int multiLineCommentNesting;
     _print("STRING LITERAL: " + stringLiteral);
     yy_pop_state();
 }
-<SINGLE_LINE_STR_SQ,SINGLE_LINE_STR_DQ,MULTI_LINE_STR_SQ,MULTI_LINE_STR_DQ><<EOF>>                                                      {
+<SINGLE_LINE_STR_SQ,SINGLE_LINE_STR_DQ,MULTI_LINE_STR_SQ,MULTI_LINE_STR_DQ,MULTI_LINE_RAW_STR_SQ,MULTI_LINE_RAW_STR_DQ><<EOF>>                                                      {
     _print("ERR: String isn't properly enclosed: " + stringLiteral);
     yy_pop_state();
 }
 
 r\'\'\'                               {stringLiteral.clear(); BEGIN(MULTI_LINE_RAW_STR_SQ);}
 <MULTI_LINE_RAW_STR_SQ>\'\'\'         {_print("STRING LITERAL: " + stringLiteral); BEGIN(INITIAL);}
-<MULTI_LINE_RAW_STR_SQ>.              {stringLiteral += yytext;}
+<MULTI_LINE_RAW_STR_SQ>(.|\n)         {stringLiteral += yytext;}
 
 r\"\"\"                               {stringLiteral.clear(); BEGIN(MULTI_LINE_RAW_STR_DQ);}
 <MULTI_LINE_RAW_STR_DQ>\"\"\"         {_print("STRING LITERAL: " + stringLiteral); BEGIN(INITIAL);}
-<MULTI_LINE_RAW_STR_DQ>.              {stringLiteral += yytext;}
+<MULTI_LINE_RAW_STR_DQ>(.|\n)         {stringLiteral += yytext;}
 
 r\'[^\'\r\n]*\'|r\"[^\"\r\r\n]*\"     {std::string tmp = yytext_str(); tmp.erase(0, 2); tmp.erase(tmp.size() - 1, 1); _print("RAW SINGLE LINE STRING: " + tmp);}
+r\'[^\'\r\n]*|r\"[^\"\r\r\n]*         {std::string tmp = yytext_str(); tmp.erase(0, 2);  _print("ERR: String isn't properly enclosed: " + tmp);}
 
 
 assert          {_print("Keyword ASSERT: " + yytext_str());}
@@ -232,25 +239,20 @@ yield           {_print("Contextual keyword YIELD: " + yytext_str());}
 
 
 {DIGIT}+        {
-    int64_t value = _atoi64(yytext);
+    uint64_t value = strtoull(yytext, NULL, 10);;
     if(errno == ERANGE)
     {
         _print("DECIMAL INTEGER LITERAL: " + yytext_str() + "(ERR: The integer literal " + yytext_str() + " can't be represented in 64 bits.)");
-        //ВОПРОС: на практике -9223372036854775808 считается целочисленным литералом (помещается в 64 бита),
-        //однако согласно документации "-" это унарный операнд, и его положение относительно числа должно учитываться только на этапе парсинга,
-        //т.е. должен обнаружиться литерал 9223372036854775808, не помещающийся в 64 бита
-        //Варианты решения: 1) оставить проверку значения численных литералов до этапа парсинга, 2) Допустить невозможность записать -9223372036854775808 в целочисленную константу,
-        // 3) Искать "-" на этапе лексинга (скорее всего, наименее корректный вариант)
     }
     else
     {
         char buf[30];
-        _print("DECIMAL INTEGER LITERAL: " + yytext_str() + " (Value = " + _i64toa(value, buf, 10) + ")");
+        _print("DECIMAL INTEGER LITERAL: " + yytext_str() + " (Value = " + _ui64toa(value, buf, 10) + ")");
     }
 }
 
 (0x|0X){HEX_DIGIT}+     {
-    int64_t value = strtoull(yytext, NULL, 16);
+    uint64_t value = strtoull(yytext, NULL, 16);
     if(errno == ERANGE)
     {
         _print("HEX INTEGER LITERAL: " + yytext_str() + "(ERR: The integer literal " + yytext_str() + " can't be represented in 64 bits.)");
@@ -258,7 +260,7 @@ yield           {_print("Contextual keyword YIELD: " + yytext_str());}
     else
     {
         char buf[30];
-        _print("HEX INTEGER LITERAL: " + yytext_str() + " (Value = " + _i64toa(value, buf, 10) + ")");
+        _print("HEX INTEGER LITERAL: " + yytext_str() + " (Value = " + _ui64toa(value, buf, 10) + ")");
     }
 }
 
