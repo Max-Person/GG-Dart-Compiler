@@ -279,6 +279,10 @@ void yyerror(char const *s) {
     variableDeclarationStatement: variableDeclaration ';'   {}
     ;
 
+    enumType: ENUM identifier '{'             {}       //подумать о метаданных (что-то было написано в документации)
+            | enumType identifier ','         {}
+            | enumType identifier '}'         {}
+        ;
 
     statement: exprStatement    {}
     ;
