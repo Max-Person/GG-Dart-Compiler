@@ -296,8 +296,26 @@ void yyerror(char const *s) {
             | ENUM identifier '{' identifierList '}'         {}
     ;
 
-    forStatement: AWAIT FOR '(' ')' statement // в скобках должно быть forLoopParts
-        | FOR '(' ')' statement
+    exprList: expr 
+        | exprList ',' expr
+    ;
+
+    forStatement: AWAIT FOR '(' forInitializerStatement expr ';' exprList ')' statement
+        | AWAIT FOR '(' forInitializerStatement ';' ')' statement 
+        | AWAIT FOR '(' forInitializerStatement expr ';' ')' statement
+        | AWAIT FOR '(' forInitializerStatement ';' exprList ')' statement
+        | AWAIT FOR '(' declaredIdentifier IN expr ')' statement
+        | AWAIT FOR '(' identifier IN expr ')' statement
+        | FOR '(' forInitializerStatement expr ';' exprList ')' statement
+        | FOR '(' forInitializerStatement ';' ')' statement
+        | FOR '(' forInitializerStatement expr ';' ')' statement
+        | FOR '(' forInitializerStatement ';' exprList ')' statement
+        | FOR '(' declaredIdentifier IN expr ')' statement
+        | FOR '(' identifier IN expr ')' statement
+    ;
+
+    forInitializerStatement: variableDeclaration
+        | exprStatement
     ;
 
     whileStatement: WHILE '(' expr ')' statement
@@ -305,6 +323,40 @@ void yyerror(char const *s) {
 
     doStatement: DO statement WHILE '(' expr ')' ';'
     ;
+
+    functionSignature: type identifier typeParameters formalParameterList
+        | type identifier formalParameterList
+        | identifier typeParameters formalParameterList
+        | identifier formalParameterList
+    ;
+
+    typeParameter: identifier EXTENDS typeNotVoid
+        | identifier
+    ;
+
+    typeParamList: typeParameter ',' typeParameter
+        | typeParamList ',' typeParameter
+    ;
+
+    typeParameters: '<' typeParameter '>'
+        | '<' typeParamList '>'
+    ;
+
+    normalParameterTypes: typeIdentifier | type ;
+
+    parameterTypeList: '(' ')'
+        | '(' typeIdentifier ',' '[' typeIdentifier ',' ']' ')'
+        | '(' typeIdentifier ',' '[' typeIdentifier ']' ')'
+        | '(' typeIdentifier ',' '[' typeIdentifier ',' ']' ')'
+        | '(' ',' ')'
+        | '(' ')'
+        | '(' ')' 
+    ;
+
+    functionType: 
+    ;
+
+    formalParameterList:;
 
     statement: exprStatement    {}
     ;
