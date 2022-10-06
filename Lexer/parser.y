@@ -126,6 +126,20 @@ void yyerror(char const *s) {
 %left INTERPOLATION_CONCAT
 
 %%
+
+    partDeclaration: %empty
+        | topLevelDeclaration
+        | partDeclaration topLevelDeclaration
+    ;
+
+    topLevelDeclaration: classDeclaration
+        | enumType
+        | LATE FINAL type initializedIdentifier ';'
+        | LATE FINAL type initializedIdentifierList ';'
+        | LATE FINAL initializedIdentifier ';'
+        | LATE FINAL initializedIdentifierList ';'
+    ;
+
     builtInIdentifier: ABSTRACT            {}
         | AS                               {}
         | COVARIANT                        {}
@@ -262,6 +276,10 @@ void yyerror(char const *s) {
         | typeNotFunction
     ;
 
+    varOrType: VAR
+        | type
+    ;
+
     //finalConstVarOrType
     declarator: LATE FINAL type                         {}
         | LATE FINAL                                    {}
@@ -269,10 +287,8 @@ void yyerror(char const *s) {
         | FINAL                                         {}
         | CONST type                                    {}
         | CONST                                         {}
-        | LATE VAR                                      {}
-        | LATE type                                     {}
-        | VAR                                           {}
-        | type                                          {}
+        | LATE varOrType                                      {}
+        | varOrType                                           {}
     ;
 
     declaredIdentifier: COVARIANT declarator identifier     {}
@@ -281,8 +297,15 @@ void yyerror(char const *s) {
 
     variableDeclaration: declaredIdentifier                 {}
         | declaredIdentifier '=' expr                       {}
-        | variableDeclaration ',' identifier                {}
-        | variableDeclaration ',' identifier '=' expr       {}
+        | variableDeclaration ',' initializedIdentifier
+    ;
+
+    initializedIdentifier: staticFinalDeclaration
+        | identifier
+    ;
+
+    initializedIdentifierList: initializedIdentifier ',' initializedIdentifier
+        | initializedIdentifierList ',' initializedIdentifier
     ;
 
     variableDeclarationStatement: variableDeclaration ';'   {}
@@ -324,10 +347,8 @@ void yyerror(char const *s) {
     doStatement: DO statement WHILE '(' expr ')' ';'
     ;
 
-    functionSignature: type identifier typeParameters formalParameterList
-        | type identifier formalParameterList
-        | identifier typeParameters formalParameterList
-        | identifier formalParameterList
+    functionSignature: type identifier typeParameterPartOpt formalParameterList
+        | identifier typeParameterPartOpt formalParameterList
     ;
 
     typeParameter: identifier EXTENDS functionType '?'
@@ -344,7 +365,8 @@ void yyerror(char const *s) {
         | typeParamList ',' typeParameter
     ;
 
-    typeParameters: '<' typeParameter '>'
+    typeParameterPartOpt: %empty
+        | '<' typeParameter '>'
         | '<' typeParamList '>'
     ;
 
@@ -375,8 +397,7 @@ void yyerror(char const *s) {
         | RETURN ';'
     ;
 
-    functionTypeTail: FUNCTION typeParameters parameterTypeList
-        | FUNCTION parameterTypeList
+    functionTypeTail: FUNCTION typeParameterPartOpt parameterTypeList
     ;
 
     functionTypeTails: functionTypeTail '?' functionTypeTail
@@ -431,8 +452,7 @@ void yyerror(char const *s) {
         | THIS '.' identifier
     ;
 
-    formalParameterPart: typeParameters formalParameterList
-        | formalParameterList
+    formalParameterPart: typeParameterPartOpt formalParameterList
     ;
 
     functionBody: FUNC_ARROW expr ';'
@@ -461,12 +481,83 @@ void yyerror(char const *s) {
         | SWITCH '(' expr ')' '{' switchCases  DEFAULT ':' statements '}'
     ;
     
-    statement: exprStatement    {}
+    statement: exprStatement
+        | variableDeclaration
+        | forStatement
+        | whileStatement
+        | doStatement
+        | switchStatement
+        | ifStatement
+        | breakStatement
+        | continueStatement
+        | returnStatement
+        | exprStatement
+        | localFunctionDeclaration
     ;
 
     statements: statement statement
         | statements statement
     ;
+
+    typeNotVoidList: typeNotVoid ',' typeNotVoid
+        | typeNotVoidList ',' typeNotVoid
+    ;
+
+    mixins: WITH typeNotVoid
+        | WITH typeNotVoidList
+    ;
+
+    superclassOpt: %empty
+        | EXTENDS typeNotVoid
+        | EXTENDS typeNotVoid mixins
+        | mixins
+    ;
+
+    interfacesOpt: %empty
+        | IMPLEMENTS typeNotVoid
+        | IMPLEMENTS typeNotVoidList
+    ;
+
+    classDeclaration: CLASS typeIdentifier typeParameterPartOpt superclassOpt interfacesOpt '{' classMemberDeclarations '}'
+        | ABSTRACT CLASS typeIdentifier typeParameterPartOpt superclassOpt interfacesOpt '{' classMemberDeclarations '}'
+        | CLASS identifier typeParameterPartOpt '=' typeNotVoid mixins interfacesOpt
+        | ABSTRACT CLASS identifier typeParameterPartOpt '=' typeNotVoid mixins interfacesOpt
+    ;
+
+    staticFinalDeclaration: identifier '=' expr
+    ;
+
+    staticFinalDeclarationList: staticFinalDeclaration
+        | staticFinalDeclarationList ',' staticFinalDeclaration
+    ;
+
+    classMemberDeclarations: declaration ';'
+        | methodSignature functionBody
+    ;
+
+    //Дописать
+    declaration: STATIC CONST type staticFinalDeclarationList
+        | STATIC CONST staticFinalDeclarationList
+        | STATIC FINAL type staticFinalDeclarationList
+        | STATIC FINAL staticFinalDeclarationList
+        | STATIC LATE FINAL type initializedIdentifierList
+        | STATIC LATE FINAL initializedIdentifierList
+        | STATIC LATE varOrType initializedIdentifierList
+        | STATIC varOrType initializedIdentifierList
+        | LATE FINAL type initializedIdentifierList
+        | LATE FINAL initializedIdentifierList
+        | FINAL type initializedIdentifierList
+        | FINAL initializedIdentifierList
+        | LATE varOrType initializedIdentifierList
+        | varOrType initializedIdentifierList
+    ;
+
+    // Дописать
+    methodSignature: functionSignature
+        | STATIC functionSignature
+    ;
+
+    
 %%
 
 /* int main(int argc, char** argv) {
