@@ -290,6 +290,8 @@ yield           {_print("Contextual keyword YIELD: " + yytext_str());}
     }
 }
 
+\=\>        {_print("FUNCARROW LEXEM =>: " + yytext_str());}
+
 \*\=        {_print("MULASSIGN LEXEM *=: " + yytext_str());}
 \/\=        {_print("DIVASSIGN LEXEM /=: " + yytext_str());}
 \~\/\=      {_print("TRUNCDIVASSIGN LEXEM ~/=: " + yytext_str());}
