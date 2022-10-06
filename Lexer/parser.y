@@ -441,7 +441,31 @@ void yyerror(char const *s) {
 
     localFunctionDeclaration: functionSignature functionBody;
 
+    ifStatement: IF '(' expr ')' statement
+        | IF '(' expr ')' statement ELSE statement
+    ;
+
+    switchCase: CASE expr ':' statement
+        | CASE expr ':' statements
+    ;
+
+    switchCases: switchCase switchCase
+        | switchCases switchCase
+    ;
+
+    switchStatement: SWITCH '(' expr ')' '{' switchCase '}'
+        | SWITCH '(' expr ')' '{' switchCases '}'
+        | SWITCH '(' expr ')' '{' switchCase DEFAULT ':' statement '}'
+        | SWITCH '(' expr ')' '{' switchCases  DEFAULT ':' statement '}'
+        | SWITCH '(' expr ')' '{' switchCase DEFAULT ':' statements '}'
+        | SWITCH '(' expr ')' '{' switchCases  DEFAULT ':' statements '}'
+    ;
+    
     statement: exprStatement    {}
+    ;
+
+    statements: statement statement
+        | statements statement
     ;
 %%
 
