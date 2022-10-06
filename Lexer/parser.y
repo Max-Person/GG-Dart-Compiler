@@ -253,13 +253,12 @@ void yyerror(char const *s) {
         | typeList ',' type                             {}
     ;
 
-    type: VOID                                          {}
-        | typeIdentifier                                      {}
+    type: typeIdentifier                                      {}
         | typeName                                      {}
         | typeIdentifier '<' type '>'                     {}
         | typeName '<' type '>'                     {}
         | typeIdentifier '<' typeList '>'                     {}
-        | typeName '<' typeList '>'                     {}
+        | typeNotFunction
     ;
 
     //finalConstVarOrType
@@ -345,18 +344,43 @@ void yyerror(char const *s) {
     normalParameterTypes: typeIdentifier | type ;
 
     parameterTypeList: '(' ')'
-        | '(' typeIdentifier ',' '[' typeIdentifier ',' ']' ')'
-        | '(' typeIdentifier ',' '[' typeIdentifier ']' ')'
-        | '(' typeIdentifier ',' '[' typeIdentifier ',' ']' ')'
+        | '('  ',' '['  ',' ']' ')'
+        | '('  ',' '['  ']' ')'
+        | '('  ',' '['  ',' ']' ')'
         | '(' ',' ')'
         | '(' ')'
         | '(' ')' 
     ;
 
-    functionType: 
+    breakStatement: BREAK identifier ';'
+        | BREAK ';'
     ;
 
-    formalParameterList:;
+    continueStatement: CONTINUE identifier ';'
+        | CONTINUE ';'
+    ;
+
+    returnStatement: RETURN expr ';'
+        | RETURN ';'
+    ;
+
+    functionType: 
+        | typeNotFunction 
+    ;
+
+    typeNotFunction: VOID
+        | typeName '<' typeList '>' '?'
+        | typeName '?'
+        | typeName '<' typeList '>'
+        | FUNCTION '?'
+        | FUNCTION
+    ;
+
+    formalParameterList: '(' ')'
+        | '(' 
+    ;
+
+    normalFormalParameter: COVARIANT type identifier 
 
     statement: exprStatement    {}
     ;
