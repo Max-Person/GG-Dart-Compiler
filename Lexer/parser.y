@@ -119,6 +119,7 @@ void yyerror(char const *s) {
 %token SYNC
 // AWAIT жив
 %token YIELD
+%token FUNC_ARROW
 
 %token COMMENT
 
@@ -329,7 +330,13 @@ void yyerror(char const *s) {
         | identifier formalParameterList
     ;
 
-    typeParameter: identifier EXTENDS typeNotVoid
+    typeParameter: identifier EXTENDS functionType '?'
+        | identifier EXTENDS functionType
+        | typeName '<' typeList '>' '?'
+        | typeName '?'
+        | typeName '<' typeList '>'
+        | FUNCTION '?'
+        | FUNCTION
         | identifier
     ;
 
@@ -341,15 +348,19 @@ void yyerror(char const *s) {
         | '<' typeParamList '>'
     ;
 
-    normalParameterTypes: typeIdentifier | type ;
+    normalParameterType: type identifier
+        | type
+    ;
+
+    normalParameterTypes: normalParameterType ',' normalParameterType
+        | normalParameterTypes ',' normalParameterType 
+    ;
 
     parameterTypeList: '(' ')'
-        | '('  ',' '['  ',' ']' ')'
-        | '('  ',' '['  ']' ')'
-        | '('  ',' '['  ',' ']' ')'
-        | '(' ',' ')'
-        | '(' ')'
-        | '(' ')' 
+        | '(' normalParameterType ',' ')'
+        | '(' normalParameterType ')'
+        | '(' normalParameterTypes ',' ')'
+        | '(' normalParameterTypes ')'
     ;
 
     breakStatement: BREAK identifier ';'
@@ -364,9 +375,29 @@ void yyerror(char const *s) {
         | RETURN ';'
     ;
 
-    functionType: 
-        | typeNotFunction 
+    functionTypeTail: FUNCTION typeParameters parameterTypeList
+        | FUNCTION parameterTypeList
     ;
+
+    functionTypeTails: functionTypeTail '?' functionTypeTail
+        | functionTypeTail functionTypeTail
+        | functionTypeTails '?' functionTypeTail
+        | functionTypeTails functionTypeTail
+        | functionTypeTail
+    ;
+
+    functionType: functionTypeTails
+        | typeNotFunction functionTypeTails
+    ;
+
+    typeNotVoid: functionType '?'
+        | functionType
+        | typeName '<' typeList '>' '?'
+        | typeName '?'
+        | typeName '<' typeList '>'
+        | FUNCTION '?'
+        | FUNCTION
+    ; 
 
     typeNotFunction: VOID
         | typeName '<' typeList '>' '?'
@@ -376,11 +407,39 @@ void yyerror(char const *s) {
         | FUNCTION
     ;
 
+
     formalParameterList: '(' ')'
-        | '(' 
+        | '(' normalFormalParameterList ',' ')'
+        | '(' normalFormalParameterList ')'
     ;
 
-    normalFormalParameter: COVARIANT type identifier 
+    normalFormalParameterList: normalFormalParameter ',' normalFormalParameter
+        | normalFormalParameterList ',' normalFormalParameter
+    ;
+
+    normalFormalParameter: type identifier formalParameterPart '?'
+        | identifier formalParameterPart '?'
+        | type identifier formalParameterPart
+        | identifier formalParameterPart
+        | declaredIdentifier
+        | identifier
+        | declarator THIS '.' identifier formalParameterPart '?'
+        | declarator THIS '.' identifier formalParameterPart
+        | declarator THIS '.' identifier
+        | THIS '.' identifier formalParameterPart '?'
+        | THIS '.' identifier formalParameterPart
+        | THIS '.' identifier
+    ;
+
+    formalParameterPart: typeParameters formalParameterList
+        | formalParameterList
+    ;
+
+    functionBody: FUNC_ARROW expr ';'
+        | statementBlock
+    ;
+
+    localFunctionDeclaration: functionSignature functionBody;
 
     statement: exprStatement    {}
     ;
