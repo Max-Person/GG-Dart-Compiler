@@ -126,9 +126,9 @@ void yyerror(char const *s) {
 %left INTERPOLATION_CONCAT
 
 %%
+    //-------------- ВЕРХНИЙ УРОВЕНЬ --------------
 
-    partDeclaration: %empty
-        | topLevelDeclaration
+    partDeclaration: topLevelDeclaration
         | partDeclaration topLevelDeclaration
     ;
 
@@ -139,6 +139,8 @@ void yyerror(char const *s) {
         | LATE FINAL initializedIdentifier ';'
         | LATE FINAL initializedIdentifierList ';'
     ;
+
+    //-------------- БАЗОВЫЕ ПОНЯТИЯ --------------
 
     builtInIdentifier: ABSTRACT            {}
         | AS                               {}
@@ -180,10 +182,16 @@ void yyerror(char const *s) {
         | otherIdentifier                  {}
     ;
 
+    identifierList: identifier ',' identifier
+        | identifierList ',' identifier
+    ;
+
     string: STRING_LITERAL INTERPOLATION_CONCAT expr INTERPOLATION_CONCAT STRING_LITERAL {}
         | string INTERPOLATION_CONCAT expr INTERPOLATION_CONCAT STRING_LITERAL {}
         | STRING_LITERAL                    {}
     ;
+
+    //-------------- ВЫРАЖЕНИЯ --------------
 
     primary: THIS                          {}
         | INTEGER_LITERAL                  {}
@@ -242,38 +250,37 @@ void yyerror(char const *s) {
         | expr '[' expr ']'                             {}
     ;
 
-    statementList: statement statement                  {}
-        | statementList statement                       {}
-    ;
-
-    statementBlock: '{' statementList '}'               {}
+    //список из одного
+    exprList: expr 
+        | exprList ',' expr
     ;
 
     exprStatement: ';'                                  {}
         | expr ';'                                      {}
     ;
 
-    
+    //-------------- ТИПИЗАЦИЯ --------------
+    // --- обычная типизация
 
     typeIdentifier: IDENTIFIER                          {}
         | otherIdentifier                               {}
         | DYNAMIC                                       {}
     ;
 
-    typeName: typeIdentifier '.' typeIdentifier                           {}
-        | typeName '.' typeIdentifier                   {}
+    typeName: typeIdentifier '.' typeIdentifier
+        | typeName '.' typeIdentifier
     ;
 
-    typeList: type ',' type                                    {}
-        | typeList ',' type                             {}
-    ;
-
-    type: typeIdentifier                                      {}
-        | typeName                                      {}
-        | typeIdentifier '<' type '>'                     {}
-        | typeName '<' type '>'                     {}
-        | typeIdentifier '<' typeList '>'                     {}
+    type: typeIdentifier
+        | typeName
+        | typeIdentifier '<' type '>'
+        | typeName '<' type '>'
+        | typeIdentifier '<' typeList '>'
         | typeNotFunction
+    ;
+
+    typeList: type ',' type
+        | typeList ',' type
     ;
 
     varOrType: VAR
@@ -291,13 +298,84 @@ void yyerror(char const *s) {
         | varOrType                                           {}
     ;
 
-    declaredIdentifier: COVARIANT declarator identifier     {}
-        | declarator identifier                             {}
+    typeNotFunction: VOID
+        | typeName '<' typeList '>' '?'
+        | typeName '?'
+        | typeName '<' typeList '>'
+        | FUNCTION '?'
+        | FUNCTION
     ;
 
-    variableDeclaration: declaredIdentifier                 {}
-        | declaredIdentifier '=' expr                       {}
-        | variableDeclaration ',' initializedIdentifier
+    typeNotVoid: functionType '?'
+        | functionType
+        | typeName '<' typeList '>' '?'
+        | typeName '?'
+        | typeName '<' typeList '>'
+        | FUNCTION '?'
+        | FUNCTION
+    ; 
+
+    typeNotVoidList: typeNotVoid ',' typeNotVoid
+        | typeNotVoidList ',' typeNotVoid
+    ;
+
+    // --- функ. типизация
+
+    normalParameterType: type identifier
+        | type
+    ;
+
+    normalParameterTypes: normalParameterType ',' normalParameterType
+        | normalParameterTypes ',' normalParameterType 
+    ;
+
+    parameterTypeList: '(' ')'
+        | '(' normalParameterType ',' ')'
+        | '(' normalParameterType ')'
+        | '(' normalParameterTypes ',' ')'
+        | '(' normalParameterTypes ')'
+    ;
+
+    functionTypeTail: FUNCTION typeParameterPartOpt parameterTypeList
+    ;
+
+    //список из одного
+    functionTypeTails: functionTypeTail '?' functionTypeTail
+        | functionTypeTail functionTypeTail
+        | functionTypeTails '?' functionTypeTail
+        | functionTypeTails functionTypeTail
+        | functionTypeTail
+    ;
+
+    functionType: functionTypeTails
+        | typeNotFunction functionTypeTails
+    ;
+
+    //-------------- GENERIC ПАРАМЕТРИЗАЦИЯ --------------
+
+    typeParameter: identifier EXTENDS functionType '?'
+        | identifier EXTENDS functionType
+        | typeName '<' typeList '>' '?'
+        | typeName '?'
+        | typeName '<' typeList '>'
+        | FUNCTION '?'
+        | FUNCTION
+        | identifier
+    ;
+
+    typeParamList: typeParameter ',' typeParameter
+        | typeParamList ',' typeParameter
+    ;
+
+    typeParameterPartOpt: %empty
+        | '<' typeParameter '>'
+        | '<' typeParamList '>'
+    ;
+
+    //-------------- ПЕРЕМЕННЫЕ И ИНИЦИАЛИЗАЦИЯ --------------
+
+    declaredIdentifier: COVARIANT declarator identifier     {}
+        | declarator identifier                             {}
     ;
 
     initializedIdentifier: staticFinalDeclaration
@@ -308,20 +386,37 @@ void yyerror(char const *s) {
         | initializedIdentifierList ',' initializedIdentifier
     ;
 
+    variableDeclaration: declaredIdentifier                 {}
+        | declaredIdentifier '=' expr                       {}
+        | variableDeclaration ',' initializedIdentifier
+    ;
+
     variableDeclarationStatement: variableDeclaration ';'   {}
     ;
 
-    identifierList: identifier ',' identifier
-        | identifierList ',' identifier
+    //-------------- РАЗВИЛКИ --------------
+
+    ifStatement: IF '(' expr ')' statement
+        | IF '(' expr ')' statement ELSE statement
     ;
 
-    enumType: ENUM identifier '{' identifier '}'            {}       //подумать о метаданных (что-то было написано в документации)
-            | ENUM identifier '{' identifierList '}'         {}
+    switchCase: CASE expr ':' statement
+        | CASE expr ':' statements
     ;
 
-    exprList: expr 
-        | exprList ',' expr
+    switchCases: switchCase switchCase
+        | switchCases switchCase
     ;
+
+    switchStatement: SWITCH '(' expr ')' '{' switchCase '}'
+        | SWITCH '(' expr ')' '{' switchCases '}'
+        | SWITCH '(' expr ')' '{' switchCase DEFAULT ':' statement '}'
+        | SWITCH '(' expr ')' '{' switchCases  DEFAULT ':' statement '}'
+        | SWITCH '(' expr ')' '{' switchCase DEFAULT ':' statements '}'
+        | SWITCH '(' expr ')' '{' switchCases  DEFAULT ':' statements '}'
+    ;
+
+    //-------------- ЦИКЛЫ --------------
 
     forStatement: AWAIT FOR '(' forInitializerStatement expr ';' exprList ')' statement
         | AWAIT FOR '(' forInitializerStatement ';' ')' statement 
@@ -347,44 +442,6 @@ void yyerror(char const *s) {
     doStatement: DO statement WHILE '(' expr ')' ';'
     ;
 
-    functionSignature: type identifier typeParameterPartOpt formalParameterList
-        | identifier typeParameterPartOpt formalParameterList
-    ;
-
-    typeParameter: identifier EXTENDS functionType '?'
-        | identifier EXTENDS functionType
-        | typeName '<' typeList '>' '?'
-        | typeName '?'
-        | typeName '<' typeList '>'
-        | FUNCTION '?'
-        | FUNCTION
-        | identifier
-    ;
-
-    typeParamList: typeParameter ',' typeParameter
-        | typeParamList ',' typeParameter
-    ;
-
-    typeParameterPartOpt: %empty
-        | '<' typeParameter '>'
-        | '<' typeParamList '>'
-    ;
-
-    normalParameterType: type identifier
-        | type
-    ;
-
-    normalParameterTypes: normalParameterType ',' normalParameterType
-        | normalParameterTypes ',' normalParameterType 
-    ;
-
-    parameterTypeList: '(' ')'
-        | '(' normalParameterType ',' ')'
-        | '(' normalParameterType ')'
-        | '(' normalParameterTypes ',' ')'
-        | '(' normalParameterTypes ')'
-    ;
-
     breakStatement: BREAK identifier ';'
         | BREAK ';'
     ;
@@ -397,45 +454,36 @@ void yyerror(char const *s) {
         | RETURN ';'
     ;
 
-    functionTypeTail: FUNCTION typeParameterPartOpt parameterTypeList
+    //-------------- СТЕЙТМЕНТЫ ОБЩЕЕ --------------
+    
+    statement: exprStatement
+        | variableDeclarationStatement
+        | forStatement
+        | whileStatement
+        | doStatement
+        | switchStatement
+        | ifStatement
+        | breakStatement
+        | continueStatement
+        | returnStatement
+        | exprStatement
+        | localFunctionDeclaration
     ;
 
-    functionTypeTails: functionTypeTail '?' functionTypeTail
-        | functionTypeTail functionTypeTail
-        | functionTypeTails '?' functionTypeTail
-        | functionTypeTails functionTypeTail
-        | functionTypeTail
+    statements: statement statement
+        | statements statement
     ;
 
-    functionType: functionTypeTails
-        | typeNotFunction functionTypeTails
+    statementBlock: '{' statements '}'               {}
     ;
 
-    typeNotVoid: functionType '?'
-        | functionType
-        | typeName '<' typeList '>' '?'
-        | typeName '?'
-        | typeName '<' typeList '>'
-        | FUNCTION '?'
-        | FUNCTION
-    ; 
-
-    typeNotFunction: VOID
-        | typeName '<' typeList '>' '?'
-        | typeName '?'
-        | typeName '<' typeList '>'
-        | FUNCTION '?'
-        | FUNCTION
-    ;
-
+    //-------------- ФУНКЦИИ --------------
 
     formalParameterList: '(' ')'
+        | '(' normalFormalParameter ',' ')'
+        | '(' normalFormalParameter ')'
         | '(' normalFormalParameterList ',' ')'
         | '(' normalFormalParameterList ')'
-    ;
-
-    normalFormalParameterList: normalFormalParameter ',' normalFormalParameter
-        | normalFormalParameterList ',' normalFormalParameter
     ;
 
     normalFormalParameter: type identifier formalParameterPart '?'
@@ -455,53 +503,28 @@ void yyerror(char const *s) {
     formalParameterPart: typeParameterPartOpt formalParameterList
     ;
 
+    normalFormalParameterList: normalFormalParameter ',' normalFormalParameter
+        | normalFormalParameterList ',' normalFormalParameter
+    ;
+
+    functionSignature: type identifier typeParameterPartOpt formalParameterList
+        | identifier typeParameterPartOpt formalParameterList
+    ;
+    
     functionBody: FUNC_ARROW expr ';'
         | statementBlock
     ;
 
-    localFunctionDeclaration: functionSignature functionBody;
-
-    ifStatement: IF '(' expr ')' statement
-        | IF '(' expr ')' statement ELSE statement
+    localFunctionDeclaration: functionSignature functionBody
     ;
 
-    switchCase: CASE expr ':' statement
-        | CASE expr ':' statements
+    //-------------- ЕНАМ --------------
+
+    enumType: ENUM identifier '{' identifier '}'            {}       //подумать о метаданных (что-то было написано в документации)
+            | ENUM identifier '{' identifierList '}'         {}
     ;
 
-    switchCases: switchCase switchCase
-        | switchCases switchCase
-    ;
-
-    switchStatement: SWITCH '(' expr ')' '{' switchCase '}'
-        | SWITCH '(' expr ')' '{' switchCases '}'
-        | SWITCH '(' expr ')' '{' switchCase DEFAULT ':' statement '}'
-        | SWITCH '(' expr ')' '{' switchCases  DEFAULT ':' statement '}'
-        | SWITCH '(' expr ')' '{' switchCase DEFAULT ':' statements '}'
-        | SWITCH '(' expr ')' '{' switchCases  DEFAULT ':' statements '}'
-    ;
-    
-    statement: exprStatement
-        | variableDeclaration
-        | forStatement
-        | whileStatement
-        | doStatement
-        | switchStatement
-        | ifStatement
-        | breakStatement
-        | continueStatement
-        | returnStatement
-        | exprStatement
-        | localFunctionDeclaration
-    ;
-
-    statements: statement statement
-        | statements statement
-    ;
-
-    typeNotVoidList: typeNotVoid ',' typeNotVoid
-        | typeNotVoidList ',' typeNotVoid
-    ;
+    //------- КЛАССЫ --------------
 
     mixins: WITH typeNotVoid
         | WITH typeNotVoidList
