@@ -350,6 +350,7 @@ yield           {_print("Contextual keyword YIELD: " + yytext_str());}
 \]           {_print("BRACKETR LEXEM ]: " + yytext_str());}
 
 \.           {_print("DOT LEXEM .: " + yytext_str());}
+\,           {_print("COMMA LEXEM .: " + yytext_str());}
 \;           {_print("SEMICOLON LEXEM ;: " + yytext_str());}
 \:           {_print("COLON LEXEM :: " + yytext_str());}
 
