@@ -72,9 +72,9 @@ int multiLineCommentNesting;
 \'                                                                                                  {stringLiteral.clear(); yy_push_state(SINGLE_LINE_STR_SQ);}
 \"                                                                                                  {stringLiteral.clear(); yy_push_state(SINGLE_LINE_STR_DQ);}
 \'\'\'                                                                                              {stringLiteral.clear(); yy_push_state(MULTI_LINE_STR_SQ);}
-\'\'\'(\\?[\t \r])+\\?\n                                                                            {stringLiteral.clear(); yy_push_state(MULTI_LINE_STR_SQ);}
+\'\'\'(\\?[\t ])+\\?(\n|\r)                                                                         {stringLiteral.clear(); yy_push_state(MULTI_LINE_STR_SQ);}
 \"\"\"                                                                                              {stringLiteral.clear(); yy_push_state(MULTI_LINE_STR_DQ);}
-\"\"\"(\\?[\t \r])+\\?\n                                                                            {stringLiteral.clear(); yy_push_state(MULTI_LINE_STR_DQ);}
+\"\"\"(\\?[\t ])+\\?(\n|\r)                                                                         {stringLiteral.clear(); yy_push_state(MULTI_LINE_STR_DQ);}
 <SINGLE_LINE_STR_SQ,SINGLE_LINE_STR_DQ,MULTI_LINE_STR_SQ,MULTI_LINE_STR_DQ>[^$"'\n\r\\]*            {stringLiteral += yytext;}
 <MULTI_LINE_STR_DQ,SINGLE_LINE_STR_DQ>\'*                                                           {stringLiteral += yytext;}
 <MULTI_LINE_STR_SQ,SINGLE_LINE_STR_SQ>\"*                                                           {stringLiteral += yytext;}
