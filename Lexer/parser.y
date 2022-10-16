@@ -120,10 +120,14 @@ void yyerror(char const *s) {
 // AWAIT жив
 %token YIELD
 %token FUNC_ARROW
+%token DOUBLE_DOT
+%token VOPROS_DOT
 
 %token COMMENT
 
 %left INTERPOLATION_CONCAT
+
+%precedence INNER_IF
 
 %%
     //-------------- ВЕРХНИЙ УРОВЕНЬ --------------
@@ -244,7 +248,7 @@ void yyerror(char const *s) {
         | INC expr %prec PREFIX_INC                     {}
         | DEC expr %prec PREFIX_DEC                     {}
         | AWAIT  expr                                   {}
-        | expr '.'                                      {}
+        | expr '.' identifier                                      {}
         | expr INC %prec POSTFIX_INC                    {}
         | expr DEC %prec POSTFIX_DEC                    {}
         | expr '[' expr ']'                             {}
@@ -397,7 +401,7 @@ void yyerror(char const *s) {
     //-------------- РАЗВИЛКИ --------------
 
     ifStatement: IF '(' expr ')' statement
-        | IF '(' expr ')' statement ELSE statement
+        | IF '(' expr ')' statement ELSE statement %prec INNER_IF
     ;
 
     switchCase: CASE expr ':' statement
@@ -580,7 +584,67 @@ void yyerror(char const *s) {
         | STATIC functionSignature
     ;
 
+
+    //------- КОНСТРУКТОРЫ --------------
+
+    constructorName: typeIdentifier '.' identifier
+        | typeIdentifier
+    ;
+
+    constructorSignature: constructorName formalParameterList
+    ;
+
+    constantConstructorSignature: CONST constructorName formalParameterList
+    ;
+
+    // вызвать именованный конструктор или другой конструктор 
+    // Пример: Car.withoutABS(this.make, this.model, this.yearMade): this(make, model, yearMade, false);
+    redirection: ':' THIS '.' identifier arguments
+        | ':' THIS arguments
+    ; 
+
+    arguments: '(' exprList ',' ')'
+        | '(' exprList ')'
+        | '(' ')'
+    ;
+
+    initializerListEntry: SUPER arguments 
+        | SUPER '.' identifier arguments
+        | fieldInitializer
+    ;
+
+    // на месте expr любой expr кроме assign
+    fieldInitializer: THIS '.' identifier '=' expr
+        | THIS '.' identifier '=' // THIS '.' identifier '=' cascade 
+    ;
+
+    initializers: ':' initializerListEntry
+        | initializers ',' initializerListEntry
+    ;
+
+
+
+
     
+    /* cascade: cascade DOUBLE_DOT ;
+
+    cascadeSection: '[' expr ']' cascadeSectionTail
+        | identifier cascadeSectionTail
+    ;
+
+    cascadeSectionTail : '=' 
+        | 
+
+    assignableSelector: '[' expr ']'
+        | '.' identifier
+        | VOPROS_DOT identifier
+        | '?' '[' expr ']'
+    ;
+
+    exprWithoutCascade:  */
+
+    
+
 %%
 
 /* int main(int argc, char** argv) {
