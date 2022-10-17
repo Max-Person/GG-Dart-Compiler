@@ -136,6 +136,7 @@ void yyerror(char const *s) {
         | partDeclaration topLevelDeclaration
     ;
 
+    //Дописать
     topLevelDeclaration: classDeclaration
         | enumType
         | LATE FINAL type initializedIdentifier ';'
@@ -171,7 +172,7 @@ void yyerror(char const *s) {
         | TYPEDEF                          {}
     ;
 
-    otherIdentifier: ASYNC                 {}
+    /* otherIdentifier: ASYNC                 {}
         | HIDE                             {}
         | OF                               {}
         | ON                               {}
@@ -179,11 +180,11 @@ void yyerror(char const *s) {
         | SYNC                             {}
         | AWAIT                            {} 
         | YIELD                            {}
-    ;
+    ; */
 
     identifier: IDENTIFIER                 {}
         | builtInIdentifier                {}
-        | otherIdentifier                  {}
+        /* | otherIdentifier                  {} */
     ;
 
     identifierList: identifier ',' identifier
@@ -210,9 +211,6 @@ void yyerror(char const *s) {
         | expr AND_ASSIGN expr             {} 
         | expr OR_ASSIGN expr              {}
         | expr XOR_ASSIGN expr             {}
-        | expr SHIFTL_ASSIGN expr          {}
-        | expr SHIFTR_ASSIGN expr          {}
-        | expr TSHIFTR_ASSIGN expr         {}
         | expr MUL_ASSIGN expr             {}
         | expr DIV_ASSIGN expr             {}
         | expr TRUNC_DIV_ASSIGN expr       {}
@@ -233,9 +231,6 @@ void yyerror(char const *s) {
         | expr '|' expr                    {}
         | expr '^' expr                    {}
         | expr '&' expr                    {}
-        | expr '<' '<' expr  %prec SHIFTL               {} //!ШИФТЫ И ГЕНЕРИКИ - НЕ БРАТЬЯ НАВЕК??
-        | expr '>' '>' expr  %prec SHIFTR               {}
-        | expr '>' '>' '>' expr  %prec TSHIFTR          {}
         | expr '+' expr                                 {}
         | expr '-' expr                                 {}
         | expr '*' expr                                 {}
@@ -247,8 +242,7 @@ void yyerror(char const *s) {
         | '~'  expr                                     {}
         | INC expr %prec PREFIX_INC                     {}
         | DEC expr %prec PREFIX_DEC                     {}
-        | AWAIT  expr                                   {}
-        | expr '.' identifier                                      {}
+        | expr '.' identifier                                      {}       //LOOK
         | expr INC %prec POSTFIX_INC                    {}
         | expr DEC %prec POSTFIX_DEC                    {}
         | expr '[' expr ']'                             {}
@@ -266,20 +260,21 @@ void yyerror(char const *s) {
     //-------------- ТИПИЗАЦИЯ --------------
     // --- обычная типизация
 
-    typeIdentifier: IDENTIFIER                          {}
+    /* typeIdentifier: IDENTIFIER                          {}
         | otherIdentifier                               {}
         | DYNAMIC                                       {}
+    ; */
+
+    //список из одного
+    //используется IDENTIFIER, потому что кажется built-in идентификаторы не могут быть названием класса
+    qualifiedName: IDENTIFIER
+        | IDENTIFIER '.' IDENTIFIER
+
+    typeName: qualifiedName
+        | DYNAMIC
     ;
 
-    typeName: typeIdentifier '.' typeIdentifier
-        | typeName '.' typeIdentifier
-    ;
-
-    type: typeIdentifier
-        | typeName
-        | typeIdentifier '<' type '>'
-        | typeName '<' type '>'
-        | typeIdentifier '<' typeList '>'
+    type: functionType
         | typeNotFunction
     ;
 
@@ -303,20 +298,18 @@ void yyerror(char const *s) {
     ;
 
     typeNotFunction: VOID
-        | typeName '<' typeList '>' '?'
+        | typeName
         | typeName '?'
-        | typeName '<' typeList '>'
-        | FUNCTION '?'
         | FUNCTION
+        | FUNCTION '?'
     ;
 
-    typeNotVoid: functionType '?'
-        | functionType
-        | typeName '<' typeList '>' '?'
+    typeNotVoid: functionType
+        | functionType '?'
+        | typeName
         | typeName '?'
-        | typeName '<' typeList '>'
-        | FUNCTION '?'
         | FUNCTION
+        | FUNCTION '?'
     ; 
 
     typeNotVoidList: typeNotVoid ',' typeNotVoid
@@ -340,40 +333,17 @@ void yyerror(char const *s) {
         | '(' normalParameterTypes ')'
     ;
 
-    functionTypeTail: FUNCTION typeParameterPartOpt parameterTypeList
+    functionTypeTail: FUNCTION parameterTypeList
     ;
 
     //список из одного
-    functionTypeTails: functionTypeTail '?' functionTypeTail
-        | functionTypeTail functionTypeTail
-        | functionTypeTails '?' functionTypeTail
+    functionTypeTails: functionTypeTails '?' functionTypeTail
         | functionTypeTails functionTypeTail
         | functionTypeTail
     ;
 
     functionType: functionTypeTails
         | typeNotFunction functionTypeTails
-    ;
-
-    //-------------- GENERIC ПАРАМЕТРИЗАЦИЯ --------------
-
-    typeParameter: identifier EXTENDS functionType '?'
-        | identifier EXTENDS functionType
-        | typeName '<' typeList '>' '?'
-        | typeName '?'
-        | typeName '<' typeList '>'
-        | FUNCTION '?'
-        | FUNCTION
-        | identifier
-    ;
-
-    typeParamList: typeParameter ',' typeParameter
-        | typeParamList ',' typeParameter
-    ;
-
-    typeParameterPartOpt: %empty
-        | '<' typeParameter '>'
-        | '<' typeParamList '>'
     ;
 
     //-------------- ПЕРЕМЕННЫЕ И ИНИЦИАЛИЗАЦИЯ --------------
@@ -422,13 +392,8 @@ void yyerror(char const *s) {
 
     //-------------- ЦИКЛЫ --------------
 
-    forStatement: AWAIT FOR '(' forInitializerStatement expr ';' exprList ')' statement
-        | AWAIT FOR '(' forInitializerStatement ';' ')' statement 
-        | AWAIT FOR '(' forInitializerStatement expr ';' ')' statement
-        | AWAIT FOR '(' forInitializerStatement ';' exprList ')' statement
-        | AWAIT FOR '(' declaredIdentifier IN expr ')' statement
-        | AWAIT FOR '(' identifier IN expr ')' statement
-        | FOR '(' forInitializerStatement expr ';' exprList ')' statement
+    //LOOK почему здесь не используются expr statement?
+    forStatement: FOR '(' forInitializerStatement expr ';' exprList ')' statement
         | FOR '(' forInitializerStatement ';' ')' statement
         | FOR '(' forInitializerStatement expr ';' ')' statement
         | FOR '(' forInitializerStatement ';' exprList ')' statement
@@ -436,7 +401,7 @@ void yyerror(char const *s) {
         | FOR '(' identifier IN expr ')' statement
     ;
 
-    forInitializerStatement: variableDeclaration
+    forInitializerStatement: variableDeclarationStatement
         | exprStatement
     ;
 
@@ -446,12 +411,11 @@ void yyerror(char const *s) {
     doStatement: DO statement WHILE '(' expr ')' ';'
     ;
 
-    breakStatement: BREAK identifier ';'
-        | BREAK ';'
+    //Здесь убрал идентификаторы, потому что это относится к лейблам
+    breakStatement: BREAK ';'
     ;
 
-    continueStatement: CONTINUE identifier ';'
-        | CONTINUE ';'
+    continueStatement: CONTINUE ';'
     ;
 
     returnStatement: RETURN expr ';'
@@ -472,6 +436,7 @@ void yyerror(char const *s) {
         | returnStatement
         | exprStatement
         | localFunctionDeclaration
+        | statementBlock
     ;
 
     statements: statement statement
@@ -490,29 +455,27 @@ void yyerror(char const *s) {
         | '(' normalFormalParameterList ')'
     ;
 
-    normalFormalParameter: type identifier formalParameterPart '?'
-        | identifier formalParameterPart '?'
-        | type identifier formalParameterPart
-        | identifier formalParameterPart
+    //LOOK здесь formalParameterList относится к функциональной типизации. Не уверен выпиливаем ли мы ее
+    normalFormalParameter: type identifier formalParameterList '?'
+        | identifier formalParameterList '?'
+        | type identifier formalParameterList
+        | identifier formalParameterList
         | declaredIdentifier
         | identifier
-        | declarator THIS '.' identifier formalParameterPart '?'
-        | declarator THIS '.' identifier formalParameterPart
+        | declarator THIS '.' identifier formalParameterList '?'
+        | declarator THIS '.' identifier formalParameterList
         | declarator THIS '.' identifier
-        | THIS '.' identifier formalParameterPart '?'
-        | THIS '.' identifier formalParameterPart
+        | THIS '.' identifier formalParameterList '?'
+        | THIS '.' identifier formalParameterList
         | THIS '.' identifier
-    ;
-
-    formalParameterPart: typeParameterPartOpt formalParameterList
     ;
 
     normalFormalParameterList: normalFormalParameter ',' normalFormalParameter
         | normalFormalParameterList ',' normalFormalParameter
     ;
 
-    functionSignature: type identifier typeParameterPartOpt formalParameterList
-        | identifier typeParameterPartOpt formalParameterList
+    functionSignature: type identifier formalParameterList
+        | identifier formalParameterList
     ;
     
     functionBody: FUNC_ARROW expr ';'
@@ -545,10 +508,10 @@ void yyerror(char const *s) {
         | IMPLEMENTS typeNotVoidList
     ;
 
-    classDeclaration: CLASS typeIdentifier typeParameterPartOpt superclassOpt interfacesOpt '{' classMemberDeclarations '}'
-        | ABSTRACT CLASS typeIdentifier typeParameterPartOpt superclassOpt interfacesOpt '{' classMemberDeclarations '}'
-        | CLASS identifier typeParameterPartOpt '=' typeNotVoid mixins interfacesOpt
-        | ABSTRACT CLASS identifier typeParameterPartOpt '=' typeNotVoid mixins interfacesOpt
+    classDeclaration: CLASS IDENTIFIER superclassOpt interfacesOpt '{' classMemberDeclarations '}'
+        | ABSTRACT CLASS IDENTIFIER superclassOpt interfacesOpt '{' classMemberDeclarations '}'
+        | CLASS identifier '=' typeNotVoid mixins interfacesOpt
+        | ABSTRACT CLASS identifier '=' typeNotVoid mixins interfacesOpt
     ;
 
     staticFinalDeclaration: identifier '=' expr
@@ -582,13 +545,15 @@ void yyerror(char const *s) {
     // Дописать
     methodSignature: functionSignature
         | STATIC functionSignature
+        | constructorSignature
+        | constructorSignature initializers
     ;
 
 
     //------- КОНСТРУКТОРЫ --------------
 
-    constructorName: typeIdentifier '.' identifier
-        | typeIdentifier
+    constructorName: IDENTIFIER '.' identifier
+        | IDENTIFIER
     ;
 
     constructorSignature: constructorName formalParameterList
@@ -613,7 +578,7 @@ void yyerror(char const *s) {
         | fieldInitializer
     ;
 
-    // на месте expr любой expr кроме assign
+    //LOOK на месте expr любой expr кроме assign
     fieldInitializer: THIS '.' identifier '=' expr
         | THIS '.' identifier '=' // THIS '.' identifier '=' cascade 
     ;
