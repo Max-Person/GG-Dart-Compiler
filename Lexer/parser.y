@@ -125,8 +125,12 @@ void yyerror(char const *s) {
 
 %token COMMENT
 
+
+%precedence PRIMARY
+
 %left INTERPOLATION_CONCAT
 
+%precedence OUTER_IF
 %precedence INNER_IF
 
 %%
@@ -191,8 +195,7 @@ void yyerror(char const *s) {
         | identifierList ',' identifier
     ;
 
-    string: STRING_LITERAL INTERPOLATION_CONCAT expr INTERPOLATION_CONCAT STRING_LITERAL {}
-        | string INTERPOLATION_CONCAT expr INTERPOLATION_CONCAT STRING_LITERAL {}
+    string: string INTERPOLATION_CONCAT expr INTERPOLATION_CONCAT STRING_LITERAL %prec INTERPOLATION_CONCAT {}
         | STRING_LITERAL                    {}
     ;
 
@@ -202,7 +205,7 @@ void yyerror(char const *s) {
         | INTEGER_LITERAL                  {}
         | DOUBLE_LITERAL                   {}
         | BOOLEAN_LITERAL                  {}
-        | string                       {}
+        | string                       %prec PRIMARY{}
         | identifier                       {}
     ;
 
@@ -260,30 +263,32 @@ void yyerror(char const *s) {
     //-------------- ТИПИЗАЦИЯ --------------
     // --- обычная типизация
 
-    /* typeIdentifier: IDENTIFIER                          {}
-        | otherIdentifier                               {}
-        | DYNAMIC                                       {}
-    ; */
-
     //список из одного
     //используется IDENTIFIER, потому что кажется built-in идентификаторы не могут быть названием класса
+    //Ркурсии изменена на правую для избежания конфликта с именем конструктора
     qualifiedName: IDENTIFIER
-        | IDENTIFIER '.' IDENTIFIER
+        | IDENTIFIER '.' qualifiedName
+    ;
 
     typeName: qualifiedName
         | DYNAMIC
     ;
 
-    type: functionType
-        | typeNotFunction
+    typeNotVoid: typeName
+        | typeName '?'
+    ; 
+
+    typeNotVoidList: typeNotVoid ',' typeNotVoid
+        | typeNotVoidList ',' typeNotVoid
     ;
 
+    type: typeNotVoid
+        | VOID
+    ;
+
+    //LOOK по любому конфликтует с typeNotVoidList... или нет? 
     typeList: type ',' type
         | typeList ',' type
-    ;
-
-    varOrType: VAR
-        | type
     ;
 
     //finalConstVarOrType
@@ -293,63 +298,24 @@ void yyerror(char const *s) {
         | FINAL                                         {}
         | CONST type                                    {}
         | CONST                                         {}
-        | LATE varOrType                                      {}
-        | varOrType                                           {}
-    ;
-
-    typeNotFunction: VOID
-        | typeName
-        | typeName '?'
-        | FUNCTION
-        | FUNCTION '?'
-    ;
-
-    typeNotVoid: functionType
-        | functionType '?'
-        | typeName
-        | typeName '?'
-        | FUNCTION
-        | FUNCTION '?'
-    ; 
-
-    typeNotVoidList: typeNotVoid ',' typeNotVoid
-        | typeNotVoidList ',' typeNotVoid
-    ;
-
-    // --- функ. типизация
-
-    normalParameterType: type identifier
-        | type
-    ;
-
-    normalParameterTypes: normalParameterType ',' normalParameterType
-        | normalParameterTypes ',' normalParameterType 
-    ;
-
-    parameterTypeList: '(' ')'
-        | '(' normalParameterType ',' ')'
-        | '(' normalParameterType ')'
-        | '(' normalParameterTypes ',' ')'
-        | '(' normalParameterTypes ')'
-    ;
-
-    functionTypeTail: FUNCTION parameterTypeList
-    ;
-
-    //список из одного
-    functionTypeTails: functionTypeTails '?' functionTypeTail
-        | functionTypeTails functionTypeTail
-        | functionTypeTail
-    ;
-
-    functionType: functionTypeTails
-        | typeNotFunction functionTypeTails
+        | LATE VAR                                      {}
+        | LATE type                                      {}
+        | VAR                                           {}
+        | type                                           {}
     ;
 
     //-------------- ПЕРЕМЕННЫЕ И ИНИЦИАЛИЗАЦИЯ --------------
 
-    declaredIdentifier: COVARIANT declarator identifier     {}
-        | declarator identifier                             {}
+    declaredIdentifier: LATE FINAL type identifier                       {}
+        | LATE FINAL identifier                                   {}
+        | FINAL type identifier                                   {}
+        | FINAL identifier                                        {}
+        | CONST type identifier                                   {}
+        | CONST identifier                                        {}
+        | LATE VAR identifier                                      {}
+        | LATE type identifier                                      {}
+        | VAR identifier                             {}
+        | type identifier                             {}
     ;
 
     initializedIdentifier: staticFinalDeclaration
@@ -370,7 +336,7 @@ void yyerror(char const *s) {
 
     //-------------- РАЗВИЛКИ --------------
 
-    ifStatement: IF '(' expr ')' statement
+    ifStatement: IF '(' expr ')' statement %prec OUTER_IF
         | IF '(' expr ')' statement ELSE statement %prec INNER_IF
     ;
 
@@ -392,11 +358,9 @@ void yyerror(char const *s) {
 
     //-------------- ЦИКЛЫ --------------
 
-    //LOOK почему здесь не используются expr statement?
-    forStatement: FOR '(' forInitializerStatement expr ';' exprList ')' statement
-        | FOR '(' forInitializerStatement ';' ')' statement
-        | FOR '(' forInitializerStatement expr ';' ')' statement
-        | FOR '(' forInitializerStatement ';' exprList ')' statement
+    //LOOK почему здесь не используются expr statement? //добавил, вроде не поменялось
+    forStatement: FOR '(' forInitializerStatement exprStatement exprList ')' statement
+        | FOR '(' forInitializerStatement exprStatement ')' statement
         | FOR '(' declaredIdentifier IN expr ')' statement
         | FOR '(' identifier IN expr ')' statement
     ;
@@ -434,7 +398,6 @@ void yyerror(char const *s) {
         | breakStatement
         | continueStatement
         | returnStatement
-        | exprStatement
         | localFunctionDeclaration
         | statementBlock
     ;
@@ -532,34 +495,35 @@ void yyerror(char const *s) {
         | STATIC FINAL staticFinalDeclarationList
         | STATIC LATE FINAL type initializedIdentifierList
         | STATIC LATE FINAL initializedIdentifierList
-        | STATIC LATE varOrType initializedIdentifierList
-        | STATIC varOrType initializedIdentifierList
+        | STATIC LATE VAR initializedIdentifierList
+        | STATIC LATE type initializedIdentifierList
+        | STATIC VAR initializedIdentifierList
+        | STATIC type initializedIdentifierList
         | LATE FINAL type initializedIdentifierList
         | LATE FINAL initializedIdentifierList
         | FINAL type initializedIdentifierList
         | FINAL initializedIdentifierList
-        | LATE varOrType initializedIdentifierList
-        | varOrType initializedIdentifierList
+        | LATE VAR initializedIdentifierList
+        | LATE type initializedIdentifierList
+        | VAR initializedIdentifierList
+        | type initializedIdentifierList
     ;
 
     // Дописать
     methodSignature: functionSignature
         | STATIC functionSignature
-        | constructorSignature
-        | constructorSignature initializers
+        | namedConstructorSignature
+        | namedConstructorSignature initializers
     ;
 
 
     //------- КОНСТРУКТОРЫ --------------
 
-    constructorName: IDENTIFIER '.' identifier
-        | IDENTIFIER
+    namedConstructorSignature: IDENTIFIER '.' identifier formalParameterList
     ;
 
-    constructorSignature: constructorName formalParameterList
-    ;
-
-    constantConstructorSignature: CONST constructorName formalParameterList
+    constantConstructorSignature: CONST IDENTIFIER formalParameterList
+        | CONST IDENTIFIER '.' identifier formalParameterList
     ;
 
     // вызвать именованный конструктор или другой конструктор 
