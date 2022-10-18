@@ -191,7 +191,7 @@ void yyerror(char const *s) {
         /* | otherIdentifier                  {} */
     ;
 
-    identifierList: identifier ',' identifier
+    identifierList: identifier
         | identifierList ',' identifier
     ;
 
@@ -202,26 +202,40 @@ void yyerror(char const *s) {
     //-------------- ВЫРАЖЕНИЯ --------------
 
     primary: THIS                          {}
+        | SUPER
         | INTEGER_LITERAL                  {}
         | DOUBLE_LITERAL                   {}
         | BOOLEAN_LITERAL                  {}
         | string                       %prec PRIMARY{}
         | identifier                       {}
+        | identifier arguments
+        | identifier ambiguousArgumentsOrParameterList
+        | '(' expr ')'
     ;
 
-    expr: primary                          {}
-        | expr '=' expr                    {}
-        | expr AND_ASSIGN expr             {} 
-        | expr OR_ASSIGN expr              {}
-        | expr XOR_ASSIGN expr             {}
-        | expr MUL_ASSIGN expr             {}
-        | expr DIV_ASSIGN expr             {}
-        | expr TRUNC_DIV_ASSIGN expr       {}
-        | expr MOD_ASSIGN expr             {}
-        | expr ADD_ASSIGN expr             {}
-        | expr SUB_ASSIGN expr             {}
-        | expr IFNULL_ASSIGN expr          {}
-        | expr '?' expr ':' expr           {}
+    assignableSelector: '[' expr ']'
+        | '.' identifier
+    ;
+
+    selector: '.' identifier arguments 
+        | '.' identifier ambiguousArgumentsOrParameterList
+        | assignableSelector
+    ;
+
+    selectors: selector
+        | selectors selector
+    ;
+
+    //Не используется (?) Проверять можно ли присваивать на этапе семантики.
+    assignableExpr: primary assignableSelector
+        | primary selectors assignableSelector
+        | SUPER assignableSelector
+        | identifier
+    ;
+
+    exprNotAssign: primary
+        | primary selector
+        /* | expr '?' expr ':' expr           {} */
         | expr IFNULL expr                 {}
         | expr OR expr                     {}
         | expr AND expr                    {}
@@ -245,10 +259,22 @@ void yyerror(char const *s) {
         | '~'  expr                                     {}
         | INC expr %prec PREFIX_INC                     {}
         | DEC expr %prec PREFIX_DEC                     {}
-        | expr '.' identifier                                      {}       //LOOK
-        | expr INC %prec POSTFIX_INC                    {}
-        | expr DEC %prec POSTFIX_DEC                    {}
-        | expr '[' expr ']'                             {}
+        /* | expr INC %prec POSTFIX_INC                    {}
+        | expr DEC %prec POSTFIX_DEC                    {} */
+    ;
+
+    expr: exprNotAssign                          {}
+        | expr '=' expr                    {}
+        | expr AND_ASSIGN expr             {} 
+        | expr OR_ASSIGN expr              {}
+        | expr XOR_ASSIGN expr             {}
+        | expr MUL_ASSIGN expr             {}
+        | expr DIV_ASSIGN expr             {}
+        | expr TRUNC_DIV_ASSIGN expr       {}
+        | expr MOD_ASSIGN expr             {}
+        | expr ADD_ASSIGN expr             {}
+        | expr SUB_ASSIGN expr             {}
+        | expr IFNULL_ASSIGN expr          {}
     ;
 
     //список из одного
@@ -336,8 +362,8 @@ void yyerror(char const *s) {
 
     //-------------- РАЗВИЛКИ --------------
 
-    ifStatement: IF '(' expr ')' statement %prec OUTER_IF
-        | IF '(' expr ')' statement ELSE statement %prec INNER_IF
+    ifStatement: IF '(' expr ')' statement 
+        | IF '(' expr ')' statement ELSE statement
     ;
 
     switchCase: CASE expr ':' statement
@@ -411,34 +437,34 @@ void yyerror(char const *s) {
 
     //-------------- ФУНКЦИИ --------------
 
-    formalParameterList: '(' ')'
-        | '(' normalFormalParameter ',' ')'
-        | '(' normalFormalParameter ')'
-        | '(' normalFormalParameterList ',' ')'
+    formalParameterList: '(' normalFormalParameterList ',' ')'
         | '(' normalFormalParameterList ')'
+        /* | '(' ')' */
     ;
 
-    //LOOK здесь formalParameterList относится к функциональной типизации. Не уверен выпиливаем ли мы ее
-    normalFormalParameter: type identifier formalParameterList '?'
-        | identifier formalParameterList '?'
-        | type identifier formalParameterList
-        | identifier formalParameterList
-        | declaredIdentifier
-        | identifier
-        | declarator THIS '.' identifier formalParameterList '?'
-        | declarator THIS '.' identifier formalParameterList
+    normalFormalParameter: declaredIdentifier
+        /* | identifier */      //- покрывается ambiguousArgumentsOrParameterList
         | declarator THIS '.' identifier
-        | THIS '.' identifier formalParameterList '?'
-        | THIS '.' identifier formalParameterList
         | THIS '.' identifier
     ;
 
-    normalFormalParameterList: normalFormalParameter ',' normalFormalParameter
+    normalFormalParameterList: normalFormalParameter
         | normalFormalParameterList ',' normalFormalParameter
+    ;
+
+    ambiguousArgumentsOrParameterList: '(' identifierList ')'
+        | '(' identifierList ',' ')'
+        | '(' ')'
+
+    arguments: '(' exprList ',' ')'
+        | '(' exprList ')'
+        /* | '(' ')' */
     ;
 
     functionSignature: type identifier formalParameterList
         | identifier formalParameterList
+        | type identifier ambiguousArgumentsOrParameterList
+        | identifier ambiguousArgumentsOrParameterList
     ;
     
     functionBody: FUNC_ARROW expr ';'
@@ -450,8 +476,7 @@ void yyerror(char const *s) {
 
     //-------------- ЕНАМ --------------
 
-    enumType: ENUM identifier '{' identifier '}'            {}       //подумать о метаданных (что-то было написано в документации)
-            | ENUM identifier '{' identifierList '}'         {}
+    enumType: ENUM identifier '{' identifierList '}'         {}
     ;
 
     //------- КЛАССЫ --------------
@@ -473,8 +498,8 @@ void yyerror(char const *s) {
 
     classDeclaration: CLASS IDENTIFIER superclassOpt interfacesOpt '{' classMemberDeclarations '}'
         | ABSTRACT CLASS IDENTIFIER superclassOpt interfacesOpt '{' classMemberDeclarations '}'
-        | CLASS identifier '=' typeNotVoid mixins interfacesOpt
-        | ABSTRACT CLASS identifier '=' typeNotVoid mixins interfacesOpt
+        | CLASS identifier '=' typeNotVoid mixins interfacesOpt ';'
+        | ABSTRACT CLASS identifier '=' typeNotVoid mixins interfacesOpt ';'
     ;
 
     staticFinalDeclaration: identifier '=' expr
@@ -520,30 +545,31 @@ void yyerror(char const *s) {
     //------- КОНСТРУКТОРЫ --------------
 
     namedConstructorSignature: IDENTIFIER '.' identifier formalParameterList
+        | IDENTIFIER '.' identifier ambiguousArgumentsOrParameterList
     ;
 
     constantConstructorSignature: CONST IDENTIFIER formalParameterList
         | CONST IDENTIFIER '.' identifier formalParameterList
+        | CONST IDENTIFIER ambiguousArgumentsOrParameterList
+        | CONST IDENTIFIER '.' identifier ambiguousArgumentsOrParameterList
     ;
 
     // вызвать именованный конструктор или другой конструктор 
     // Пример: Car.withoutABS(this.make, this.model, this.yearMade): this(make, model, yearMade, false);
     redirection: ':' THIS '.' identifier arguments
         | ':' THIS arguments
-    ; 
-
-    arguments: '(' exprList ',' ')'
-        | '(' exprList ')'
-        | '(' ')'
+        | ':' THIS '.' identifier ambiguousArgumentsOrParameterList
+        | ':' THIS ambiguousArgumentsOrParameterList
     ;
 
     initializerListEntry: SUPER arguments 
         | SUPER '.' identifier arguments
+        | SUPER ambiguousArgumentsOrParameterList 
+        | SUPER '.' identifier ambiguousArgumentsOrParameterList
         | fieldInitializer
     ;
 
-    //LOOK на месте expr любой expr кроме assign
-    fieldInitializer: THIS '.' identifier '=' expr
+    fieldInitializer: THIS '.' identifier '=' exprNotAssign
         | THIS '.' identifier '=' // THIS '.' identifier '=' cascade 
     ;
 
