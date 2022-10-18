@@ -210,6 +210,7 @@ void yyerror(char const *s) {
 
     primary: THIS                          {}
         | SUPER
+        | NULL_
         | INTEGER_LITERAL                  {}
         | DOUBLE_LITERAL                   {}
         | BOOLEAN_LITERAL                  {}
@@ -217,6 +218,10 @@ void yyerror(char const *s) {
         | identifier                       {}
         | identifier arguments
         | identifier ambiguousArgumentsOrParameterList
+        | NEW qualifiedName arguments
+        | NEW qualifiedName ambiguousArgumentsOrParameterList
+        | CONST qualifiedName arguments
+        | CONST qualifiedName ambiguousArgumentsOrParameterList
         | '(' expr ')'
     ;
 
