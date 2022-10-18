@@ -143,10 +143,17 @@ void yyerror(char const *s) {
     //Дописать
     topLevelDeclaration: classDeclaration
         | enumType
-        | LATE FINAL type initializedIdentifier ';'
         | LATE FINAL type initializedIdentifierList ';'
-        | LATE FINAL initializedIdentifier ';'
         | LATE FINAL initializedIdentifierList ';'
+        | functionSignature functionBody
+        | FINAL type staticFinalDeclarationList ';'
+        | FINAL staticFinalDeclarationList ';'
+        | CONST type staticFinalDeclarationList ';'
+        | CONST staticFinalDeclarationList ';'
+        | LATE VAR initializedIdentifierList ';'
+        | LATE type initializedIdentifierList ';'
+        | VAR initializedIdentifierList ';'
+        | type initializedIdentifierList ';'
     ;
 
     //-------------- БАЗОВЫЕ ПОНЯТИЯ --------------
@@ -222,20 +229,29 @@ void yyerror(char const *s) {
         | assignableSelector
     ;
 
+    //--- Не используется (?) Проверять можно ли присваивать на этапе семантики.
     selectors: selector
         | selectors selector
     ;
 
-    //Не используется (?) Проверять можно ли присваивать на этапе семантики.
-    assignableExpr: primary assignableSelector
-        | primary selectors assignableSelector
-        | SUPER assignableSelector
+    assignableExpr: selectorExpr assignableSelector
         | identifier
     ;
+    //---
 
-    exprNotAssign: primary
-        | primary selector
-        /* | expr '?' expr ':' expr           {} */
+    selectorExpr: primary
+        | selectorExpr selector
+    ;
+
+    //Можно вставить и в exprNotAssign, но по какой-то причине это вызывает конфликты c POSTFIX_INC/DEC, хотя приоритеты определены.
+    postfixExpr: selectorExpr
+        | postfixExpr INC %prec POSTFIX_INC                    {}
+        | postfixExpr DEC %prec POSTFIX_DEC                    {}
+    ;
+
+    //Можно бы указать exprNotAssign вместо expr, но это не имеет значения из-за приоритетов
+    exprNotAssign: postfixExpr
+        | expr '?' expr ':' expr           {}
         | expr IFNULL expr                 {}
         | expr OR expr                     {}
         | expr AND expr                    {}
@@ -259,8 +275,6 @@ void yyerror(char const *s) {
         | '~'  expr                                     {}
         | INC expr %prec PREFIX_INC                     {}
         | DEC expr %prec PREFIX_DEC                     {}
-        /* | expr INC %prec POSTFIX_INC                    {}
-        | expr DEC %prec POSTFIX_DEC                    {} */
     ;
 
     expr: exprNotAssign                          {}
@@ -304,17 +318,12 @@ void yyerror(char const *s) {
         | typeName '?'
     ; 
 
-    typeNotVoidList: typeNotVoid ',' typeNotVoid
+    typeNotVoidList: typeNotVoid
         | typeNotVoidList ',' typeNotVoid
     ;
 
     type: typeNotVoid
         | VOID
-    ;
-
-    //LOOK по любому конфликтует с typeNotVoidList... или нет? 
-    typeList: type ',' type
-        | typeList ',' type
     ;
 
     //finalConstVarOrType
@@ -348,7 +357,7 @@ void yyerror(char const *s) {
         | identifier
     ;
 
-    initializedIdentifierList: initializedIdentifier ',' initializedIdentifier
+    initializedIdentifierList: initializedIdentifier
         | initializedIdentifierList ',' initializedIdentifier
     ;
 
@@ -443,9 +452,9 @@ void yyerror(char const *s) {
     ;
 
     normalFormalParameter: declaredIdentifier
-        /* | identifier */      //- покрывается ambiguousArgumentsOrParameterList
-        | declarator THIS '.' identifier
-        | THIS '.' identifier
+        /* | identifier */      // покрывается ambiguousArgumentsOrParameterList
+        /* | declarator THIS '.' identifier
+        | THIS '.' identifier */       // см fieldFormalParameter
     ;
 
     normalFormalParameterList: normalFormalParameter
@@ -481,8 +490,7 @@ void yyerror(char const *s) {
 
     //------- КЛАССЫ --------------
 
-    mixins: WITH typeNotVoid
-        | WITH typeNotVoidList
+    mixins: WITH typeNotVoidList
     ;
 
     superclassOpt: %empty
@@ -492,7 +500,6 @@ void yyerror(char const *s) {
     ;
 
     interfacesOpt: %empty
-        | IMPLEMENTS typeNotVoid
         | IMPLEMENTS typeNotVoidList
     ;
 
@@ -509,8 +516,12 @@ void yyerror(char const *s) {
         | staticFinalDeclarationList ',' staticFinalDeclaration
     ;
 
-    classMemberDeclarations: declaration ';'
+    classMemberDeclaration: declaration ';'
         | methodSignature functionBody
+    ;
+
+    classMemberDeclarations: classMemberDeclaration
+        | classMemberDeclarations classMemberDeclaration
     ;
 
     //Дописать
@@ -532,6 +543,15 @@ void yyerror(char const *s) {
         | LATE type initializedIdentifierList
         | VAR initializedIdentifierList
         | type initializedIdentifierList
+        | constantConstructorSignature
+        | constantConstructorSignature redirection
+        | constantConstructorSignature initializers
+        | namedConstructorSignature
+        | namedConstructorSignature redirection
+        | namedConstructorSignature initializers
+        | functionSignature
+        | functionSignature redirection
+        | functionSignature initializers
     ;
 
     // Дописать
@@ -544,13 +564,31 @@ void yyerror(char const *s) {
 
     //------- КОНСТРУКТОРЫ --------------
 
+    fieldFormalParameter: declarator THIS '.' identifier
+        | THIS '.' identifier
+    ;
+
+    constructorFormalParameterList: fieldFormalParameter
+        | normalFormalParameterList ',' fieldFormalParameter
+        | constructorFormalParameterList ',' normalFormalParameter
+        | constructorFormalParameterList ',' fieldFormalParameter
+    ;
+
+    constructorFormalParameters: '(' constructorFormalParameterList ',' ')'
+        | '(' constructorFormalParameterList ')'
+        /* | '(' ')' */
+    ;
+
     namedConstructorSignature: IDENTIFIER '.' identifier formalParameterList
+        | IDENTIFIER '.' identifier constructorFormalParameters
         | IDENTIFIER '.' identifier ambiguousArgumentsOrParameterList
     ;
 
     constantConstructorSignature: CONST IDENTIFIER formalParameterList
-        | CONST IDENTIFIER '.' identifier formalParameterList
+        | CONST IDENTIFIER constructorFormalParameters
         | CONST IDENTIFIER ambiguousArgumentsOrParameterList
+        | CONST IDENTIFIER '.' identifier formalParameterList
+        | CONST IDENTIFIER '.' identifier constructorFormalParameters
         | CONST IDENTIFIER '.' identifier ambiguousArgumentsOrParameterList
     ;
 
