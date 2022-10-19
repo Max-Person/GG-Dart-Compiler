@@ -123,15 +123,10 @@ void yyerror(char const *s) {
 %token DOUBLE_DOT
 %token VOPROS_DOT
 
-%token COMMENT
-
 
 %precedence PRIMARY
 
 %left INTERPOLATION_CONCAT
-
-%precedence OUTER_IF
-%precedence INNER_IF
 
 %%
     //-------------- ВЕРХНИЙ УРОВЕНЬ --------------
@@ -183,19 +178,8 @@ void yyerror(char const *s) {
         | TYPEDEF                          {}
     ;
 
-    /* otherIdentifier: ASYNC                 {}
-        | HIDE                             {}
-        | OF                               {}
-        | ON                               {}
-        | SHOW                             {}
-        | SYNC                             {}
-        | AWAIT                            {} 
-        | YIELD                            {}
-    ; */
-
     identifier: IDENTIFIER                 {}
         | builtInIdentifier                {}
-        /* | otherIdentifier                  {} */
     ;
 
     identifierList: identifier
@@ -227,16 +211,6 @@ void yyerror(char const *s) {
         | '.' identifier ambiguousArgumentsOrParameterList
         | assignableSelector
     ;
-
-    //--- Не используется (?) Проверять можно ли присваивать на этапе семантики.
-    selectors: selector
-        | selectors selector
-    ;
-
-    assignableExpr: selectorExpr assignableSelector
-        | identifier
-    ;
-    //---
 
     selectorExpr: idDotList arguments
         | idDotList ambiguousArgumentsOrParameterList
@@ -308,7 +282,6 @@ void yyerror(char const *s) {
         | expr IFNULL_ASSIGN expr          {}
     ;
 
-    //список из одного
     exprList: expr 
         | exprList ',' expr
     ;
@@ -318,11 +291,6 @@ void yyerror(char const *s) {
     ;
 
     //-------------- ТИПИЗАЦИЯ --------------
-    // --- обычная типизация
-
-    //список из одного
-    //используется IDENTIFIER, потому что кажется built-in идентификаторы не могут быть названием класса
-    //Ркурсии изменена на правую для избежания конфликта с именем конструктора
     
     IDDotList: IDENTIFIER '.' IDENTIFIER
         | IDDotList '.' IDENTIFIER
@@ -419,7 +387,6 @@ void yyerror(char const *s) {
 
     //-------------- ЦИКЛЫ --------------
 
-    //LOOK почему здесь не используются expr statement? //добавил, вроде не поменялось
     forStatement: FOR '(' forInitializerStatement exprStatement exprList ')' statement
         | FOR '(' forInitializerStatement exprStatement ')' statement
         | FOR '(' declaredIdentifier IN expr ')' statement
@@ -602,7 +569,6 @@ void yyerror(char const *s) {
 
     constructorFormalParameters: '(' constructorFormalParameterList ',' ')'
         | '(' constructorFormalParameterList ')'
-        /* | '(' ')' */
     ;
 
     namedConstructorSignature: IDDotList formalParameterList
@@ -630,38 +596,12 @@ void yyerror(char const *s) {
         | SUPER '.' identifier arguments
         | SUPER ambiguousArgumentsOrParameterList 
         | SUPER '.' identifier ambiguousArgumentsOrParameterList
-        | fieldInitializer
-    ;
-
-    fieldInitializer: THIS '.' identifier '=' exprNotAssign
-        | THIS '.' identifier '=' // THIS '.' identifier '=' cascade 
+        | THIS '.' identifier '=' exprNotAssign
     ;
 
     initializers: ':' initializerListEntry
         | initializers ',' initializerListEntry
     ;
-
-
-
-
-    
-    /* cascade: cascade DOUBLE_DOT ;
-
-    cascadeSection: '[' expr ']' cascadeSectionTail
-        | identifier cascadeSectionTail
-    ;
-
-    cascadeSectionTail : '=' 
-        | 
-
-    assignableSelector: '[' expr ']'
-        | '.' identifier
-        | VOPROS_DOT identifier
-        | '?' '[' expr ']'
-    ;
-
-    exprWithoutCascade:  */
-
     
 
 %%
