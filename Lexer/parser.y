@@ -215,18 +215,12 @@ void yyerror(char const *s) {
         | DOUBLE_LITERAL                   {}
         | BOOLEAN_LITERAL                  {}
         | string                       %prec PRIMARY{}
-        | identifier                       {}
-        | identifier arguments
-        | identifier ambiguousArgumentsOrParameterList
-        | NEW qualifiedName arguments
-        | NEW qualifiedName ambiguousArgumentsOrParameterList
-        | CONST qualifiedName arguments
-        | CONST qualifiedName ambiguousArgumentsOrParameterList
         | '(' expr ')'
     ;
 
     assignableSelector: '[' expr ']'
-        | '.' identifier
+        | '.' idDotList
+        | '.' IDDotList
     ;
 
     selector: '.' identifier arguments 
@@ -244,19 +238,37 @@ void yyerror(char const *s) {
     ;
     //---
 
-    selectorExpr: primary
+    selectorExpr: idDotList arguments
+        | idDotList ambiguousArgumentsOrParameterList
+        | IDDotList arguments
+        | IDDotList ambiguousArgumentsOrParameterList
+        | identifier arguments
+        | identifier ambiguousArgumentsOrParameterList
+        | NEW IDDotList arguments
+        | NEW IDDotList ambiguousArgumentsOrParameterList
+        | NEW IDENTIFIER arguments
+        | NEW IDENTIFIER ambiguousArgumentsOrParameterList
+        | CONST IDDotList arguments
+        | CONST IDDotList ambiguousArgumentsOrParameterList
+        | CONST IDENTIFIER arguments
+        | CONST IDENTIFIER ambiguousArgumentsOrParameterList
+        | primary selector
         | selectorExpr selector
     ;
 
     //Можно вставить и в exprNotAssign, но по какой-то причине это вызывает конфликты c POSTFIX_INC/DEC, хотя приоритеты определены.
-    postfixExpr: selectorExpr
+    postfixExpr: primary
+        | idDotList      
+        | IDDotList  
+        | identifier              
+        | selectorExpr
         | postfixExpr INC %prec POSTFIX_INC                    {}
         | postfixExpr DEC %prec POSTFIX_DEC                    {}
     ;
 
     //Можно бы указать exprNotAssign вместо expr, но это не имеет значения из-за приоритетов
     exprNotAssign: postfixExpr
-        | expr '?' expr ':' expr           {}
+        /* | expr '?' expr ':' expr           {} */
         | expr IFNULL expr                 {}
         | expr OR expr                     {}
         | expr AND expr                    {}
@@ -311,11 +323,20 @@ void yyerror(char const *s) {
     //список из одного
     //используется IDENTIFIER, потому что кажется built-in идентификаторы не могут быть названием класса
     //Ркурсии изменена на правую для избежания конфликта с именем конструктора
-    qualifiedName: IDENTIFIER
-        | IDENTIFIER '.' qualifiedName
+    
+    IDDotList: IDENTIFIER '.' IDENTIFIER
+        | IDDotList '.' IDENTIFIER
     ;
 
-    typeName: qualifiedName
+    idDotList: builtInIdentifier '.' IDENTIFIER
+        | builtInIdentifier '.' builtInIdentifier
+        | IDDotList '.' builtInIdentifier
+        | idDotList '.' IDENTIFIER
+        | idDotList '.' builtInIdentifier
+    ;
+
+    typeName: IDENTIFIER
+        | IDDotList
         | DYNAMIC
     ;
 
@@ -584,17 +605,17 @@ void yyerror(char const *s) {
         /* | '(' ')' */
     ;
 
-    namedConstructorSignature: IDENTIFIER '.' identifier formalParameterList
-        | IDENTIFIER '.' identifier constructorFormalParameters
-        | IDENTIFIER '.' identifier ambiguousArgumentsOrParameterList
+    namedConstructorSignature: IDDotList formalParameterList
+        | IDDotList constructorFormalParameters
+        | IDDotList ambiguousArgumentsOrParameterList
     ;
 
-    constantConstructorSignature: CONST IDENTIFIER formalParameterList
+    constantConstructorSignature: CONST IDDotList formalParameterList
+        | CONST IDDotList constructorFormalParameters
+        | CONST IDDotList ambiguousArgumentsOrParameterList
+        | CONST IDENTIFIER formalParameterList
         | CONST IDENTIFIER constructorFormalParameters
         | CONST IDENTIFIER ambiguousArgumentsOrParameterList
-        | CONST IDENTIFIER '.' identifier formalParameterList
-        | CONST IDENTIFIER '.' identifier constructorFormalParameters
-        | CONST IDENTIFIER '.' identifier ambiguousArgumentsOrParameterList
     ;
 
     // вызвать именованный конструктор или другой конструктор 
