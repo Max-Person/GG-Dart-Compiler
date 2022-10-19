@@ -14,13 +14,15 @@ void yyerror(char const *s) {
 }
 %}
 
+%code requires{ #include "structures.h" }
+
 
 %union {
     long long intval;
     double doubleval;
     char *stringval;
-    char *identifier;
     bool boolval;
+    identifier_node* _identifier_node;
 }
 
 %right '=' AND_ASSIGN OR_ASSIGN XOR_ASSIGN SHIFTL_ASSIGN SHIFTR_ASSIGN TSHIFTR_ASSIGN MUL_ASSIGN DIV_ASSIGN TRUNC_DIV_ASSIGN MOD_ASSIGN ADD_ASSIGN SUB_ASSIGN IFNULL_ASSIGN
@@ -43,7 +45,7 @@ void yyerror(char const *s) {
 %token <doubleval>DOUBLE_LITERAL
 %token <stringval>STRING_LITERAL
 %token <boolval> BOOLEAN_LITERAL
-%token <identifier>IDENTIFIER
+%token <_identifier_node>IDENTIFIER
 %token END
 
 %token INC                          // ++
@@ -87,29 +89,29 @@ void yyerror(char const *s) {
 %token WHILE
 %token WITH
 
-%token ABSTRACT
-%token AS
-%token COVARIANT
-%token DEFERRED
-%token DYNAMIC
-%token EXPORT
-%token EXTERNAL
-%token EXTENSION
-%token FACTORY
-%token FUNCTION
-%token GET
-%token IMPLEMENTS
-%token IMPORT
-%token INTERFACE
-%token LATE
-%token LIBRARY
-%token MIXIN
-%token OPERATOR
-%token PART
-%token REQUIRED
-%token SET
-%token STATIC
-%token TYPEDEF
+%token<_identifier_node> ABSTRACT
+%token<_identifier_node> AS
+%token<_identifier_node> COVARIANT
+%token<_identifier_node> DEFERRED
+%token<_identifier_node> DYNAMIC
+%token<_identifier_node> EXPORT
+%token<_identifier_node> EXTERNAL
+%token<_identifier_node> EXTENSION
+%token<_identifier_node> FACTORY
+%token<_identifier_node> FUNCTION
+%token<_identifier_node> GET
+%token<_identifier_node> IMPLEMENTS
+%token<_identifier_node> IMPORT
+%token<_identifier_node> INTERFACE
+%token<_identifier_node> LATE
+%token<_identifier_node> LIBRARY
+%token<_identifier_node> MIXIN
+%token<_identifier_node> OPERATOR
+%token<_identifier_node> PART
+%token<_identifier_node> REQUIRED
+%token<_identifier_node> SET
+%token<_identifier_node> STATIC
+%token<_identifier_node> TYPEDEF
 
 %token ASYNC
 %token HIDE
@@ -123,10 +125,12 @@ void yyerror(char const *s) {
 %token DOUBLE_DOT
 %token VOPROS_DOT
 
-
 %precedence PRIMARY
 
 %left INTERPOLATION_CONCAT
+
+%nterm<_identifier_node>builtInIdentifier
+%nterm<_identifier_node>identifier
 
 %%
     //-------------- ВЕРХНИЙ УРОВЕНЬ --------------
@@ -153,33 +157,33 @@ void yyerror(char const *s) {
 
     //-------------- БАЗОВЫЕ ПОНЯТИЯ --------------
 
-    builtInIdentifier: ABSTRACT            {}
-        | AS                               {}
-        | COVARIANT                        {}
-        | DEFERRED                         {}
-        | DYNAMIC                          {}
-        | EXPORT                           {}
-        | EXTERNAL                         {}
-        | EXTENSION                        {}
-        | FACTORY                          {}
-        | FUNCTION                         {}
-        | GET                              {}
-        | IMPLEMENTS                       {}
-        | IMPORT                           {}
-        | INTERFACE                        {}
-        | LATE                             {}
-        | LIBRARY                          {}
-        | MIXIN                            {}
-        | OPERATOR                         {}
-        | PART                             {}
-        | REQUIRED                         {}
-        | SET                              {}
-        | STATIC                           {}
-        | TYPEDEF                          {}
+    builtInIdentifier: ABSTRACT            {$$ = $1;}
+        | AS                               {$$ = $1;}
+        | COVARIANT                        {$$ = $1;}
+        | DEFERRED                         {$$ = $1;}
+        | DYNAMIC                          {$$ = $1;}
+        | EXPORT                           {$$ = $1;}
+        | EXTERNAL                         {$$ = $1;}
+        | EXTENSION                        {$$ = $1;}
+        | FACTORY                          {$$ = $1;}
+        | FUNCTION                         {$$ = $1;}
+        | GET                              {$$ = $1;}
+        | IMPLEMENTS                       {$$ = $1;}
+        | IMPORT                           {$$ = $1;}
+        | INTERFACE                        {$$ = $1;}
+        | LATE                             {$$ = $1;}
+        | LIBRARY                          {$$ = $1;}
+        | MIXIN                            {$$ = $1;}
+        | OPERATOR                         {$$ = $1;}
+        | PART                             {$$ = $1;}
+        | REQUIRED                         {$$ = $1;}
+        | SET                              {$$ = $1;}
+        | STATIC                           {$$ = $1;}
+        | TYPEDEF                          {$$ = $1;}
     ;
 
-    identifier: IDENTIFIER                 {}
-        | builtInIdentifier                {}
+    identifier: IDENTIFIER                 {$$ = $1;}
+        | builtInIdentifier                {$$ = $1;}
     ;
 
     identifierList: identifier
@@ -369,19 +373,14 @@ void yyerror(char const *s) {
         | IF '(' expr ')' statement ELSE statement
     ;
 
-    switchCase: CASE expr ':' statement
-        | CASE expr ':' statements
+    switchCase: CASE expr ':' statements
     ;
 
-    switchCases: switchCase switchCase
+    switchCases: switchCase
         | switchCases switchCase
     ;
 
-    switchStatement: SWITCH '(' expr ')' '{' switchCase '}'
-        | SWITCH '(' expr ')' '{' switchCases '}'
-        | SWITCH '(' expr ')' '{' switchCase DEFAULT ':' statement '}'
-        | SWITCH '(' expr ')' '{' switchCases  DEFAULT ':' statement '}'
-        | SWITCH '(' expr ')' '{' switchCase DEFAULT ':' statements '}'
+    switchStatement: SWITCH '(' expr ')' '{' switchCases '}'
         | SWITCH '(' expr ')' '{' switchCases  DEFAULT ':' statements '}'
     ;
 
@@ -430,7 +429,7 @@ void yyerror(char const *s) {
         | statementBlock
     ;
 
-    statements: statement statement
+    statements: statement
         | statements statement
     ;
 
@@ -457,6 +456,7 @@ void yyerror(char const *s) {
     ambiguousArgumentsOrParameterList: '(' identifierList ')'
         | '(' identifierList ',' ')'
         | '(' ')'
+    ;
 
     arguments: '(' exprList ',' ')'
         | '(' exprList ')'
@@ -606,7 +606,7 @@ void yyerror(char const *s) {
 
 %%
 
-/* int main(int argc, char** argv) {
+int main(int argc, char** argv) {
     if (argc > 1) {
         yyin = fopen(argv[1], "r");
         yyparse();
@@ -615,4 +615,4 @@ void yyerror(char const *s) {
     else {
         yyerror("Not found file");
     }
-} */
+}
