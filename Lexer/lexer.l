@@ -17,11 +17,23 @@
 #define YY_DECL int yylex()
 
 void _print(const std::string & message)         {
-    std::cout << message << std::endl;
+    std::cout << "lex:" << message << std::endl;
 }
 
 std::string yytext_str() {
     return std::string(yytext);
+}
+
+char* stdToCstr(std::string str) {
+    char* cstr = (char*) malloc((str.length()+1)*(sizeof(char)));
+    strcpy(cstr, str.c_str());
+    return cstr;
+}
+
+char* copyCstr(char* str) {
+    char* cstr = (char*) malloc((strlen(str)+1)*(sizeof(char)));
+    strcpy(cstr, str);
+    return cstr;
 }
 
 int delayedReturn = -100;
@@ -117,8 +129,7 @@ int multiLineCommentNesting;
     _print("STR INTERPOLATION CONCAT (START)");
     yy_push_state(STR_INTERPOLATION);
 
-    yylval.stringval=(char *)malloc(strlen(stringLiteral)+1);
-    strcpy(yylval.stringval, stringLiteral);
+    yylval.stringval = stdToCstr(stringLiteral);
     delayedReturn = INTERPOLATION_CONCAT;    
     return STRING_LITERAL;
 }
@@ -141,8 +152,7 @@ int multiLineCommentNesting;
     _print("STR INTERPOLATION CONCAT (START)");
     yy_push_state(SIMPLE_INTERPOLATION);
     
-    yylval.stringval=(char *)malloc(strlen(stringLiteral)+1);
-    strcpy(yylval.stringval, stringLiteral);
+    yylval.stringval = stdToCstr(stringLiteral);
     delayedReturn = INTERPOLATION_CONCAT;    
     return STRING_LITERAL;
 }
@@ -153,8 +163,7 @@ int multiLineCommentNesting;
     _print("STR INTERPOLATION CONCAT (END)");
     yy_pop_state();
 
-    yylval.stringval=(char *)malloc(strlen(yytext)+1);
-    strcpy(yylval.stringval, yytext);
+    yylval._identifier_node=create_identifier_node(false, copyCstr(yytext));
     delayedReturn = INTERPOLATION_CONCAT;    
     return IDENTIFIER; // мб надо вернуть IDENTIFIER ??? Конечно !!! Невероятно!!!!
 }
@@ -163,16 +172,14 @@ int multiLineCommentNesting;
     _print("STRING LITERAL: " + stringLiteral);
     yy_pop_state();
 
-    yylval.stringval=(char *)malloc(strlen(stringLiteral)+1);
-    strcpy(yylval.stringval, stringLiteral);    
+    yylval.stringval = stdToCstr(stringLiteral);    
     return STRING_LITERAL;
 }
 <SINGLE_LINE_STR_DQ>\"                                                         {
     _print("STRING LITERAL: " + stringLiteral);
     yy_pop_state();
 
-    yylval.stringval=(char *)malloc(strlen(stringLiteral)+1);
-    strcpy(yylval.stringval, stringLiteral);    
+    yylval.stringval = stdToCstr(stringLiteral);    
     return STRING_LITERAL;
 }
 <SINGLE_LINE_STR_SQ,SINGLE_LINE_STR_DQ>[\n\r]                                  {
@@ -184,16 +191,14 @@ int multiLineCommentNesting;
     _print("STRING LITERAL: " + stringLiteral);
     yy_pop_state();
 
-    yylval.stringval=(char *)malloc(strlen(stringLiteral)+1);
-    strcpy(yylval.stringval, stringLiteral);    
+    yylval.stringval = stdToCstr(stringLiteral);    
     return STRING_LITERAL;
 }
 <MULTI_LINE_STR_DQ>\"\"\"                                                      {
     _print("STRING LITERAL: " + stringLiteral);
     yy_pop_state();
 
-    yylval.stringval=(char *)malloc(strlen(stringLiteral)+1);
-    strcpy(yylval.stringval, stringLiteral);    
+    yylval.stringval = stdToCstr(stringLiteral);    
     return STRING_LITERAL;
 }
 <SINGLE_LINE_STR_SQ,SINGLE_LINE_STR_DQ,MULTI_LINE_STR_SQ,MULTI_LINE_STR_DQ,MULTI_LINE_RAW_STR_SQ,MULTI_LINE_RAW_STR_DQ><<EOF>>                                                      {
@@ -206,8 +211,7 @@ r\'\'\'                               {stringLiteral.clear(); BEGIN(MULTI_LINE_R
 <MULTI_LINE_RAW_STR_SQ>\'\'\'         {
     _print("STRING LITERAL: " + stringLiteral); BEGIN(INITIAL);
     
-    yylval.stringval=(char *)malloc(strlen(stringLiteral)+1);
-    strcpy(yylval.stringval, stringLiteral);
+    yylval.stringval = stdToCstr(stringLiteral);
     return STRING_LITERAL;
 }
 
@@ -218,8 +222,7 @@ r\"\"\"                               {stringLiteral.clear(); BEGIN(MULTI_LINE_R
 <MULTI_LINE_RAW_STR_DQ>\"\"\"         {
     _print("STRING LITERAL: " + stringLiteral); BEGIN(INITIAL);
 
-    yylval.stringval=(char *)malloc(strlen(tmp)+1);
-    strcpy(yylval.stringval, tmp);
+    yylval.stringval = stdToCstr(stringLiteral);
     return STRING_LITERAL;
 }
 
@@ -231,8 +234,7 @@ r\'[^\'\r\n]*\'|r\"[^\"\r\r\n]*\"     {
     tmp.erase(tmp.size() - 1, 1);
     _print("RAW SINGLE LINE STRING: " + tmp);
 
-    yylval.stringval=(char *)malloc(strlen(tmp)+1);
-    strcpy(yylval.stringval, tmp);
+    yylval.stringval = stdToCstr(tmp);
     return STRING_LITERAL;
 }
 
@@ -259,7 +261,8 @@ extends         {_print("Keyword EXTENDS: " + yytext_str()); return EXTENDS;}
 false           {
     _print("Keyword FALSE: " + yytext_str());
     yylval.boolval=false;
-    return BOOLEAN_LITERAL;}
+    return BOOLEAN_LITERAL;
+}
 final           {_print("Keyword FINAL: " + yytext_str()); return FINAL;}
 finally         {_print("Keyword FINALLY: " + yytext_str()); return FINALLY;}
 
@@ -278,36 +281,38 @@ throw           {_print("Keyword THROW: " + yytext_str()); return THROW;}
 true            {
     _print("Keyword TRUE: " + yytext_str()); 
     yylval.boolval=true;
-    return BOOLEAN_LITERAL;}
+    return BOOLEAN_LITERAL;
+}
 try             {_print("Keyword TRY: " + yytext_str()); return TRY;}
 var             {_print("Keyword VAR: " + yytext_str()); return VAR;}
 void            {_print("Keyword VOID: " + yytext_str()); return VOID;}
 while           {_print("Keyword WHILE: " + yytext_str()); return WHILE;}
 with            {_print("Keyword WITH: " + yytext_str()); return WITH;}
 
-abstract        {_print("Built-in identifier ABSTRACT: " + yytext_str()); return ABSTRACT;}
-as              {_print("Built-in identifier AS: " + yytext_str()); return AS;}
-covariant       {_print("Built-in identifier COVARIANT: " + yytext_str()); return COVARIANT;}
-deferred        {_print("Built-in identifier DEFERRED: " + yytext_str()); return DEFERRED;}
-dynamic         {_print("Built-in identifier DYNAMIC: " + yytext_str()); return DYNAMIC;}
-export          {_print("Built-in identifier EXPORT: " + yytext_str()); return EXPORT;}
-external        {_print("Built-in identifier EXTERNAL: " + yytext_str()); return EXTERNAL;}
-extension       {_print("Built-in identifier EXTENSION: " + yytext_str()); return EXTENSION;}
-factory         {_print("Built-in identifier FACTORY: " + yytext_str()); return FACTORY;}
-Function        {_print("Built-in identifier FUNCTION: " + yytext_str()); return FUNCTION;}
-get             {_print("Built-in identifier GET: " + yytext_str()); return GET;}
-implements      {_print("Built-in identifier IMPLEMENTS: " + yytext_str()); return IMPLEMENTS;}
-import          {_print("Built-in identifier IMPORT: " + yytext_str()); return IMPORT;}
-interface       {_print("Built-in identifier INTERFACE: " + yytext_str()); return INTERFACE;}
-late            {_print("Built-in identifier LATE: " + yytext_str()); return LATE;}
-library         {_print("Built-in identifier LIBRARY: " + yytext_str()); return LIBRARY;}
-mixin           {_print("Built-in identifier MIXIN: " + yytext_str()); return MIXIN;}
-operator        {_print("Built-in identifier OPERATOR: " + yytext_str()); return OPERATOR;}
-part            {_print("Built-in identifier PART: " + yytext_str()); return PART;}
-required        {_print("Built-in identifier REQUIRED: " + yytext_str()); return REQUIRED;}
-set             {_print("Built-in identifier SET: " + yytext_str()); return SET;}
-static          {_print("Built-in identifier STATIC: " + yytext_str()); return STATIC;}
-typedef         {_print("Built-in identifier TYPEDEF: " + yytext_str()); return TYPEDEF;}
+abstract        {_print("Built-in identifier ABSTRACT: " + yytext_str());   yylval._identifier_node=create_identifier_node(true, (char*)"abstract"); return ABSTRACT;}
+as              {_print("Built-in identifier AS: " + yytext_str());         yylval._identifier_node=create_identifier_node(true, (char*)"as"); return AS;}
+covariant       {_print("Built-in identifier COVARIANT: " + yytext_str());  yylval._identifier_node=create_identifier_node(true, (char*)"covariant"); return COVARIANT;}
+deferred        {_print("Built-in identifier DEFERRED: " + yytext_str());   yylval._identifier_node=create_identifier_node(true, (char*)"deferred"); return DEFERRED;}
+dynamic         {_print("Built-in identifier DYNAMIC: " + yytext_str());    yylval._identifier_node=create_identifier_node(true, (char*)"dynamic"); return DYNAMIC;}
+export          {_print("Built-in identifier EXPORT: " + yytext_str());     yylval._identifier_node=create_identifier_node(true, (char*)"export"); return EXPORT;}
+external        {_print("Built-in identifier EXTERNAL: " + yytext_str());   yylval._identifier_node=create_identifier_node(true, (char*)"external"); return EXTERNAL;}
+extension       {_print("Built-in identifier EXTENSION: " + yytext_str());  yylval._identifier_node=create_identifier_node(true, (char*)"extension"); return EXTENSION;}
+factory         {_print("Built-in identifier FACTORY: " + yytext_str());    yylval._identifier_node=create_identifier_node(true, (char*)"factory"); return FACTORY;}
+Function        {_print("Built-in identifier FUNCTION: " + yytext_str());   yylval._identifier_node=create_identifier_node(true, (char*)"Function"); return FUNCTION;}
+get             {_print("Built-in identifier GET: " + yytext_str());        yylval._identifier_node=create_identifier_node(true, (char*)"get"); return GET;}
+implements      {_print("Built-in identifier IMPLEMENTS: " + yytext_str()); yylval._identifier_node=create_identifier_node(true, (char*)"implements"); return IMPLEMENTS;}
+import          {_print("Built-in identifier IMPORT: " + yytext_str());     yylval._identifier_node=create_identifier_node(true, (char*)"import"); return IMPORT;}
+interface       {_print("Built-in identifier INTERFACE: " + yytext_str());  yylval._identifier_node=create_identifier_node(true, (char*)"interface"); return INTERFACE;}
+late            {_print("Built-in identifier LATE: " + yytext_str());       yylval._identifier_node=create_identifier_node(true, (char*)"late"); return LATE;}
+library         {_print("Built-in identifier LIBRARY: " + yytext_str());    yylval._identifier_node=create_identifier_node(true, (char*)"library"); return LIBRARY;}
+mixin           {_print("Built-in identifier MIXIN: " + yytext_str());      yylval._identifier_node=create_identifier_node(true, (char*)"mixin"); return MIXIN;}
+operator        {_print("Built-in identifier OPERATOR: " + yytext_str());   yylval._identifier_node=create_identifier_node(true, (char*)"operator"); return OPERATOR;}
+part            {_print("Built-in identifier PART: " + yytext_str());       yylval._identifier_node=create_identifier_node(true, (char*)"part"); return PART;}
+required        {_print("Built-in identifier REQUIRED: " + yytext_str());   yylval._identifier_node=create_identifier_node(true, (char*)"required"); return REQUIRED;}
+set             {_print("Built-in identifier SET: " + yytext_str());        yylval._identifier_node=create_identifier_node(true, (char*)"set"); return SET;}
+static          {_print("Built-in identifier STATIC: " + yytext_str());     yylval._identifier_node=create_identifier_node(true, (char*)"static"); return STATIC;}
+typedef         {_print("Built-in identifier TYPEDEF: " + yytext_str());    yylval._identifier_node=create_identifier_node(true, (char*)"typedef"); return TYPEDEF;}
+
 async           {_print("Contextual keyword ASYNC: " + yytext_str()); return ASYNC;}
 hide            {_print("Contextual keyword HIDE: " + yytext_str()); return HIDE;}
 of              {_print("Contextual keyword OF: " + yytext_str()); return OF;}
@@ -322,8 +327,7 @@ yield           {_print("Contextual keyword YIELD: " + yytext_str()); return YIE
 
 ([_$]|{LETTER})([_$]|{LETTER}|{DIGIT})*     {
     _print("IDENTIFIER: " + yytext_str());
-    yylval.stringval=(char *) malloc(strlen(yytext) + 1);
-    strcpy(yylval.stringval, yytext);
+    yylval._identifier_node=create_identifier_node(false, copyCstr(yytext));
     return IDENTIFIER;
 }    
 
@@ -455,7 +459,7 @@ yield           {_print("Contextual keyword YIELD: " + yytext_str()); return YIE
 
 %%
 
-int main(int argc, char** argv)         {
+/* int main(int argc, char** argv)         {
     if (argc > 1)           {
         fopen_s(&yyin, argv[1], "r");
         yylex();
@@ -463,4 +467,4 @@ int main(int argc, char** argv)         {
     else            {
         _print("File not found");
     }
-}
+} */

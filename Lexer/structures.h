@@ -1,3 +1,15 @@
+#include <stdlib.h>
+
+struct identifier_node {
+    bool isBuiltin;
+    char* stringval;
+
+    identifier_node* next = NULL;
+};
+
+
+identifier_node* create_identifier_node(bool isBuiltin, char* stringval);
+
 enum stmt_type{
     expr_statement,
     variable_declaration_statement,
