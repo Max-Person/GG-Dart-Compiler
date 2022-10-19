@@ -16,15 +16,14 @@ void yyerror(char const *s) {
 
 %code requires{ #include "structures.h" }
 
+%token END
+%token INC
+%token DEC
+%right '?'
+%right ';'
+%right ':'
 
-%union {
-    long long intval;
-    double doubleval;
-    char *stringval;
-    bool boolval;
-    identifier_node* _identifier_node;
-}
-
+//операторы
 %right '=' AND_ASSIGN OR_ASSIGN XOR_ASSIGN SHIFTL_ASSIGN SHIFTR_ASSIGN TSHIFTR_ASSIGN MUL_ASSIGN DIV_ASSIGN TRUNC_DIV_ASSIGN MOD_ASSIGN ADD_ASSIGN SUB_ASSIGN IFNULL_ASSIGN
 %left IFNULL
 %left OR
@@ -40,97 +39,46 @@ void yyerror(char const *s) {
 %nonassoc UMINUS '!' '~' PREFIX_INC PREFIX_DEC AWAIT
 %nonassoc '.' '(' ')' '[' ']' POSTFIX_INC POSTFIX_DEC
 
-
+//литералы
 %token <intval>INTEGER_LITERAL
 %token <doubleval>DOUBLE_LITERAL
 %token <stringval>STRING_LITERAL
 %token <boolval> BOOLEAN_LITERAL
 %token <_identifier_node>IDENTIFIER
-%token END
 
-%token INC                          // ++
-%token DEC                          // --
+//Ключевые слова
+%token ASSERT BREAK CASE CATCH CLASS CONST CONTINUE DEFAULT DO ELSE ENUM EXTENDS FALSE FINAL FINALLY FOR IF IN IS NEW NULL_ RETHROW RETURN SUPER SWITCH THIS THROW TRUE TRY VAR VOID WHILE WITH
 
-%right '?'
-%right ';'
-%right ':'
+//Built-in идентификаторы
+%token<_identifier_node> ABSTRACT AS COVARIANT DEFERRED DYNAMIC EXPORT EXTERNAL EXTENSION FACTORY FUNCTION GET IMPLEMENTS IMPORT INTERFACE LATE LIBRARY MIXIN OPERATOR PART REQUIRED SET STATIC TYPEDEF
 
-%token ASSERT
-%token BREAK
-%token CASE
-%token CATCH
-%token CLASS
-%token CONST
-%token CONTINUE
-%token DEFAULT
-%token DO
-%token ELSE
-%token ENUM
-%token EXTENDS
-%token FALSE
-%token FINAL
-%token FINALLY
-%token FOR
-%token IF
-%token IN
-%token IS
-%token NEW
-%token NULL_
-%token RETHROW
-%token RETURN
-%token SUPER
-%token SWITCH
-%token THIS
-%token THROW
-%token TRUE
-%token TRY
-%token VAR
-%token VOID
-%token WHILE
-%token WITH
+//"другие" индентификаторы - надо записать в обычные
+%token ASYNC HIDE OF ON SHOW SYNC YIELD FUNC_ARROW DOUBLE_DOT VOPROS_DOT
 
-%token<_identifier_node> ABSTRACT
-%token<_identifier_node> AS
-%token<_identifier_node> COVARIANT
-%token<_identifier_node> DEFERRED
-%token<_identifier_node> DYNAMIC
-%token<_identifier_node> EXPORT
-%token<_identifier_node> EXTERNAL
-%token<_identifier_node> EXTENSION
-%token<_identifier_node> FACTORY
-%token<_identifier_node> FUNCTION
-%token<_identifier_node> GET
-%token<_identifier_node> IMPLEMENTS
-%token<_identifier_node> IMPORT
-%token<_identifier_node> INTERFACE
-%token<_identifier_node> LATE
-%token<_identifier_node> LIBRARY
-%token<_identifier_node> MIXIN
-%token<_identifier_node> OPERATOR
-%token<_identifier_node> PART
-%token<_identifier_node> REQUIRED
-%token<_identifier_node> SET
-%token<_identifier_node> STATIC
-%token<_identifier_node> TYPEDEF
-
-%token ASYNC
-%token HIDE
-%token OF
-%token ON
-%token SHOW
-%token SYNC
-// AWAIT жив
-%token YIELD
-%token FUNC_ARROW
-%token DOUBLE_DOT
-%token VOPROS_DOT
-
+//служебное
 %precedence PRIMARY
-
 %left INTERPOLATION_CONCAT
 
-%nterm<_identifier_node>builtInIdentifier
-%nterm<_identifier_node>identifier
+//---
+
+%union {
+    long long intval;
+    double doubleval;
+    char *stringval;
+    bool boolval;
+    
+    identifier_node* _identifier_node;
+    ambiguousArgumentsOrParameterList_node* _ambiguousArgumentsOrParameterList_node;
+    arguments_node* _arguments_node;
+    selector_node* _selector_node;
+    expr_node* _expr;
+}
+
+%nterm<_identifier_node>identifier builtInIdentifier identifierList IDDotList idDotList
+%nterm<_ambiguousArgumentsOrParameterList_node>ambiguousArgumentsOrParameterList
+%nterm<_arguments_node>arguments
+%nterm<_selector_node>assignableSelector selector
+%nterm<_expr>string primary selectorExpr postfixExpr exprNotAssign expr exprList
 
 %%
     //-------------- ВЕРХНИЙ УРОВЕНЬ --------------
@@ -186,108 +134,110 @@ void yyerror(char const *s) {
         | builtInIdentifier                {$$ = $1;}
     ;
 
-    identifierList: identifier
-        | identifierList ',' identifier
+    identifierList: identifier              {$$ = $1;}
+        | identifierList ',' identifier     {$$ = identifierLists_add($1, $3);}
     ;
 
-    string: string INTERPOLATION_CONCAT expr INTERPOLATION_CONCAT STRING_LITERAL %prec INTERPOLATION_CONCAT {}
-        | STRING_LITERAL                    {}
+    string: string INTERPOLATION_CONCAT expr INTERPOLATION_CONCAT STRING_LITERAL %prec INTERPOLATION_CONCAT     {$$ = create_strInterpolation_expr_node($1, $3, $5);}
+        | STRING_LITERAL                    {$$ = create_strlit_expr_node($1);}
     ;
 
     //-------------- ВЫРАЖЕНИЯ --------------
 
-    primary: THIS                          {}
-        | SUPER
-        | NULL_
-        | INTEGER_LITERAL                  {}
-        | DOUBLE_LITERAL                   {}
-        | BOOLEAN_LITERAL                  {}
-        | string                       %prec PRIMARY{}
-        | '(' expr ')'
+    primary: THIS                           {$$ = create_this_expr_node();}
+        | SUPER                             {$$ = create_super_expr_node();}
+        | NULL_                             {$$ = create_null_expr_node();}
+        | INTEGER_LITERAL                   {$$ = create_intlit_expr_node($1);}
+        | DOUBLE_LITERAL                    {$$ = create_doublelit_expr_node($1);}
+        | BOOLEAN_LITERAL                   {$$ = create_boollit_expr_node($1);}
+        | string            %prec PRIMARY   {$$ = $1;}
+        | '(' expr ')'                      {$$ = $2;}
     ;
 
-    assignableSelector: '[' expr ']'
-        | '.' idDotList
-        | '.' IDDotList
+    assignableSelector: '[' expr ']'        {$$ = create_brackets_selector_node($2);}
+        | '.' idDotList                     {$$ = create_access_selector_node($2);} 
+        | '.' IDDotList                     {$$ = create_access_selector_node($2);}
     ;
 
-    selector: '.' identifier arguments 
-        | '.' identifier ambiguousArgumentsOrParameterList
-        | assignableSelector
+    selector: '.' identifier arguments      {$$ = create_methodCall_selector_node($2, $3);}
+        | '.' identifier ambiguousArgumentsOrParameterList  {$$ = create_methodCall_selector_node($2, convert_ambiguous_to_arguments($3));}
+        | assignableSelector                {$$ = $1;}
     ;
 
-    selectorExpr: idDotList arguments
-        | idDotList ambiguousArgumentsOrParameterList
-        | IDDotList arguments
-        | IDDotList ambiguousArgumentsOrParameterList
-        | identifier arguments
-        | identifier ambiguousArgumentsOrParameterList
-        | NEW IDDotList arguments
-        | NEW IDDotList ambiguousArgumentsOrParameterList
-        | NEW IDENTIFIER arguments
-        | NEW IDENTIFIER ambiguousArgumentsOrParameterList
-        | CONST IDDotList arguments
-        | CONST IDDotList ambiguousArgumentsOrParameterList
-        | CONST IDENTIFIER arguments
-        | CONST IDENTIFIER ambiguousArgumentsOrParameterList
-        | primary selector
-        | selectorExpr selector
+    selectorExpr: idDotList arguments                           {$$ = create_call_expr_node($1, $2);}
+        | idDotList ambiguousArgumentsOrParameterList           {$$ = create_call_expr_node($1, convert_ambiguous_to_arguments($2));}
+        | IDDotList arguments                                   {$$ = create_call_expr_node($1, $2);}
+        | IDDotList ambiguousArgumentsOrParameterList           {$$ = create_call_expr_node($1, convert_ambiguous_to_arguments($2));}
+        | identifier arguments                                  {$$ = create_call_expr_node($1, $2);}
+        | identifier ambiguousArgumentsOrParameterList          {$$ = create_call_expr_node($1, convert_ambiguous_to_arguments($2));}
+        | idDotList '[' expr ']'                                {$$ = create_selector_expr_node(create_idAccess_expr_node($1), create_brackets_selector_node($3));}
+        | IDDotList '[' expr ']'                                {$$ = create_selector_expr_node(create_idAccess_expr_node($1), create_brackets_selector_node($3));}
+        | identifier '[' expr ']'                               {$$ = create_selector_expr_node(create_idAccess_expr_node($1), create_brackets_selector_node($3));}
+        | NEW IDDotList arguments                               {$$ = create_constructNew_expr_node($2, $3);}
+        | NEW IDDotList ambiguousArgumentsOrParameterList       {$$ = create_constructNew_expr_node($2, convert_ambiguous_to_arguments($3));}
+        | NEW IDENTIFIER arguments                              {$$ = create_constructNew_expr_node($2, $3);}
+        | NEW IDENTIFIER ambiguousArgumentsOrParameterList      {$$ = create_constructNew_expr_node($2, convert_ambiguous_to_arguments($3));}
+        | CONST IDDotList arguments                             {$$ = create_constructConst_expr_node($2, $3);}
+        | CONST IDDotList ambiguousArgumentsOrParameterList     {$$ = create_constructConst_expr_node($2, convert_ambiguous_to_arguments($3));}
+        | CONST IDENTIFIER arguments                            {$$ = create_constructConst_expr_node($2, $3);}
+        | CONST IDENTIFIER ambiguousArgumentsOrParameterList    {$$ = create_constructConst_expr_node($2, convert_ambiguous_to_arguments($3));}
+        | primary                                               {$$ = $1;}
+        | selectorExpr selector                                 {$$ = create_selector_expr_node($1, $2);}
     ;
 
     //Можно вставить и в exprNotAssign, но по какой-то причине это вызывает конфликты c POSTFIX_INC/DEC, хотя приоритеты определены.
-    postfixExpr: primary
-        | idDotList      
-        | IDDotList  
-        | identifier              
-        | selectorExpr
-        | postfixExpr INC %prec POSTFIX_INC                    {}
-        | postfixExpr DEC %prec POSTFIX_DEC                    {}
+    postfixExpr: idDotList                      {$$ = create_idAccess_expr_node($1);}
+        | IDDotList                             {$$ = create_idAccess_expr_node($1);}
+        | identifier                            {$$ = create_idAccess_expr_node($1);}
+        | selectorExpr                          {$$ = $1;}
+        | postfixExpr INC %prec POSTFIX_INC     {$$ = create_operator_expr_node(postfix_inc, $1, NULL);}
+        | postfixExpr DEC %prec POSTFIX_DEC     {$$ = create_operator_expr_node(postfix_dec, $1, NULL);}
     ;
 
     //Можно бы указать exprNotAssign вместо expr, но это не имеет значения из-за приоритетов
-    exprNotAssign: postfixExpr
+    exprNotAssign: postfixExpr          {$$ = $1;}
         /* | expr '?' expr ':' expr           {} */
-        | expr IFNULL expr                 {}
-        | expr OR expr                     {}
-        | expr AND expr                    {}
-        | expr EQ expr                     {}
-        | expr NEQ expr                    {}
-        | expr '>' expr                    {}
-        | expr '<' expr                    {}
-        | expr GREATER_EQ expr             {}
-        | expr LESS_EQ expr                {}
-        | expr '|' expr                    {}
-        | expr '^' expr                    {}
-        | expr '&' expr                    {}
-        | expr '+' expr                                 {}
-        | expr '-' expr                                 {}
-        | expr '*' expr                                 {}
-        | expr '/' expr                                 {}
-        | expr '%' expr                                 {}
-        | expr TRUNCDIV  expr                           {}
-        | '-'  expr %prec UMINUS                        {}
-        | '!'  expr                                     {}
-        | '~'  expr                                     {}
-        | INC expr %prec PREFIX_INC                     {}
-        | DEC expr %prec PREFIX_DEC                     {}
+        | expr IFNULL expr              {$$ = create_operator_expr_node(ifnull, $1, $3);}
+        | expr OR expr                  {$$ = create_operator_expr_node(_or, $1, $3);}
+        | expr AND expr                 {$$ = create_operator_expr_node(_and, $1, $3);}
+        | expr EQ expr                  {$$ = create_operator_expr_node(eq, $1, $3);}
+        | expr NEQ expr                 {$$ = create_operator_expr_node(neq, $1, $3);}
+        | expr '>' expr                 {$$ = create_operator_expr_node(greater, $1, $3);}
+        | expr '<' expr                 {$$ = create_operator_expr_node(less, $1, $3);}
+        | expr GREATER_EQ expr          {$$ = create_operator_expr_node(greater_eq, $1, $3);}
+        | expr LESS_EQ expr             {$$ = create_operator_expr_node(less_eq, $1, $3);}
+        | expr '|' expr                 {$$ = create_operator_expr_node(b_or, $1, $3);}
+        | expr '^' expr                 {$$ = create_operator_expr_node(b_xor, $1, $3);}
+        | expr '&' expr                 {$$ = create_operator_expr_node(b_and, $1, $3);}
+        | expr '+' expr                 {$$ = create_operator_expr_node(add, $1, $3);}
+        | expr '-' expr                 {$$ = create_operator_expr_node(sub, $1, $3);}
+        | expr '*' expr                 {$$ = create_operator_expr_node(mul, $1, $3);}
+        | expr '/' expr                 {$$ = create_operator_expr_node(_div, $1, $3);}
+        | expr '%' expr                 {$$ = create_operator_expr_node(mod, $1, $3);}
+        | expr TRUNCDIV  expr           {$$ = create_operator_expr_node(truncdiv, $1, $3);}
+        | '-'  expr %prec UMINUS        {$$ = create_operator_expr_node(u_minus, $2, NULL);}
+        | '!'  expr                     {$$ = create_operator_expr_node(excl, $2, NULL);}
+        | '~'  expr                     {$$ = create_operator_expr_node(tilde, $2, NULL);}
+        | INC expr %prec PREFIX_INC     {$$ = create_operator_expr_node(prefix_inc, $2, NULL);}
+        | DEC expr %prec PREFIX_DEC     {$$ = create_operator_expr_node(prefix_dec, $2, NULL);}
     ;
 
-    expr: exprNotAssign                          {}
-        | expr '=' expr                    {}
-        | expr AND_ASSIGN expr             {} 
-        | expr OR_ASSIGN expr              {}
-        | expr XOR_ASSIGN expr             {}
-        | expr MUL_ASSIGN expr             {}
-        | expr DIV_ASSIGN expr             {}
-        | expr TRUNC_DIV_ASSIGN expr       {}
-        | expr MOD_ASSIGN expr             {}
-        | expr ADD_ASSIGN expr             {}
-        | expr SUB_ASSIGN expr             {}
-        | expr IFNULL_ASSIGN expr          {}
+    expr: exprNotAssign                    {$$ = $1;}
+        | expr '=' expr                    {$$ = create_operator_expr_node(assign, $1, $3);}
+        | expr AND_ASSIGN expr             {$$ = create_operator_expr_node(and_assign, $1, $3);} 
+        | expr OR_ASSIGN expr              {$$ = create_operator_expr_node(or_assign, $1, $3);}
+        | expr XOR_ASSIGN expr             {$$ = create_operator_expr_node(xor_assign, $1, $3);}
+        | expr MUL_ASSIGN expr             {$$ = create_operator_expr_node(mul_assign, $1, $3);}
+        | expr DIV_ASSIGN expr             {$$ = create_operator_expr_node(div_assign, $1, $3);}
+        | expr TRUNC_DIV_ASSIGN expr       {$$ = create_operator_expr_node(trunc_div_assign, $1, $3);}
+        | expr MOD_ASSIGN expr             {$$ = create_operator_expr_node(mod_assign, $1, $3);}
+        | expr ADD_ASSIGN expr             {$$ = create_operator_expr_node(add_assign, $1, $3);}
+        | expr SUB_ASSIGN expr             {$$ = create_operator_expr_node(sub_assign, $1, $3);}
+        | expr IFNULL_ASSIGN expr          {$$ = create_operator_expr_node(ifnull_assign, $1, $3);}
     ;
 
-    exprList: expr 
-        | exprList ',' expr
+    exprList: expr              {$$ = $1;}
+        | exprList ',' expr     {$$ = exprList_add($1, $3);}
     ;
 
     exprStatement: ';'                                  {}
@@ -296,15 +246,15 @@ void yyerror(char const *s) {
 
     //-------------- ТИПИЗАЦИЯ --------------
     
-    IDDotList: IDENTIFIER '.' IDENTIFIER
-        | IDDotList '.' IDENTIFIER
+    IDDotList: IDENTIFIER '.' IDENTIFIER    {$$ = identifierLists_add($1, $3);}
+        | IDDotList '.' IDENTIFIER          {$$ = identifierLists_add($1, $3);}
     ;
 
-    idDotList: builtInIdentifier '.' IDENTIFIER
-        | builtInIdentifier '.' builtInIdentifier
-        | IDDotList '.' builtInIdentifier
-        | idDotList '.' IDENTIFIER
-        | idDotList '.' builtInIdentifier
+    idDotList: builtInIdentifier '.' IDENTIFIER     {$$ = identifierLists_add($1, $3);}   
+        | builtInIdentifier '.' builtInIdentifier   {$$ = identifierLists_add($1, $3);}
+        | IDDotList '.' builtInIdentifier           {$$ = identifierLists_add($1, $3);}
+        | idDotList '.' IDENTIFIER                  {$$ = identifierLists_add($1, $3);}
+        | idDotList '.' builtInIdentifier           {$$ = identifierLists_add($1, $3);}
     ;
 
     typeName: IDENTIFIER
@@ -453,14 +403,13 @@ void yyerror(char const *s) {
         | normalFormalParameterList ',' normalFormalParameter
     ;
 
-    ambiguousArgumentsOrParameterList: '(' identifierList ')'
-        | '(' identifierList ',' ')'
-        | '(' ')'
+    ambiguousArgumentsOrParameterList: '(' identifierList ')'   {$$ = create_ambiguousArgumentsOrParameterList_node($2);}
+        | '(' identifierList ',' ')'                            {$$ = create_ambiguousArgumentsOrParameterList_node($2);}
+        | '(' ')'                                               {$$ = create_ambiguousArgumentsOrParameterList_node(NULL);}
     ;
 
-    arguments: '(' exprList ',' ')'
-        | '(' exprList ')'
-        /* | '(' ')' */
+    arguments: '(' exprList ',' ')'     {$$ = create_arguments_node($2);}
+        | '(' exprList ')'              {$$ = create_arguments_node($2);}
     ;
 
     functionSignature: type identifier formalParameterList
