@@ -72,6 +72,7 @@ void yyerror(char const *s) {
     arguments_node* _arguments_node;
     selector_node* _selector_node;
     expr_node* _expr;
+    type_node* _type_node;
 }
 
 %nterm<_identifier_node>identifier builtInIdentifier identifierList IDDotList idDotList
@@ -79,6 +80,7 @@ void yyerror(char const *s) {
 %nterm<_arguments_node>arguments
 %nterm<_selector_node>assignableSelector selector
 %nterm<_expr>string primary selectorExpr postfixExpr exprNotAssign expr exprList
+%nterm<_type_node>typeName typeNotVoid typeNotVoidList type
 
 %%
     //-------------- ВЕРХНИЙ УРОВЕНЬ --------------
@@ -257,21 +259,21 @@ void yyerror(char const *s) {
         | idDotList '.' builtInIdentifier           {$$ = identifierLists_add($1, $3);}
     ;
 
-    typeName: IDENTIFIER
-        | IDDotList
-        | DYNAMIC
+    typeName: IDENTIFIER    {$$ = create_named_type_node($1, false);}
+        | IDDotList         {$$ = create_named_type_node($1, false);}
+        | DYNAMIC           {$$ = create_dynamic_type_node(false);}
     ;
 
-    typeNotVoid: typeName
-        | typeName '?'
+    typeNotVoid: typeName   {$$ = $1;}
+        | typeName '?'      {$$ = type_node_makeNullable($1, true);}
     ; 
 
-    typeNotVoidList: typeNotVoid
-        | typeNotVoidList ',' typeNotVoid
+    typeNotVoidList: typeNotVoid                {$$ = $1;}
+        | typeNotVoidList ',' typeNotVoid       {$$ = typeList_add($1, $3);}
     ;
 
-    type: typeNotVoid
-        | VOID
+    type: typeNotVoid       {$$ = $1;}
+        | VOID              {$$ = create_void_type_node();}
     ;
 
     //finalConstVarOrType

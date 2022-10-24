@@ -176,3 +176,24 @@ stmt_node* create_if_node(struct expr_node* condition, struct stmt_node* body);
 stmt_node* create_break_node();
 stmt_node* create_continue_node();
 stmt_node* create_return_node(struct expr_node* returnExpr);
+
+enum type_type {
+    named,
+    dynamic,
+    _void,
+};
+struct type_node {
+    int id;
+
+    type_type type;
+    bool isNullable;
+
+    identifier_node* name;
+
+    type_node* next = NULL;
+};
+type_node* create_named_type_node(identifier_node* name, bool isNullable);
+type_node* create_dynamic_type_node(bool isNullable);
+type_node* create_void_type_node();
+type_node* type_node_makeNullable(type_node* node, bool isNullable);
+type_node* typeList_add(type_node* start, type_node* added);

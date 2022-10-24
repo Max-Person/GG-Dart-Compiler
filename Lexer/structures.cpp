@@ -320,3 +320,50 @@ stmt_node* create_break_node(){
 
     return node;
 }
+
+type_node* create_named_type_node(identifier_node* name, bool isNullable) {
+    type_node* node = (type_node*)malloc(sizeof(type_node));
+    node->id = newID();
+    node->next = NULL;
+
+    node->type = named;
+    node->name = name;
+    node->isNullable = isNullable;
+
+    return node;
+}
+type_node* create_dynamic_type_node(bool isNullable) {
+    type_node* node = (type_node*)malloc(sizeof(type_node));
+    node->id = newID();
+    node->next = NULL;
+
+    node->type = dynamic;
+    node->isNullable = isNullable;
+
+    return node;
+}
+type_node* create_void_type_node() {
+    type_node* node = (type_node*)malloc(sizeof(type_node));
+    node->id = newID();
+    node->next = NULL;
+
+    node->type = _void;
+
+    return node;
+}
+type_node* type_node_makeNullable(type_node* node, bool isNullable) {
+    if (node->type != _void) {
+        node->isNullable = isNullable;
+    }
+    return node;
+}
+type_node* typeList_add(type_node* start, type_node* added) {
+    type_node* cur = start;
+    while (cur->next != NULL) {
+        cur = cur->next;
+    }
+    added->next = NULL;
+    cur->next = added;
+
+    return start;
+}
