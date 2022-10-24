@@ -54,40 +54,33 @@ identifier_node* identifierLists_takeLast(identifier_node* start){
     return next;
 }
 
-ambiguousArgumentsOrParameterList_node* create_ambiguousArgumentsOrParameterList_node(identifier_node* argsOrParams) {
-    ambiguousArgumentsOrParameterList_node* node = (ambiguousArgumentsOrParameterList_node*)malloc(sizeof(ambiguousArgumentsOrParameterList_node));
-    node->id = newID();
-    
-    node->argsOrParams = argsOrParams;
-
-    printf("prs: ambiguousArgumentsOrParameterList_node created \n");
-
-    return node;
-}
-arguments_node* convert_ambiguous_to_arguments(ambiguousArgumentsOrParameterList_node* ambiguous) {
-    if (ambiguous->argsOrParams == NULL) {
-        return create_arguments_node(NULL);
+expr_node* convert_ambiguous_to_arguments(identifier_node* argsOrParams) {
+    if (argsOrParams == NULL) {
+        return NULL;
     }
-    
-    identifier_node* curId = ambiguous->argsOrParams;
+
+    identifier_node* curId = argsOrParams;
     expr_node* exprList = create_idAccess_expr_node(curId);
     while (curId->next != NULL) {
         curId = curId->next;
         exprList_add(exprList, create_idAccess_expr_node(curId));
     }
 
-    return create_arguments_node(exprList); //TODO
+    return exprList;
 }
+formalParameter_node* convert_ambiguous_to_parameters(identifier_node* argsOrParams) {
+    if (argsOrParams == NULL) {
+        return NULL;
+    }
 
-arguments_node* create_arguments_node(expr_node* args) {
-    arguments_node* node = (arguments_node*)malloc(sizeof(arguments_node));
-    node->id = newID();
+    identifier_node* curId = argsOrParams;
+    formalParameter_node* exprList = create_normal_formalParameter_node(curId);
+    while (curId->next != NULL) {
+        curId = curId->next;
+        formalParameterList_add(exprList, create_normal_formalParameter_node(curId));
+    }
 
-    node->args = args;
-
-    printf("prs: arguments_node created \n");
-
-    return node;
+    return exprList;
 }
 
 selector_node* create_brackets_selector_node(expr_node* inBrackets){
@@ -112,7 +105,7 @@ selector_node* create_access_selector_node(identifier_node* accessList){
 
     return node;
 }
-selector_node* create_methodCall_selector_node(identifier_node* accessList, arguments_node* callArguments){
+selector_node* create_methodCall_selector_node(identifier_node* accessList, expr_node* callArguments){
     selector_node* node = (selector_node*)malloc(sizeof(selector_node));
     node->id = newID();
 
@@ -214,7 +207,7 @@ expr_node* create_idAccess_expr_node(identifier_node* accessList) {
 
     return node;
 }
-expr_node* create_call_expr_node(identifier_node* accessList, arguments_node* callArguments) {
+expr_node* create_call_expr_node(identifier_node* accessList, expr_node* callArguments) {
     expr_node* node = (expr_node*)malloc(sizeof(expr_node));
     node->id = newID();
     node->next = NULL;
@@ -225,7 +218,7 @@ expr_node* create_call_expr_node(identifier_node* accessList, arguments_node* ca
 
     return node;
 }
-expr_node* create_constructNew_expr_node(identifier_node* accessList, arguments_node* callArguments) {
+expr_node* create_constructNew_expr_node(identifier_node* accessList, expr_node* callArguments) {
     expr_node* node = (expr_node*)malloc(sizeof(expr_node));
     node->id = newID();
     node->next = NULL;
@@ -236,7 +229,7 @@ expr_node* create_constructNew_expr_node(identifier_node* accessList, arguments_
 
     return node;
 }
-expr_node* create_constructConst_expr_node(identifier_node* accessList, arguments_node* callArguments) {
+expr_node* create_constructConst_expr_node(identifier_node* accessList, expr_node* callArguments) {
     expr_node* node = (expr_node*)malloc(sizeof(expr_node));
     node->id = newID();
     node->next = NULL;
@@ -494,4 +487,152 @@ variableDeclaration_node* variableDeclaration_idInitList_add(variableDeclaration
         declaration->idInitList = idInitList_add(declaration->idInitList, added);
     }
     return declaration;
+}
+
+formalParameter_node* create_normal_formalParameter_node(declaredIdentifier_node* declaredIdentifier) {
+    formalParameter_node* node = (formalParameter_node*)malloc(sizeof(formalParameter_node));
+    node->id = newID();
+    node->next = NULL;
+
+    node->isField = false;
+    node->isDeclared = true;
+    node->declarator = declaredIdentifier->declarator;
+    node->identifier = declaredIdentifier->identifier;
+
+    free(declaredIdentifier); //todo не уверен здесь
+
+    return node;
+}
+formalParameter_node* create_normal_formalParameter_node(identifier_node* identifier) {
+    formalParameter_node* node = (formalParameter_node*)malloc(sizeof(formalParameter_node));
+    node->id = newID();
+    node->next = NULL;
+
+    node->isField = false;
+    node->isDeclared = false;
+    node->declarator = NULL;
+    node->identifier = identifier;
+
+    return node;
+}
+formalParameter_node* create_field_formalParameter_node(declarator_node* declarator, identifier_node* identifier) {
+    formalParameter_node* node = (formalParameter_node*)malloc(sizeof(formalParameter_node));
+    node->id = newID();
+    node->next = NULL;
+
+    node->isField = true;
+    node->isDeclared = declarator != NULL;
+    node->declarator = declarator;
+    node->identifier = identifier;
+
+    return node;
+}
+formalParameter_node* formalParameterList_add(formalParameter_node* start, formalParameter_node* added) {
+    formalParameter_node* cur = start;
+    while (cur->next != NULL) {
+        cur = cur->next;
+    }
+    added->next = NULL;
+    cur->next = added;
+
+    return start;
+}
+
+initializer_node* create_superConstructor_initializer_node(expr_node* args) {
+    initializer_node* node = (initializer_node*)malloc(sizeof(initializer_node));
+    node->id = newID();
+    node->next = NULL;
+
+    node->type = superConstructor;
+    node->args = args;
+
+    return node;
+}
+initializer_node* create_superNamedConstructor_initializer_node(identifier_node* superConstructorName, expr_node* args) {
+    initializer_node* node = (initializer_node*)malloc(sizeof(initializer_node));
+    node->id = newID();
+    node->next = NULL;
+
+    node->type = superNamedConstructor;
+    node->superConstructorName = superConstructorName;
+    node->args = args;
+
+    return node;
+}
+initializer_node* create_thisAssign_initializer_node(identifier_node* thisFieldId, expr_node* value) {
+    initializer_node* node = (initializer_node*)malloc(sizeof(initializer_node));
+    node->id = newID();
+    node->next = NULL;
+
+    node->type = thisAssign;
+    node->thisFieldId = thisFieldId;
+    node->value = value;
+
+    return node;
+}
+initializer_node* initializerList_add(initializer_node* start, initializer_node* added) {
+    initializer_node* cur = start;
+    while (cur->next != NULL) {
+        cur = cur->next;
+    }
+    added->next = NULL;
+    cur->next = added;
+
+    return start;
+}
+
+redirection_node* create_redirection_node(identifier_node* name, expr_node* args) {
+    redirection_node* node = (redirection_node*)malloc(sizeof(redirection_node));
+    node->id = newID();
+
+    node->isNamed = name != NULL;
+    node->name = name;
+    node->args = args;
+
+    return node;
+}
+
+signature_node* create_funcOrConstruct_signature_node(type_node* returnType, identifier_node* name, formalParameter_node* parameters) {
+    signature_node* node = (signature_node*)malloc(sizeof(signature_node));
+    node->id = newID();
+
+    node->type = funcOrConstruct;
+    node->isStatic = false;
+    node->returnType = returnType;
+    node->name = name;
+    node->parameters = parameters;
+
+    return node;
+}
+signature_node* create_construct_signature_node(bool isConst, identifier_node* name, formalParameter_node* parameters) {
+    if (name->next != NULL && name->next->next != NULL) {
+        throw -1;   // имя конструктора может иметь только тип Car.name - дот-лист из двух элементов
+    }
+
+    signature_node* node = (signature_node*)malloc(sizeof(signature_node));
+    node->id = newID();
+
+    node->type = construct;
+    node->isStatic = false;
+    node->isConst = isConst;
+    node->isNamed = name->next != NULL;
+    node->name = name;
+    node->parameters = parameters;
+
+    node->initializers = NULL;
+    node->redirection = NULL;
+
+    return node;
+}
+signature_node* signature_node_setStatic(signature_node* signature) {
+    signature->isStatic = true;
+    return signature;
+}
+signature_node* signature_node_addInitializers(signature_node* signature, initializer_node* initializers) {
+    signature->initializers = initializers;
+    return signature;
+}
+signature_node* signature_node_addRedirection(signature_node* signature, redirection_node* redirection) {
+    signature->redirection = redirection;
+    return signature;
 }

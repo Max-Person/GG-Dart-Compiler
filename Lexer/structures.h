@@ -14,21 +14,8 @@ identifier_node* identifierLists_add(identifier_node* start, identifier_node* ad
 identifier_node* identifierLists_getLast(identifier_node* start);
 
 
-struct ambiguousArgumentsOrParameterList_node {
-    int id;
-
-    struct identifier_node* argsOrParams;
-};
-ambiguousArgumentsOrParameterList_node* create_ambiguousArgumentsOrParameterList_node(identifier_node* argsOrParams);
-
-
-struct arguments_node {
-    int id;
-
-    struct expr_node* args;
-};
-arguments_node* create_arguments_node(expr_node* args);
-arguments_node* convert_ambiguous_to_arguments(ambiguousArgumentsOrParameterList_node* ambiguous); //TODO
+struct expr_node* convert_ambiguous_to_arguments(identifier_node* argsOrParams);
+struct formalParameter_node* convert_ambiguous_to_parameters(identifier_node* argsOrParams);
 
 
 enum selector_type{
@@ -42,11 +29,11 @@ struct selector_node{
     selector_type type;
     struct expr_node* inBrackets;
     struct identifier_node* accessList;
-    struct arguments_node* callArguments;
+    struct expr_node* callArguments;
 };
 selector_node* create_brackets_selector_node(expr_node* inBrackets);
 selector_node* create_access_selector_node(identifier_node* accessList);
-selector_node* create_methodCall_selector_node(identifier_node* accessList, arguments_node* callArguments);
+selector_node* create_methodCall_selector_node(identifier_node* accessList, expr_node* callArguments);
 
 
 enum expr_type{
@@ -118,7 +105,7 @@ struct expr_node{
     char* string_value;
     
     struct identifier_node* accessList;
-    struct arguments_node* callArguments;
+    struct expr_node* callArguments;
 
     struct selector_node* selector;
 
@@ -136,9 +123,9 @@ expr_node* create_boollit_expr_node(bool value);
 expr_node* create_strlit_expr_node(char* value);
 expr_node* create_strInterpolation_expr_node(expr_node* before, expr_node* interpol, char* after);
 expr_node* create_idAccess_expr_node(identifier_node* accessList);
-expr_node* create_call_expr_node(identifier_node* accessList, arguments_node* callArguments);
-expr_node* create_constructNew_expr_node(identifier_node* accessList, arguments_node* callArguments);
-expr_node* create_constructConst_expr_node(identifier_node* accessList, arguments_node* callArguments);
+expr_node* create_call_expr_node(identifier_node* accessList, expr_node* callArguments);
+expr_node* create_constructNew_expr_node(identifier_node* accessList, expr_node* callArguments);
+expr_node* create_constructConst_expr_node(identifier_node* accessList, expr_node* callArguments);
 expr_node* create_selector_expr_node(expr_node* operand, selector_node* selector);
 expr_node* create_operator_expr_node(expr_type type, expr_node* operand, expr_node* operand2);
 expr_node* exprList_add(expr_node* start, expr_node* added);
@@ -250,3 +237,76 @@ struct variableDeclaration_node {
 variableDeclaration_node* create_nonAssign_variableDeclaration_node(declaredIdentifier_node* declaredIdentifier);
 variableDeclaration_node* create_assign_variableDeclaration_node(declaredIdentifier_node* declaredIdentifier, expr_node* value);
 variableDeclaration_node* variableDeclaration_idInitList_add(variableDeclaration_node* declaration, idInit_node* added);
+
+struct formalParameter_node {
+    int id;
+
+    bool isField;
+    bool isDeclared;
+
+    struct declarator_node* declarator;
+    struct identifier_node* identifier;
+
+    struct formalParameter_node* next = NULL;
+};
+formalParameter_node* create_normal_formalParameter_node(declaredIdentifier_node* declaredIdentifier);
+formalParameter_node* create_normal_formalParameter_node(identifier_node* identifier);
+formalParameter_node* create_field_formalParameter_node(declarator_node* declarator, identifier_node* identifier);
+formalParameter_node* formalParameterList_add(formalParameter_node* start, formalParameter_node* added);
+
+enum initializer_type {
+    superConstructor,
+    superNamedConstructor,
+    thisAssign,
+};
+struct initializer_node {
+    int id;
+
+    initializer_type type;
+
+    identifier_node* superConstructorName;
+    expr_node* args;
+
+    identifier_node* thisFieldId;
+    expr_node* value;
+
+    initializer_node* next = NULL;
+};
+initializer_node* create_superConstructor_initializer_node(expr_node* args);
+initializer_node* create_superNamedConstructor_initializer_node(identifier_node* superConstructorName, expr_node* args);
+initializer_node* create_thisAssign_initializer_node(identifier_node* thisFieldId, expr_node* value);
+initializer_node* initializerList_add(initializer_node* start, initializer_node* added);
+
+struct redirection_node {
+    int id;
+
+    bool isNamed;
+    identifier_node* name;
+    expr_node* args;
+};
+redirection_node* create_redirection_node(identifier_node* name, expr_node* args);
+
+enum signature_type {
+    funcOrConstruct,
+    construct,
+};
+struct signature_node {
+    int id;
+
+    bool isStatic;
+    signature_type type;
+
+    type_node* returnType;
+    identifier_node* name;
+    formalParameter_node* parameters;
+
+    bool isNamed;
+    bool isConst;
+    initializer_node* initializers;
+    redirection_node* redirection;
+};
+signature_node* create_funcOrConstruct_signature_node(type_node* returnType, identifier_node* name, formalParameter_node* parameters);
+signature_node* create_construct_signature_node(bool isConst, identifier_node* name, formalParameter_node* parameters);
+signature_node* signature_node_setStatic(signature_node* signature);
+signature_node* signature_node_addInitializers(signature_node* signature, initializer_node* initializers);
+signature_node* signature_node_addRedirection(signature_node* signature, redirection_node* redirection);

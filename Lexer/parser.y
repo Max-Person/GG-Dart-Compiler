@@ -68,8 +68,6 @@ void yyerror(char const *s) {
     bool boolval;
     
     identifier_node* _identifier_node;
-    ambiguousArgumentsOrParameterList_node* _ambiguousArgumentsOrParameterList_node;
-    arguments_node* _arguments_node;
     selector_node* _selector_node;
     expr_node* _expr;
     type_node* _type_node;
@@ -78,19 +76,25 @@ void yyerror(char const *s) {
     variableDeclaration_node* _variableDeclaration_node;
     idInit_node* _idInit_node;
     stmt_node* _stmt_node;
+    formalParameter_node* _formalParameter_node;
+    initializer_node* _initializer_node;
+    redirection_node* _redirection_node;
+    signature_node* _signature_node;
 }
 
-%nterm<_identifier_node>identifier builtInIdentifier identifierList IDDotList idDotList
-%nterm<_ambiguousArgumentsOrParameterList_node>ambiguousArgumentsOrParameterList
-%nterm<_arguments_node>arguments
+%nterm<_identifier_node>identifier builtInIdentifier identifierList IDDotList idDotList ambiguousArgumentsOrParameterList
 %nterm<_selector_node>assignableSelector selector
-%nterm<_expr>string primary selectorExpr postfixExpr exprNotAssign expr exprList
+%nterm<_expr>string primary selectorExpr postfixExpr exprNotAssign expr exprList arguments
 %nterm<_type_node>typeName typeNotVoid typeNotVoidList type
 %nterm<_declarator_node>declarator
 %nterm<_declaredIdentifier_node>declaredIdentifier
 %nterm<_idInit_node>staticFinalDeclaration staticFinalDeclarationList initializedIdentifier initializedIdentifierList
 %nterm<_variableDeclaration_node>variableDeclaration
 %nterm<_stmt_node>whileStatement doStatement ifStatement breakStatement returnStatement continueStatement statement statements forInitializerStatement variableDeclarationStatement exprStatement
+%nterm<_formalParameter_node>normalFormalParameter normalFormalParameterList formalParameterList fieldFormalParameter constructorFormalParameters constructorFormalParameterList
+%nterm<_initializer_node>initializerListEntry initializers
+%nterm<_redirection_node>redirection
+%nterm<_signature_node>functionSignature methodSignature namedConstructorSignature constantConstructorSignature
 
 %%
     //-------------- ВЕРХНИЙ УРОВЕНЬ --------------
@@ -402,34 +406,34 @@ void yyerror(char const *s) {
 
     //-------------- ФУНКЦИИ --------------
 
-    formalParameterList: '(' normalFormalParameterList ',' ')'
-        | '(' normalFormalParameterList ')'
+    formalParameterList: '(' normalFormalParameterList ',' ')'      {$$ = $2;}
+        | '(' normalFormalParameterList ')'                         {$$ = $2;}
         /* | '(' ')' */
     ;
 
-    normalFormalParameter: declaredIdentifier
+    normalFormalParameter: declaredIdentifier       {$$ = create_normal_formalParameter_node($1);}
         /* | identifier */      // покрывается ambiguousArgumentsOrParameterList
         /* | declarator THIS '.' identifier
         | THIS '.' identifier */       // см fieldFormalParameter
     ;
 
-    normalFormalParameterList: normalFormalParameter
-        | normalFormalParameterList ',' normalFormalParameter
+    normalFormalParameterList: normalFormalParameter            {$$ = $1;}
+        | normalFormalParameterList ',' normalFormalParameter   {$$ = formalParameterList_add($1, $3);}
     ;
 
-    ambiguousArgumentsOrParameterList: '(' identifierList ')'   {$$ = create_ambiguousArgumentsOrParameterList_node($2);}
-        | '(' identifierList ',' ')'                            {$$ = create_ambiguousArgumentsOrParameterList_node($2);}
-        | '(' ')'                                               {$$ = create_ambiguousArgumentsOrParameterList_node(NULL);}
+    ambiguousArgumentsOrParameterList: '(' identifierList ')'   {$$ = $2;}
+        | '(' identifierList ',' ')'                            {$$ = $2;}
+        | '(' ')'                                               {$$ = NULL;}
     ;
 
-    arguments: '(' exprList ',' ')'     {$$ = create_arguments_node($2);}
-        | '(' exprList ')'              {$$ = create_arguments_node($2);}
+    arguments: '(' exprList ',' ')'     {$$ = $2;}
+        | '(' exprList ')'              {$$ = $2;}
     ;
 
-    functionSignature: type identifier formalParameterList
-        | identifier formalParameterList
-        | type identifier ambiguousArgumentsOrParameterList
-        | identifier ambiguousArgumentsOrParameterList
+    functionSignature: type identifier formalParameterList      {$$ = create_funcOrConstruct_signature_node($1, $2, $3);}
+        | identifier formalParameterList                        {$$ = create_funcOrConstruct_signature_node(NULL, $1, $2);}
+        | type identifier ambiguousArgumentsOrParameterList     {$$ = create_funcOrConstruct_signature_node($1, $2, convert_ambiguous_to_parameters($3));}
+        | identifier ambiguousArgumentsOrParameterList          {$$ = create_funcOrConstruct_signature_node(NULL, $1, convert_ambiguous_to_parameters($2));}
     ;
     
     functionBody: FUNC_ARROW expr ';'
@@ -511,59 +515,59 @@ void yyerror(char const *s) {
     ;
 
     // Дописать
-    methodSignature: functionSignature
-        | STATIC functionSignature
-        | namedConstructorSignature
-        | namedConstructorSignature initializers
+    methodSignature: functionSignature              {$$ = $1;}
+        | STATIC functionSignature                  {$$ = signature_node_setStatic($2);}
+        | namedConstructorSignature                 {$$ = $1;}
+        | namedConstructorSignature initializers    {$$ = signature_node_addInitializers($1, $2);}
     ;
 
 
     //------- КОНСТРУКТОРЫ --------------
 
-    fieldFormalParameter: declarator THIS '.' identifier
-        | THIS '.' identifier
+    fieldFormalParameter: declarator THIS '.' identifier    {$$ = create_field_formalParameter_node($1, $4);}
+        | THIS '.' identifier                               {$$ = create_field_formalParameter_node(NULL, $3);}
     ;
 
-    constructorFormalParameterList: fieldFormalParameter
-        | normalFormalParameterList ',' fieldFormalParameter
-        | constructorFormalParameterList ',' normalFormalParameter
-        | constructorFormalParameterList ',' fieldFormalParameter
+    constructorFormalParameterList: fieldFormalParameter                {$$ = $1;}
+        | normalFormalParameterList ',' fieldFormalParameter            {$$ = formalParameterList_add($1, $3);}
+        | constructorFormalParameterList ',' normalFormalParameter      {$$ = formalParameterList_add($1, $3);}
+        | constructorFormalParameterList ',' fieldFormalParameter       {$$ = formalParameterList_add($1, $3);}
     ;
 
-    constructorFormalParameters: '(' constructorFormalParameterList ',' ')'
-        | '(' constructorFormalParameterList ')'
+    constructorFormalParameters: '(' constructorFormalParameterList ',' ')'     {$$ = $2;}
+        | '(' constructorFormalParameterList ')'                                {$$ = $2;}
     ;
 
-    namedConstructorSignature: IDDotList formalParameterList
-        | IDDotList constructorFormalParameters
-        | IDDotList ambiguousArgumentsOrParameterList
+    namedConstructorSignature: IDDotList formalParameterList            {$$ = create_construct_signature_node(false, $1, $2);}
+        | IDDotList constructorFormalParameters                         {$$ = create_construct_signature_node(false, $1, $2);}
+        | IDDotList ambiguousArgumentsOrParameterList                   {$$ = create_construct_signature_node(false, $1, convert_ambiguous_to_parameters($2));}
     ;
 
-    constantConstructorSignature: CONST IDDotList formalParameterList
-        | CONST IDDotList constructorFormalParameters
-        | CONST IDDotList ambiguousArgumentsOrParameterList
-        | CONST IDENTIFIER formalParameterList
-        | CONST IDENTIFIER constructorFormalParameters
-        | CONST IDENTIFIER ambiguousArgumentsOrParameterList
+    constantConstructorSignature: CONST IDDotList formalParameterList       {$$ = create_construct_signature_node(true, $2, $3);}
+        | CONST IDDotList constructorFormalParameters                       {$$ = create_construct_signature_node(true, $2, $3);}
+        | CONST IDDotList ambiguousArgumentsOrParameterList                 {$$ = create_construct_signature_node(true, $2, convert_ambiguous_to_parameters($3));}
+        | CONST IDENTIFIER formalParameterList                              {$$ = create_construct_signature_node(true, $2, $3);}
+        | CONST IDENTIFIER constructorFormalParameters                      {$$ = create_construct_signature_node(true, $2, $3);}
+        | CONST IDENTIFIER ambiguousArgumentsOrParameterList                {$$ = create_construct_signature_node(true, $2, convert_ambiguous_to_parameters($3));}
     ;
 
     // вызвать именованный конструктор или другой конструктор 
     // Пример: Car.withoutABS(this.make, this.model, this.yearMade): this(make, model, yearMade, false);
-    redirection: ':' THIS '.' identifier arguments
-        | ':' THIS arguments
-        | ':' THIS '.' identifier ambiguousArgumentsOrParameterList
-        | ':' THIS ambiguousArgumentsOrParameterList
+    redirection: ':' THIS '.' identifier arguments                          {$$ = create_redirection_node($4, $5);}
+        | ':' THIS arguments                                                {$$ = create_redirection_node(NULL, $3);}
+        | ':' THIS '.' identifier ambiguousArgumentsOrParameterList         {$$ = create_redirection_node($4, convert_ambiguous_to_arguments($5));}
+        | ':' THIS ambiguousArgumentsOrParameterList                        {$$ = create_redirection_node(NULL, convert_ambiguous_to_arguments($3));}
     ;
 
-    initializerListEntry: SUPER arguments 
-        | SUPER '.' identifier arguments
-        | SUPER ambiguousArgumentsOrParameterList 
-        | SUPER '.' identifier ambiguousArgumentsOrParameterList
-        | THIS '.' identifier '=' exprNotAssign
+    initializerListEntry: SUPER arguments                           {$$ = create_superConstructor_initializer_node($2);}
+        | SUPER '.' identifier arguments                            {$$ = create_superNamedConstructor_initializer_node($3, $4);}
+        | SUPER ambiguousArgumentsOrParameterList                   {$$ = create_superConstructor_initializer_node(convert_ambiguous_to_arguments($2));}
+        | SUPER '.' identifier ambiguousArgumentsOrParameterList    {$$ = create_superNamedConstructor_initializer_node($3, convert_ambiguous_to_arguments($4));}
+        | THIS '.' identifier '=' exprNotAssign                     {$$ = create_thisAssign_initializer_node($3, $5);}
     ;
 
-    initializers: ':' initializerListEntry
-        | initializers ',' initializerListEntry
+    initializers: ':' initializerListEntry                          {$$ = $2;}
+        | initializers ',' initializerListEntry                     {$$ = initializerList_add($1, $3);}
     ;
     
 
