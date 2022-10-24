@@ -198,7 +198,7 @@ expr_node* create_strInterpolation_expr_node(expr_node* before, expr_node* inter
     node->next = NULL;
 
     node->type = string_interpolation;
-    node->operand = before; //TODO возможно стоит проверить тип
+    node->operand = before; //TODO пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ
     node->operand2 = interpol;
     node->string_value = after;
 
@@ -263,7 +263,7 @@ expr_node* create_operator_expr_node(expr_type type, expr_node* operand, expr_no
     node->id = newID();
     node->next = NULL;
 
-    node->type = type; //TODO проверять что точно оператор, и если assign то проверить первый операнд на присваемость 
+    node->type = type; //TODO пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ, пїЅ пїЅпїЅпїЅпїЅ assign пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ 
     node->operand = operand;
     node->operand2 = operand2;
 
@@ -280,7 +280,7 @@ expr_node* exprList_add(expr_node* start, expr_node* added){
     return start;
 }
 
-stmt_node* create_while_node(struct expr_node* condition, struct stmt_node* body){
+stmt_node* create_while_stmt_node(expr_node* condition, stmt_node* body){
     stmt_node* node = (stmt_node*)malloc(sizeof(stmt_node));
     node->id = newID();
 
@@ -290,7 +290,7 @@ stmt_node* create_while_node(struct expr_node* condition, struct stmt_node* body
 
     return node;
 }
-stmt_node* create_do_node(struct expr_node* condition, struct stmt_node* body){
+stmt_node* create_do_stmt_node(stmt_node* body, expr_node* condition){
     stmt_node* node = (stmt_node*)malloc(sizeof(stmt_node));
     node->id = newID();
 
@@ -300,17 +300,7 @@ stmt_node* create_do_node(struct expr_node* condition, struct stmt_node* body){
 
     return node;
 }
-stmt_node* create_if_node(struct expr_node* condition, struct stmt_node* body){
-    stmt_node* node = (stmt_node*)malloc(sizeof(stmt_node));
-    node->id = newID();
-
-    node->body = body;
-    node->condition = condition;
-    node->type = if_statement;
-
-    return node;
-}
-stmt_node* create_break_node(){
+stmt_node* create_break_stmt_node(){
     stmt_node* node = (stmt_node*)malloc(sizeof(stmt_node));
     node->id = newID();
 
@@ -320,7 +310,56 @@ stmt_node* create_break_node(){
 
     return node;
 }
+stmt_node* create_continue_stmt_node(){
+    stmt_node* node = (stmt_node*)malloc(sizeof(stmt_node));
+    node->id = newID();
 
+    node->body = NULL;
+    node->condition = NULL;
+    node->type = continue_statement;
+
+    return node;
+}
+stmt_node* create_return_stmt_node(expr_node* returnExpr){
+    stmt_node* node = (stmt_node*)malloc(sizeof(stmt_node));
+    node->id = newID();
+
+    node->body = NULL;
+    node->condition = NULL;
+    node->elseBody = NULL;
+    node->returnExpr = returnExpr;
+    node->type = return_statement;
+
+    return node;
+}
+stmt_node* create_if_stmt_node(expr_node* condition, stmt_node* body, stmt_node* elseBody){
+    stmt_node* node = (stmt_node*)malloc(sizeof(stmt_node));
+    node->id = newID();
+
+    node->body = body;
+    node->condition = condition;
+    node->elseBody = elseBody;
+    node->returnExpr = NULL;
+    node->type = if_statement;
+
+    return node;
+}
+stmt_node* create_variable_declaration_stmt_node(variableDeclaration_node* variableDeclaration){
+    stmt_node* node = (stmt_node*)malloc(sizeof(stmt_node));
+    node->id = newID();
+    node->type = variable_declaration_statement;
+    node->variableDeclaration = variableDeclaration;
+
+    return node;
+}
+stmt_node* create_expr_stmt_node(expr_node* expr){
+    stmt_node* node = (stmt_node*)malloc(sizeof(stmt_node));
+    node->id = newID();
+    node->type = expr_statement;
+    node->expr = expr;
+
+    return node;
+}
 type_node* create_named_type_node(identifier_node* name, bool isNullable) {
     type_node* node = (type_node*)malloc(sizeof(type_node));
     node->id = newID();

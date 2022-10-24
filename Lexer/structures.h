@@ -155,7 +155,8 @@ enum stmt_type {
     continue_statement,
     return_statement,
     local_function_declaration,
-    statement_block
+    statement_block,
+    for_initializer_statement
 };
 
 struct stmt_node{
@@ -168,14 +169,20 @@ struct stmt_node{
 
     struct expr_node* returnExpr;
 
+    struct variableDeclaration_node* variableDeclaration;
+
+    struct expr_node* expr;
+
     enum stmt_type type;
 };
-stmt_node* create_while_node(struct expr_node* condition, struct stmt_node* body);
-stmt_node* create_do_node(struct expr_node* condition, struct stmt_node* body);
-stmt_node* create_if_node(struct expr_node* condition, struct stmt_node* body);
-stmt_node* create_break_node();
-stmt_node* create_continue_node();
-stmt_node* create_return_node(struct expr_node* returnExpr);
+stmt_node* create_while_stmt_node(expr_node* condition, stmt_node* body);
+stmt_node* create_do_stmt_node(stmt_node* body, expr_node* condition);
+stmt_node* create_if_stmt_node(expr_node* condition, stmt_node* body, stmt_node* elseBody);
+stmt_node* create_break_stmt_node();
+stmt_node* create_continue_stmt_node();
+stmt_node* create_return_stmt_node(expr_node* returnExpr);
+stmt_node* create_variable_declaration_stmt_node(variableDeclaration_node* variableDeclaration);
+stmt_node* create_expr_stmt_node(expr_node* expr);
 
 enum type_type {
     named,

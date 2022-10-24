@@ -77,6 +77,7 @@ void yyerror(char const *s) {
     declaredIdentifier_node* _declaredIdentifier_node;
     variableDeclaration_node* _variableDeclaration_node;
     idInit_node* _idInit_node;
+    stmt_node* _stmt_node;
 }
 
 %nterm<_identifier_node>identifier builtInIdentifier identifierList IDDotList idDotList
@@ -89,6 +90,7 @@ void yyerror(char const *s) {
 %nterm<_declaredIdentifier_node>declaredIdentifier
 %nterm<_idInit_node>staticFinalDeclaration staticFinalDeclarationList initializedIdentifier initializedIdentifierList
 %nterm<_variableDeclaration_node>variableDeclaration
+%nterm<_stmt_node>whileStatement doStatement ifStatement breakStatement returnStatement continueStatement statement statements forInitializerStatement variableDeclarationStatement exprStatement
 
 %%
     //-------------- ВЕРХНИЙ УРОВЕНЬ --------------
@@ -154,6 +156,7 @@ void yyerror(char const *s) {
 
     //-------------- ВЫРАЖЕНИЯ --------------
 
+
     primary: THIS                           {$$ = create_this_expr_node();}
         | SUPER                             {$$ = create_super_expr_node();}
         | NULL_                             {$$ = create_null_expr_node();}
@@ -161,6 +164,7 @@ void yyerror(char const *s) {
         | DOUBLE_LITERAL                    {$$ = create_doublelit_expr_node($1);}
         | BOOLEAN_LITERAL                   {$$ = create_boollit_expr_node($1);}
         | string            %prec PRIMARY   {$$ = $1;}
+        | '[' exprList ']'                  {$$ = $2;}
         | '(' expr ')'                      {$$ = $2;}
     ;
 
@@ -250,8 +254,8 @@ void yyerror(char const *s) {
         | exprList ',' expr     {$$ = exprList_add($1, $3);}
     ;
 
-    exprStatement: ';'                                  {}
-        | expr ';'                                      {}
+    exprStatement: ';'                                  {$$ = create_expr_stmt_node(NULL);}
+        | expr ';'                                      {$$ = create_expr_stmt_node($1);}
     ;
 
     //-------------- ТИПИЗАЦИЯ --------------
@@ -324,13 +328,13 @@ void yyerror(char const *s) {
         | variableDeclaration ',' initializedIdentifier     {$$ = variableDeclaration_idInitList_add($1, $3);}
     ;
 
-    variableDeclarationStatement: variableDeclaration ';'   {}
+    variableDeclarationStatement: variableDeclaration ';'   {$$ = create_variable_declaration_stmt_node($1);}
     ;
 
     //-------------- РАЗВИЛКИ --------------
 
-    ifStatement: IF '(' expr ')' statement 
-        | IF '(' expr ')' statement ELSE statement
+    ifStatement: IF '(' expr ')' statement      {$$ = create_if_stmt_node($3, $5, NULL);}
+        | IF '(' expr ')' statement ELSE statement  {$$ = create_if_stmt_node($3, $5, $7);}
     ;
 
     switchCase: CASE expr ':' statements
@@ -352,25 +356,25 @@ void yyerror(char const *s) {
         | FOR '(' identifier IN expr ')' statement
     ;
 
-    forInitializerStatement: variableDeclarationStatement
-        | exprStatement
+    forInitializerStatement: variableDeclarationStatement       {$$ = $1;}
+        | exprStatement                                         {$$ = $1;}
     ;
 
-    whileStatement: WHILE '(' expr ')' statement
+    whileStatement: WHILE '(' expr ')' statement    {$$ = create_while_stmt_node($3, $5);}
     ;
 
-    doStatement: DO statement WHILE '(' expr ')' ';'
+    doStatement: DO statement WHILE '(' expr ')' ';'    {$$ = create_do_stmt_node($2, $5);}
     ;
 
     //Здесь убрал идентификаторы, потому что это относится к лейблам
-    breakStatement: BREAK ';'
+    breakStatement: BREAK ';'       {$$ = create_break_stmt_node();}
     ;
 
-    continueStatement: CONTINUE ';'
+    continueStatement: CONTINUE ';'     {$$ = create_continue_stmt_node();}
     ;
 
-    returnStatement: RETURN expr ';'
-        | RETURN ';'
+    returnStatement: RETURN expr ';'       {$$ = create_return_stmt_node($2);}
+        | RETURN ';'            {$$ = create_return_stmt_node(NULL);}
     ;
 
     //-------------- СТЕЙТМЕНТЫ ОБЩЕЕ --------------
@@ -389,7 +393,7 @@ void yyerror(char const *s) {
         | statementBlock
     ;
 
-    statements: statement
+    statements: %empty
         | statements statement
     ;
 
