@@ -197,3 +197,49 @@ type_node* create_dynamic_type_node(bool isNullable);
 type_node* create_void_type_node();
 type_node* type_node_makeNullable(type_node* node, bool isNullable);
 type_node* typeList_add(type_node* start, type_node* added);
+
+struct declarator_node {
+    int id;
+
+    bool isLate;
+    bool isFinal;
+    bool isConst;
+    bool isTyped;
+
+    struct type_node* valueType;
+};
+declarator_node* create_declarator_node(bool isLate, bool isFinal, bool isConst, type_node* valueType);
+
+struct declaredIdentifier_node {
+    int id;
+
+    struct declarator_node* declarator;
+    struct identifier_node* identifier;
+};
+declaredIdentifier_node* create_declaredIdentifier_node(declarator_node* declarator, identifier_node* identifier);
+declaredIdentifier_node* create_declaredIdentifier_node(bool isLate, bool isFinal, bool isConst, type_node* valueType, identifier_node* identifier);
+
+struct idInit_node {
+    int id;
+
+    bool isAssign;
+    struct identifier_node* identifier;
+    struct expr_node* value;
+
+    struct idInit_node* next = NULL;
+};
+idInit_node* create_id_idInit_node(identifier_node* identifier);
+idInit_node* create_assign_idInit_node(identifier_node* identifier, expr_node* value);
+idInit_node* idInitList_add(idInit_node* start, idInit_node* added);
+
+struct variableDeclaration_node {
+    int id;
+
+    bool isAssign;
+    struct declaredIdentifier_node* declaredIdentifier;
+    struct expr_node* value;
+    struct idInit_node* idInitList = NULL;
+};
+variableDeclaration_node* create_nonAssign_variableDeclaration_node(declaredIdentifier_node* declaredIdentifier);
+variableDeclaration_node* create_assign_variableDeclaration_node(declaredIdentifier_node* declaredIdentifier, expr_node* value);
+variableDeclaration_node* variableDeclaration_idInitList_add(variableDeclaration_node* declaration, idInit_node* added);

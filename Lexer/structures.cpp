@@ -367,3 +367,92 @@ type_node* typeList_add(type_node* start, type_node* added) {
 
     return start;
 }
+
+declarator_node* create_declarator_node(bool isLate, bool isFinal, bool isConst, type_node* valueType) {
+    declarator_node* node = (declarator_node*)malloc(sizeof(declarator_node));
+    node->id = newID();
+
+    node->isLate = isLate;
+    node->isFinal = isFinal;
+    node->isConst = isConst;
+    node->isTyped = valueType != NULL;
+    node->valueType = valueType;
+
+    return node;
+}
+
+declaredIdentifier_node* create_declaredIdentifier_node(declarator_node* declarator, identifier_node* identifier) {
+    declaredIdentifier_node* node = (declaredIdentifier_node*)malloc(sizeof(declaredIdentifier_node));
+    node->id = newID();
+
+    node->declarator = declarator;
+    node->identifier = identifier;
+
+    return node;
+}
+declaredIdentifier_node* create_declaredIdentifier_node(bool isLate, bool isFinal, bool isConst, type_node* valueType, identifier_node* identifier) {
+    return create_declaredIdentifier_node(create_declarator_node(isLate, isFinal, isConst, valueType), identifier);
+}
+
+idInit_node* create_id_idInit_node(identifier_node* identifier) {
+    idInit_node* node = (idInit_node*)malloc(sizeof(idInit_node));
+    node->id = newID();
+    node->next = NULL;
+
+    node->isAssign = false;
+    node->identifier = identifier;
+
+    return node;
+}
+idInit_node* create_assign_idInit_node(identifier_node* identifier, expr_node* value) {
+    idInit_node* node = (idInit_node*)malloc(sizeof(idInit_node));
+    node->id = newID();
+    node->next = NULL;
+
+    node->isAssign = true;
+    node->identifier = identifier;
+    node->value = value;
+
+    return node;
+}
+idInit_node* idInitList_add(idInit_node* start, idInit_node* added) {
+    idInit_node* cur = start;
+    while (cur->next != NULL) {
+        cur = cur->next;
+    }
+    added->next = NULL;
+    cur->next = added;
+
+    return start;
+}
+
+variableDeclaration_node* create_nonAssign_variableDeclaration_node(declaredIdentifier_node* declaredIdentifier) {
+    variableDeclaration_node* node = (variableDeclaration_node*)malloc(sizeof(variableDeclaration_node));
+    node->id = newID();
+    node->idInitList = NULL;
+
+    node->isAssign = false;
+    node->declaredIdentifier = declaredIdentifier;
+
+    return node;
+}
+variableDeclaration_node* create_assign_variableDeclaration_node(declaredIdentifier_node* declaredIdentifier, expr_node* value) {
+    variableDeclaration_node* node = (variableDeclaration_node*)malloc(sizeof(variableDeclaration_node));
+    node->id = newID();
+    node->idInitList = NULL;
+
+    node->isAssign = true;
+    node->declaredIdentifier = declaredIdentifier;
+    node->value = value;
+
+    return node;
+}
+variableDeclaration_node* variableDeclaration_idInitList_add(variableDeclaration_node* declaration, idInit_node* added) {
+    if (declaration->idInitList == NULL) {
+        declaration->idInitList = added;
+    }
+    else {
+        declaration->idInitList = idInitList_add(declaration->idInitList, added);
+    }
+    return declaration;
+}

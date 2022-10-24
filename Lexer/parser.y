@@ -73,6 +73,10 @@ void yyerror(char const *s) {
     selector_node* _selector_node;
     expr_node* _expr;
     type_node* _type_node;
+    declarator_node* _declarator_node;
+    declaredIdentifier_node* _declaredIdentifier_node;
+    variableDeclaration_node* _variableDeclaration_node;
+    idInit_node* _idInit_node;
 }
 
 %nterm<_identifier_node>identifier builtInIdentifier identifierList IDDotList idDotList
@@ -81,6 +85,10 @@ void yyerror(char const *s) {
 %nterm<_selector_node>assignableSelector selector
 %nterm<_expr>string primary selectorExpr postfixExpr exprNotAssign expr exprList
 %nterm<_type_node>typeName typeNotVoid typeNotVoidList type
+%nterm<_declarator_node>declarator
+%nterm<_declaredIdentifier_node>declaredIdentifier
+%nterm<_idInit_node>staticFinalDeclaration staticFinalDeclarationList initializedIdentifier initializedIdentifierList
+%nterm<_variableDeclaration_node>variableDeclaration
 
 %%
     //-------------- ВЕРХНИЙ УРОВЕНЬ --------------
@@ -277,43 +285,43 @@ void yyerror(char const *s) {
     ;
 
     //finalConstVarOrType
-    declarator: LATE FINAL type                         {}
-        | LATE FINAL                                    {}
-        | FINAL type                                    {}
-        | FINAL                                         {}
-        | CONST type                                    {}
-        | CONST                                         {}
-        | LATE VAR                                      {}
-        | LATE type                                      {}
-        | VAR                                           {}
-        | type                                           {}
+    declarator: LATE FINAL type     {$$ = create_declarator_node(true, true, false, $3);}
+        | LATE FINAL                {$$ = create_declarator_node(true, true, false, NULL);}
+        | FINAL type                {$$ = create_declarator_node(false, true, false, $2);}
+        | FINAL                     {$$ = create_declarator_node(false, true, false, NULL);}
+        | CONST type                {$$ = create_declarator_node(false, false, true, $2);}
+        | CONST                     {$$ = create_declarator_node(false, false, true, NULL);}
+        | LATE VAR                  {$$ = create_declarator_node(true, false, false, NULL);}
+        | LATE type                 {$$ = create_declarator_node(true, false, false, $2);}
+        | VAR                       {$$ = create_declarator_node(false, false, false, NULL);}
+        | type                      {$$ = create_declarator_node(false, false, false, $1);}
     ;
 
     //-------------- ПЕРЕМЕННЫЕ И ИНИЦИАЛИЗАЦИЯ --------------
 
-    declaredIdentifier: LATE FINAL type identifier                       {}
-        | LATE FINAL identifier                                   {}
-        | FINAL type identifier                                   {}
-        | FINAL identifier                                        {}
-        | CONST type identifier                                   {}
-        | CONST identifier                                        {}
-        | LATE VAR identifier                                      {}
-        | LATE type identifier                                      {}
-        | VAR identifier                             {}
-        | type identifier                             {}
+    declaredIdentifier: LATE FINAL type identifier      {$$ = create_declaredIdentifier_node(true, true, false, $3,     $4);}
+        | LATE FINAL identifier                         {$$ = create_declaredIdentifier_node(true, true, false, NULL,   $3);}
+        | FINAL type identifier                         {$$ = create_declaredIdentifier_node(false, true, false, $2,    $3);}
+        | FINAL identifier                              {$$ = create_declaredIdentifier_node(false, true, false, NULL,  $2);}
+        | CONST type identifier                         {$$ = create_declaredIdentifier_node(false, false, true, $2,    $3);}
+        | CONST identifier                              {$$ = create_declaredIdentifier_node(false, false, true, NULL,  $2);}
+        | LATE VAR identifier                           {$$ = create_declaredIdentifier_node(true, false, false, NULL,  $3);}
+        | LATE type identifier                          {$$ = create_declaredIdentifier_node(true, false, false, $2,    $3);}
+        | VAR identifier                                {$$ = create_declaredIdentifier_node(false, false, false, NULL, $2);}
+        | type identifier                               {$$ = create_declaredIdentifier_node(false, false, false, $1,   $2);}
     ;
 
-    initializedIdentifier: staticFinalDeclaration
-        | identifier
+    initializedIdentifier: staticFinalDeclaration               {$$ = $1;}
+        | identifier                                            {$$ = create_id_idInit_node($1);}
     ;
 
-    initializedIdentifierList: initializedIdentifier
-        | initializedIdentifierList ',' initializedIdentifier
+    initializedIdentifierList: initializedIdentifier            {$$ = $1;}
+        | initializedIdentifierList ',' initializedIdentifier   {$$ = idInitList_add($1, $3);}
     ;
 
-    variableDeclaration: declaredIdentifier                 {}
-        | declaredIdentifier '=' expr                       {}
-        | variableDeclaration ',' initializedIdentifier
+    variableDeclaration: declaredIdentifier                 {$$ = create_nonAssign_variableDeclaration_node($1);}
+        | declaredIdentifier '=' expr                       {$$ = create_assign_variableDeclaration_node($1, $3);}
+        | variableDeclaration ',' initializedIdentifier     {$$ = variableDeclaration_idInitList_add($1, $3);}
     ;
 
     variableDeclarationStatement: variableDeclaration ';'   {}
@@ -453,11 +461,11 @@ void yyerror(char const *s) {
         | ABSTRACT CLASS identifier '=' typeNotVoid mixins interfacesOpt ';'
     ;
 
-    staticFinalDeclaration: identifier '=' expr
+    staticFinalDeclaration: identifier '=' expr                     {$$ = create_assign_idInit_node($1, $3);}
     ;
 
-    staticFinalDeclarationList: staticFinalDeclaration
-        | staticFinalDeclarationList ',' staticFinalDeclaration
+    staticFinalDeclarationList: staticFinalDeclaration              {$$ = $1;}
+        | staticFinalDeclarationList ',' staticFinalDeclaration     {$$ = idInitList_add($1, $3);}
     ;
 
     classMemberDeclaration: declaration ';'
