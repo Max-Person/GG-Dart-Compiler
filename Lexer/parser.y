@@ -90,7 +90,7 @@ void yyerror(char const *s) {
 %nterm<_declaredIdentifier_node>declaredIdentifier
 %nterm<_idInit_node>staticFinalDeclaration staticFinalDeclarationList initializedIdentifier initializedIdentifierList
 %nterm<_variableDeclaration_node>variableDeclaration
-%nterm<_stmt_node>whileStatement doStatement ifStatement breakStatement returnStatement continueStatement statement statements forInitializerStatement variableDeclarationStatement exprStatement
+%nterm<_stmt_node>whileStatement doStatement ifStatement breakStatement returnStatement continueStatement statement statements forInitializerStatement variableDeclarationStatement exprStatement forStatement statementBlock
 %nterm<_formalParameter_node>normalFormalParameter normalFormalParameterList formalParameterList fieldFormalParameter constructorFormalParameters constructorFormalParameterList
 %nterm<_initializer_node>initializerListEntry initializers
 %nterm<_redirection_node>redirection
@@ -354,9 +354,12 @@ void yyerror(char const *s) {
 
     //-------------- ЦИКЛЫ --------------
 
-    forStatement: FOR '(' forInitializerStatement exprStatement exprList ')' statement
-        | FOR '(' forInitializerStatement exprStatement ')' statement
-        | FOR '(' declaredIdentifier IN expr ')' statement
+    forStatement: FOR '(' forInitializerStatement exprStatement exprList ')' statement      {//$$ = create_for_stmt();
+    }
+        | FOR '(' forInitializerStatement exprStatement ')' statement                       {//$$ = create_for_stmt($3, $4, $6, NULL);
+        }
+        | FOR '(' declaredIdentifier IN expr ')' statement                                  {//$$ = create_for_stmt($3, $5, , NULL);
+        }
         | FOR '(' identifier IN expr ')' statement
     ;
 
@@ -383,25 +386,25 @@ void yyerror(char const *s) {
 
     //-------------- СТЕЙТМЕНТЫ ОБЩЕЕ --------------
     
-    statement: exprStatement
-        | variableDeclarationStatement
-        | forStatement
-        | whileStatement
-        | doStatement
-        | switchStatement
-        | ifStatement
-        | breakStatement
-        | continueStatement
-        | returnStatement
-        | localFunctionDeclaration
-        | statementBlock
+    statement: exprStatement                {$$ = $1;}
+        | variableDeclarationStatement      {$$ = $1;}
+        | forStatement                      {$$ = $1;}
+        | whileStatement                    {$$ = $1;}
+        | doStatement                       {$$ = $1;}
+        | switchStatement                   {$$ = $1;}
+        | ifStatement                       {$$ = $1;}
+        | breakStatement                    {$$ = $1;}
+        | continueStatement                 {$$ = $1;}
+        | returnStatement                   {$$ = $1;}
+        | localFunctionDeclaration          {$$ = $1;}
+        | statementBlock                    {$$ = $1;}
     ;
 
-    statements: %empty
-        | statements statement
+    statements: %empty                      {$$ = NULL;}
+        | statements statement              {$$ = stmtList_add($1, $2);}
     ;
 
-    statementBlock: '{' statements '}'               {}
+    statementBlock: '{' statements '}'               {$$ = $2;}
     ;
 
     //-------------- ФУНКЦИИ --------------

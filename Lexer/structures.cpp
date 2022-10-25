@@ -353,6 +353,24 @@ stmt_node* create_expr_stmt_node(expr_node* expr){
 
     return node;
 }
+stmt_node* create_for_stmt_node(){
+    stmt_node* node = (stmt_node*)malloc(sizeof(stmt_node));
+    node->id = newID();
+    node->type = for_statement;
+    node->expr = expr;
+
+    return node;
+}
+stmt_node* stmtList_add(stmt_node* start, stmt_node* added){
+    stmt_node* cur = start;
+    while (cur->nextStmt != NULL) {
+        cur = cur->nextStmt;
+    }
+    added->nextStmt = NULL;
+    cur->nextStmt = added;
+
+    return start;
+}
 type_node* create_named_type_node(identifier_node* name, bool isNullable) {
     type_node* node = (type_node*)malloc(sizeof(type_node));
     node->id = newID();

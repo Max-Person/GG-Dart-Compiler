@@ -160,6 +160,12 @@ struct stmt_node{
 
     struct expr_node* expr;
 
+    struct stmt_node* nextStmt;
+
+    struct stmt_node* forInitializerStmt;
+    
+    struct declaredIdentifier_node* declaredIdentifier;
+
     enum stmt_type type;
 };
 stmt_node* create_while_stmt_node(expr_node* condition, stmt_node* body);
@@ -170,6 +176,8 @@ stmt_node* create_continue_stmt_node();
 stmt_node* create_return_stmt_node(expr_node* returnExpr);
 stmt_node* create_variable_declaration_stmt_node(variableDeclaration_node* variableDeclaration);
 stmt_node* create_expr_stmt_node(expr_node* expr);
+stmt_node* create_for_stmt_node(expr_node* expr);
+stmt_node* stmtList_add(stmt_node* start, stmt_node* added);
 
 enum type_type {
     named,
@@ -310,3 +318,9 @@ signature_node* create_construct_signature_node(bool isConst, identifier_node* n
 signature_node* signature_node_setStatic(signature_node* signature);
 signature_node* signature_node_addInitializers(signature_node* signature, initializer_node* initializers);
 signature_node* signature_node_addRedirection(signature_node* signature, redirection_node* redirection);
+
+struct switch_case_node {
+    int id;
+
+    
+};
