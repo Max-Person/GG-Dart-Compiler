@@ -353,16 +353,27 @@ stmt_node* create_expr_stmt_node(expr_node* expr){
 
     return node;
 }
-stmt_node* create_for_stmt_node(){
+stmt_node* create_for_stmt_node(stmt_node* forInitializerStmt, stmt_node* exprStmt, expr_node* exprList, stmt_node* body, declaredIdentifier_node* declaredIdentifier, expr_node* expr, identifier_node* identifier){
     stmt_node* node = (stmt_node*)malloc(sizeof(stmt_node));
     node->id = newID();
     node->type = for_statement;
+    node->forInitializerStmt = forInitializerStmt;
+    node->exprStmt = exprStmt;
+    node->exprList = exprList;
+    node->body = body;
+    node->declaredIdentifier = declaredIdentifier;
+    node->expr = expr;
+    node->identifier = identifier;
+    
     node->expr = expr;
 
     return node;
 }
 stmt_node* stmtList_add(stmt_node* start, stmt_node* added){
     stmt_node* cur = start;
+    if(cur == NULL){
+        return added;
+    }
     while (cur->nextStmt != NULL) {
         cur = cur->nextStmt;
     }

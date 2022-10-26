@@ -90,7 +90,7 @@ void yyerror(char const *s) {
 %nterm<_declaredIdentifier_node>declaredIdentifier
 %nterm<_idInit_node>staticFinalDeclaration staticFinalDeclarationList initializedIdentifier initializedIdentifierList
 %nterm<_variableDeclaration_node>variableDeclaration
-%nterm<_stmt_node>whileStatement doStatement ifStatement breakStatement returnStatement continueStatement statement statements forInitializerStatement variableDeclarationStatement exprStatement forStatement statementBlock
+%nterm<_stmt_node>whileStatement doStatement ifStatement breakStatement returnStatement continueStatement statement statements forInitializerStatement variableDeclarationStatement exprStatement forStatement statementBlock localFunctionDeclaration switchStatement
 %nterm<_formalParameter_node>normalFormalParameter normalFormalParameterList formalParameterList fieldFormalParameter constructorFormalParameters constructorFormalParameterList
 %nterm<_initializer_node>initializerListEntry initializers
 %nterm<_redirection_node>redirection
@@ -354,13 +354,10 @@ void yyerror(char const *s) {
 
     //-------------- ЦИКЛЫ --------------
 
-    forStatement: FOR '(' forInitializerStatement exprStatement exprList ')' statement      {//$$ = create_for_stmt();
-    }
-        | FOR '(' forInitializerStatement exprStatement ')' statement                       {//$$ = create_for_stmt($3, $4, $6, NULL);
-        }
-        | FOR '(' declaredIdentifier IN expr ')' statement                                  {//$$ = create_for_stmt($3, $5, , NULL);
-        }
-        | FOR '(' identifier IN expr ')' statement
+    forStatement: FOR '(' forInitializerStatement exprStatement exprList ')' statement      {$$ = create_for_stmt_node($3, $4, $5, $7, NULL, NULL, NULL);}
+        | FOR '(' forInitializerStatement exprStatement ')' statement                       {$$ = create_for_stmt_node($3, $4, NULL, $6, NULL, NULL, NULL);}
+        | FOR '(' declaredIdentifier IN expr ')' statement                                  {$$ = create_for_stmt_node(NULL, NULL, NULL, $7, $3, $5, NULL);}
+        | FOR '(' identifier IN expr ')' statement                                          {$$ = create_for_stmt_node(NULL, NULL, NULL, $7, NULL, $5, $3);}
     ;
 
     forInitializerStatement: variableDeclarationStatement       {$$ = $1;}
@@ -400,7 +397,7 @@ void yyerror(char const *s) {
         | statementBlock                    {$$ = $1;}
     ;
 
-    statements: %empty                      {$$ = NULL;}
+    statements: %empty                      {$$ = NULL;} // {statements statement statement}
         | statements statement              {$$ = stmtList_add($1, $2);}
     ;
 

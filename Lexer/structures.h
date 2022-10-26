@@ -158,13 +158,19 @@ struct stmt_node{
 
     struct variableDeclaration_node* variableDeclaration;
 
-    struct expr_node* expr;
+    struct expr_node* expr; 
 
-    struct stmt_node* nextStmt;
+    struct stmt_node* nextStmt; 
 
     struct stmt_node* forInitializerStmt;
     
     struct declaredIdentifier_node* declaredIdentifier;
+
+    struct identifier_node* identifier;
+
+    struct expr_node* exprList;
+
+    struct stmt_node* exprStmt;
 
     enum stmt_type type;
 };
@@ -176,7 +182,7 @@ stmt_node* create_continue_stmt_node();
 stmt_node* create_return_stmt_node(expr_node* returnExpr);
 stmt_node* create_variable_declaration_stmt_node(variableDeclaration_node* variableDeclaration);
 stmt_node* create_expr_stmt_node(expr_node* expr);
-stmt_node* create_for_stmt_node(expr_node* expr);
+stmt_node* create_for_stmt_node(stmt_node* forInitializerStmt, stmt_node* exprStmt, expr_node* exprList, stmt_node* body, declaredIdentifier_node* declaredIdentifier, expr_node* expr, identifier_node* identifier);
 stmt_node* stmtList_add(stmt_node* start, stmt_node* added);
 
 enum type_type {
@@ -321,6 +327,7 @@ signature_node* signature_node_addRedirection(signature_node* signature, redirec
 
 struct switch_case_node {
     int id;
+
 
     
 };
