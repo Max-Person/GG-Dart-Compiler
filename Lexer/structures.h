@@ -133,7 +133,8 @@ expr_node* exprList_add(expr_node* start, expr_node* added);
 enum stmt_type {
     expr_statement,
     variable_declaration_statement,
-    for_statement,
+    forN_statement,
+    forEach_statement,
     while_statement,
     do_statement,
     switch_statement,
@@ -148,9 +149,11 @@ enum stmt_type {
 
 struct stmt_node{
     int id;
+
+    enum stmt_type type;
     
-    struct expr_node* condition;
-    struct stmt_node* body;
+    struct expr_node* condition;    //��� if, switch, while � for
+    struct stmt_node* body;         //��� if, while, for
 
     struct stmt_node* elseBody;
 
@@ -158,21 +161,20 @@ struct stmt_node{
 
     struct variableDeclaration_node* variableDeclaration;
 
-    struct expr_node* expr; 
-
-    struct stmt_node* nextStmt; 
+    struct expr_node* expr; // ��� exprStatement
 
     struct stmt_node* forInitializerStmt;
-    
-    struct declaredIdentifier_node* declaredIdentifier;
+    struct expr_node* forPostExpr; //for postAction
+    struct declarator_node* forEachDeclarator;
+    struct identifier_node* forEachIdentifier;
+    struct expr_node* forContainerExpr;
 
-    struct identifier_node* identifier;
+    struct functionDefinition_node* func;
 
-    struct expr_node* exprList;
+    struct switch_case_node* switchCaseList;
+    struct stmt_node* defaultSwitchActions;
 
-    struct stmt_node* exprStmt;
-
-    enum stmt_type type;
+    struct stmt_node* nextStmt;
 };
 stmt_node* create_while_stmt_node(expr_node* condition, stmt_node* body);
 stmt_node* create_do_stmt_node(stmt_node* body, expr_node* condition);
@@ -182,7 +184,11 @@ stmt_node* create_continue_stmt_node();
 stmt_node* create_return_stmt_node(expr_node* returnExpr);
 stmt_node* create_variable_declaration_stmt_node(variableDeclaration_node* variableDeclaration);
 stmt_node* create_expr_stmt_node(expr_node* expr);
-stmt_node* create_for_stmt_node(stmt_node* forInitializerStmt, stmt_node* exprStmt, expr_node* exprList, stmt_node* body, declaredIdentifier_node* declaredIdentifier, expr_node* expr, identifier_node* identifier);
+stmt_node* create_forN_stmt_node(stmt_node* forInitializerStmt, stmt_node* exprStmt, expr_node* exprList, stmt_node* body);
+stmt_node* create_forEach_stmt_node(struct declaredIdentifier_node* declaredIdentifier, struct expr_node* expr, struct stmt_node* body);
+stmt_node* create_forEach_stmt_node(struct identifier_node* identifier, struct expr_node* expr, struct stmt_node* body);
+stmt_node* create_switch_case_stmt_node(expr_node* condition, switch_case_node* switchCaseList, stmt_node* defaultSwitchActions);
+stmt_node* create_functionDefinition_stmt_node(struct functionDefinition_node* func);
 stmt_node* stmtList_add(stmt_node* start, stmt_node* added);
 
 enum type_type {
@@ -325,9 +331,28 @@ signature_node* signature_node_setStatic(signature_node* signature);
 signature_node* signature_node_addInitializers(signature_node* signature, initializer_node* initializers);
 signature_node* signature_node_addRedirection(signature_node* signature, redirection_node* redirection);
 
+struct functionDefinition_node {
+    int id;
+
+    signature_node* signature;
+    stmt_node* body;
+};
+functionDefinition_node* create_functionDefinition_node(signature_node* signature, stmt_node* body);
+
 struct switch_case_node {
     int id;
 
-
-    
+    switch_case_node* next;
+    stmt_node* actions;
+    expr_node* condition;
 };
+switch_case_node* create_switch_case_node(stmt_node* actions, expr_node* condition);
+switch_case_node* switchCaseList_add(switch_case_node* start, switch_case_node* added);
+
+struct enum_node {
+    int id;
+
+    identifier_node* name;
+    identifier_node* values;
+};
+enum_node* create_enum_node(identifier_node* name, identifier_node* values);

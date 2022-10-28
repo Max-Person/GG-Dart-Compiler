@@ -80,6 +80,9 @@ void yyerror(char const *s) {
     initializer_node* _initializer_node;
     redirection_node* _redirection_node;
     signature_node* _signature_node;
+    functionDefinition_node* _functionDefinition_node;
+    switch_case_node* _switchCase_node;
+    enum_node* _enumType_node;
 }
 
 %nterm<_identifier_node>identifier builtInIdentifier identifierList IDDotList idDotList ambiguousArgumentsOrParameterList
@@ -90,11 +93,14 @@ void yyerror(char const *s) {
 %nterm<_declaredIdentifier_node>declaredIdentifier
 %nterm<_idInit_node>staticFinalDeclaration staticFinalDeclarationList initializedIdentifier initializedIdentifierList
 %nterm<_variableDeclaration_node>variableDeclaration
-%nterm<_stmt_node>whileStatement doStatement ifStatement breakStatement returnStatement continueStatement statement statements forInitializerStatement variableDeclarationStatement exprStatement forStatement statementBlock localFunctionDeclaration switchStatement
+%nterm<_stmt_node>whileStatement doStatement ifStatement breakStatement returnStatement continueStatement statement statements forInitializerStatement variableDeclarationStatement exprStatement forStatement statementBlock switchStatement functionBody
 %nterm<_formalParameter_node>normalFormalParameter normalFormalParameterList formalParameterList fieldFormalParameter constructorFormalParameters constructorFormalParameterList
 %nterm<_initializer_node>initializerListEntry initializers
 %nterm<_redirection_node>redirection
 %nterm<_signature_node>functionSignature methodSignature namedConstructorSignature constantConstructorSignature
+%nterm<_switchCase_node> switchCase switchCases
+%nterm<_enumType_node> enumType
+%nterm<_functionDefinition_node>localFunctionDeclaration
 
 %%
     //-------------- ВЕРХНИЙ УРОВЕНЬ --------------
@@ -341,25 +347,25 @@ void yyerror(char const *s) {
         | IF '(' expr ')' statement ELSE statement  {$$ = create_if_stmt_node($3, $5, $7);}
     ;
 
-    switchCase: CASE expr ':' statements
+    switchCase: CASE expr ':' statements        {$$ = create_switch_case_node($4, $2);}
     ;
 
-    switchCases: switchCase
-        | switchCases switchCase
+    switchCases: switchCase                     {$$ = $1;}
+        | switchCases switchCase                {$$ = switchCaseList_add($1, $2);}
     ;
 
-    switchStatement: SWITCH '(' expr ')' '{' switchCases '}'
-        | SWITCH '(' expr ')' '{' switchCases  DEFAULT ':' statements '}'
+    switchStatement: SWITCH '(' expr ')' '{' switchCases '}'        {$$ = create_switch_case_stmt_node($3, $6,  NULL);}
+        | SWITCH '(' expr ')' '{' switchCases  DEFAULT ':' statements '}'       {$$ = create_switch_case_stmt_node($3, $6, $9);}
     ;
 
     //-------------- ЦИКЛЫ --------------
 
-    forStatement: FOR '(' forInitializerStatement exprStatement exprList ')' statement      {$$ = create_for_stmt_node($3, $4, $5, $7, NULL, NULL, NULL);}
-        | FOR '(' forInitializerStatement exprStatement ')' statement                       {$$ = create_for_stmt_node($3, $4, NULL, $6, NULL, NULL, NULL);}
-        | FOR '(' declaredIdentifier IN expr ')' statement                                  {$$ = create_for_stmt_node(NULL, NULL, NULL, $7, $3, $5, NULL);}
-        | FOR '(' identifier IN expr ')' statement                                          {$$ = create_for_stmt_node(NULL, NULL, NULL, $7, NULL, $5, $3);}
+    forStatement: FOR '(' forInitializerStatement exprStatement exprList ')' statement      {$$ = create_forN_stmt_node($3, $4, $5, $7);}
+        | FOR '(' forInitializerStatement exprStatement ')' statement                       {$$ = create_forN_stmt_node($3, $4, NULL, $6);}
+        | FOR '(' declaredIdentifier IN expr ')' statement                                  {$$ = create_forEach_stmt_node($3, $5, $7);}
+        | FOR '(' identifier IN expr ')' statement                                          {$$ = create_forEach_stmt_node($3, $5, $7);}
     ;
-
+    
     forInitializerStatement: variableDeclarationStatement       {$$ = $1;}
         | exprStatement                                         {$$ = $1;}
     ;
@@ -393,7 +399,7 @@ void yyerror(char const *s) {
         | breakStatement                    {$$ = $1;}
         | continueStatement                 {$$ = $1;}
         | returnStatement                   {$$ = $1;}
-        | localFunctionDeclaration          {$$ = $1;}
+        | localFunctionDeclaration          {$$ = create_functionDefinition_stmt_node($1);}
         | statementBlock                    {$$ = $1;}
     ;
 
@@ -436,16 +442,16 @@ void yyerror(char const *s) {
         | identifier ambiguousArgumentsOrParameterList          {$$ = create_funcOrConstruct_signature_node(NULL, $1, convert_ambiguous_to_parameters($2));}
     ;
     
-    functionBody: FUNC_ARROW expr ';'
-        | statementBlock
+    functionBody: FUNC_ARROW expr ';'   {$$ = create_return_stmt_node($2);}
+        | statementBlock                {$$ = $1;}
     ;
 
-    localFunctionDeclaration: functionSignature functionBody
+    localFunctionDeclaration: functionSignature functionBody    {$$ = create_functionDefinition_node($1, $2);}
     ;
 
     //-------------- ЕНАМ --------------
 
-    enumType: ENUM identifier '{' identifierList '}'         {}
+    enumType: ENUM identifier '{' identifierList '}'         {$$ = create_enum_node($2, $4);}
     ;
 
     //------- КЛАССЫ --------------

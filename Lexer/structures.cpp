@@ -353,34 +353,77 @@ stmt_node* create_expr_stmt_node(expr_node* expr){
 
     return node;
 }
-stmt_node* create_for_stmt_node(stmt_node* forInitializerStmt, stmt_node* exprStmt, expr_node* exprList, stmt_node* body, declaredIdentifier_node* declaredIdentifier, expr_node* expr, identifier_node* identifier){
+stmt_node* create_forN_stmt_node(stmt_node* forInitializerStmt, stmt_node* condition, expr_node* forPostExpr, stmt_node* body) {
     stmt_node* node = (stmt_node*)malloc(sizeof(stmt_node));
     node->id = newID();
-    node->type = for_statement;
+
+    node->type = forN_statement;
     node->forInitializerStmt = forInitializerStmt;
-    node->exprStmt = exprStmt;
-    node->exprList = exprList;
+    node->condition = condition->expr;
+    node->forPostExpr = forPostExpr;
     node->body = body;
-    node->declaredIdentifier = declaredIdentifier;
-    node->expr = expr;
-    node->identifier = identifier;
-    
-    node->expr = expr;
+
+    return node;
+}
+stmt_node* create_forEach_stmt_node(declaredIdentifier_node* declaredIdentifier, expr_node* expr, stmt_node* body) {
+    stmt_node* node = (stmt_node*)malloc(sizeof(stmt_node));
+    node->id = newID();
+
+    node->type = forEach_statement;
+    node->forEachDeclarator = declaredIdentifier->declarator;
+    node->forEachIdentifier = declaredIdentifier->identifier;
+    node->forContainerExpr = expr;
+    node->body = body;
+
+    free(declaredIdentifier); //look
+
+    return node;
+}
+stmt_node* create_forEach_stmt_node(identifier_node* identifier, expr_node* expr, stmt_node* body) {
+    stmt_node* node = (stmt_node*)malloc(sizeof(stmt_node));
+    node->id = newID();
+
+    node->type = forEach_statement;
+    node->forEachDeclarator = NULL;
+    node->forEachIdentifier = identifier;
+    node->forContainerExpr = expr;
+    node->body = body;
+
+    return node;
+}
+stmt_node* create_functionDefinition_stmt_node(struct functionDefinition_node* func) {
+    stmt_node* node = (stmt_node*)malloc(sizeof(stmt_node));
+    node->id = newID();
+
+    node->type = local_function_declaration;
+    node->func = func;
 
     return node;
 }
 stmt_node* stmtList_add(stmt_node* start, stmt_node* added){
-    stmt_node* cur = start;
-    if(cur == NULL){
+    added->nextStmt = NULL;     //look нужно решить че с блоками делать
+    if (start == NULL) {
         return added;
     }
+
+    stmt_node* cur = start;
     while (cur->nextStmt != NULL) {
         cur = cur->nextStmt;
     }
-    added->nextStmt = NULL;
     cur->nextStmt = added;
 
     return start;
+}
+
+stmt_node* create_switch_case_stmt_node(expr_node* condition, switch_case_node* switchCaseList, stmt_node* defaultSwitchActions){
+    stmt_node* node = (stmt_node*)malloc(sizeof(stmt_node));
+    node->id = newID();
+    node->type = switch_statement;
+    node->switchCaseList = switchCaseList;
+    node->condition = condition;
+    node->defaultSwitchActions = defaultSwitchActions;
+
+    return node;
 }
 type_node* create_named_type_node(identifier_node* name, bool isNullable) {
     type_node* node = (type_node*)malloc(sizeof(type_node));
@@ -664,4 +707,44 @@ signature_node* signature_node_addInitializers(signature_node* signature, initia
 signature_node* signature_node_addRedirection(signature_node* signature, redirection_node* redirection) {
     signature->redirection = redirection;
     return signature;
+}
+
+functionDefinition_node* create_functionDefinition_node(signature_node* signature, stmt_node* body) {
+    functionDefinition_node* node = (functionDefinition_node*)malloc(sizeof(functionDefinition_node));
+    node->id = newID();
+
+    node->signature = signature;
+    node->body = body;
+
+    return node;
+}
+
+switch_case_node* create_switch_case_node(stmt_node* actions, expr_node* condition){
+    switch_case_node* node = (switch_case_node*)malloc(sizeof(switch_case_node));
+
+    node->id = newID();
+    node->actions = actions;
+    node->condition = condition;
+
+    return node;
+}
+switch_case_node* switchCaseList_add(switch_case_node* start, switch_case_node* added){
+    switch_case_node* cur = start;
+    while (cur->next != NULL) {
+        cur = cur->next;
+    }
+    added->next = NULL;
+    cur->next = added;
+
+    return start;
+}
+
+enum_node* create_enum_node(identifier_node* name, identifier_node* values){
+    enum_node* node = (enum_node*)malloc(sizeof(enum_node));
+    node->id = newID();
+
+    node->name = name;
+    node->values = values;
+
+    return node;
 }
