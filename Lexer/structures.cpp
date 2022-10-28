@@ -473,9 +473,13 @@ type_node* typeList_add(type_node* start, type_node* added) {
 }
 
 declarator_node* create_declarator_node(bool isLate, bool isFinal, bool isConst, type_node* valueType) {
+    return create_declarator_node(false, isLate, isFinal, isConst, valueType);
+}
+declarator_node* create_declarator_node(bool isStatic, bool isLate, bool isFinal, bool isConst, type_node* valueType) {
     declarator_node* node = (declarator_node*)malloc(sizeof(declarator_node));
     node->id = newID();
 
+    node->isStatic = isStatic;
     node->isLate = isLate;
     node->isFinal = isFinal;
     node->isConst = isConst;
@@ -745,6 +749,80 @@ enum_node* create_enum_node(identifier_node* name, identifier_node* values){
 
     node->name = name;
     node->values = values;
+
+    return node;
+}
+
+classMemberDeclaration_node* create_field_classMemberDeclaration_node(bool isStatic, bool isLate, bool isFinal, bool isConst, type_node* valueType, idInit_node* idList) {
+    classMemberDeclaration_node* node = (classMemberDeclaration_node*)malloc(sizeof(classMemberDeclaration_node));
+    node->id = newID();
+
+    node->type = field;
+    node->declarator = create_declarator_node(isStatic, isLate, isFinal, isConst, valueType);
+    node->idList = idList;
+
+    return node;
+}
+classMemberDeclaration_node* create_constructSignature_classMemberDeclaration_node(signature_node* signature) {
+    classMemberDeclaration_node* node = (classMemberDeclaration_node*)malloc(sizeof(classMemberDeclaration_node));
+    node->id = newID();
+
+    node->type = constructSignature;
+    node->signature = signature;
+
+    return node;
+}
+classMemberDeclaration_node* create_methodDefinition_classMemberDeclaration_node(signature_node* signature, stmt_node* body) {
+    classMemberDeclaration_node* node = (classMemberDeclaration_node*)malloc(sizeof(classMemberDeclaration_node));
+    node->id = newID();
+
+    node->type = methodDefinition;
+    node->signature = signature;
+    node->body = body;
+
+    return node;
+}
+classMemberDeclaration_node* classMemberDeclarationList_add(classMemberDeclaration_node* start, classMemberDeclaration_node* added) {
+    classMemberDeclaration_node* cur = start;
+    while (cur->next != NULL) {
+        cur = cur->next;
+    }
+    added->next = NULL;
+    cur->next = added;
+
+    return start;
+}
+
+supeclassOpt_node* create_supeclassOpt_node(type_node* superclass, type_node* mixins) {
+    supeclassOpt_node* node = (supeclassOpt_node*)malloc(sizeof(supeclassOpt_node));
+    node->superclass = superclass;
+    node->mixins = mixins;
+    return node;
+}
+classDeclaration_node* create_normal_classDeclaration_node(bool isAbstract, supeclassOpt_node* superOpt, type_node* interfaces, classMemberDeclaration_node* members, identifier_node* name) {
+    classDeclaration_node* node = (classDeclaration_node*)malloc(sizeof(classDeclaration_node));
+    node->id = newID();
+
+    node->isAlias = false;
+    node->isAbstract = isAbstract;
+    node->super = superOpt->superclass;
+    node->mixins = superOpt->mixins;
+    free(superOpt);     //look
+    node->interfaces = interfaces;
+    node->name = name;
+
+    return node;
+}
+classDeclaration_node* create_alias_classDeclaration_node(bool isAbstract, type_node* super, type_node* mixins, type_node* interfaces, identifier_node* name) {
+    classDeclaration_node* node = (classDeclaration_node*)malloc(sizeof(classDeclaration_node));
+    node->id = newID();
+
+    node->isAlias = true;
+    node->isAbstract = isAbstract;
+    node->super = super;
+    node->mixins = mixins;
+    node->interfaces = interfaces;
+    node->name = name;
 
     return node;
 }

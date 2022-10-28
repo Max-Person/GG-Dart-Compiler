@@ -83,12 +83,15 @@ void yyerror(char const *s) {
     functionDefinition_node* _functionDefinition_node;
     switch_case_node* _switchCase_node;
     enum_node* _enumType_node;
+    classMemberDeclaration_node* _classMemberDeclaration_node;
+    supeclassOpt_node* _supeclassOpt_node;
+    classDeclaration_node* _classDeclaration_node;
 }
 
 %nterm<_identifier_node>identifier builtInIdentifier identifierList IDDotList idDotList ambiguousArgumentsOrParameterList
 %nterm<_selector_node>assignableSelector selector
 %nterm<_expr>string primary selectorExpr postfixExpr exprNotAssign expr exprList arguments
-%nterm<_type_node>typeName typeNotVoid typeNotVoidList type
+%nterm<_type_node>typeName typeNotVoid typeNotVoidList type mixins interfacesOpt
 %nterm<_declarator_node>declarator
 %nterm<_declaredIdentifier_node>declaredIdentifier
 %nterm<_idInit_node>staticFinalDeclaration staticFinalDeclarationList initializedIdentifier initializedIdentifierList
@@ -101,6 +104,9 @@ void yyerror(char const *s) {
 %nterm<_switchCase_node> switchCase switchCases
 %nterm<_enumType_node> enumType
 %nterm<_functionDefinition_node>localFunctionDeclaration
+%nterm<_classMemberDeclaration_node>declaration classMemberDeclaration classMemberDeclarations
+%nterm<_supeclassOpt_node>superclassOpt
+%nterm<_classDeclaration_node>classDeclaration
 
 %%
     //-------------- ВЕРХНИЙ УРОВЕНЬ --------------
@@ -365,7 +371,7 @@ void yyerror(char const *s) {
         | FOR '(' declaredIdentifier IN expr ')' statement                                  {$$ = create_forEach_stmt_node($3, $5, $7);}
         | FOR '(' identifier IN expr ')' statement                                          {$$ = create_forEach_stmt_node($3, $5, $7);}
     ;
-    
+
     forInitializerStatement: variableDeclarationStatement       {$$ = $1;}
         | exprStatement                                         {$$ = $1;}
     ;
@@ -456,23 +462,23 @@ void yyerror(char const *s) {
 
     //------- КЛАССЫ --------------
 
-    mixins: WITH typeNotVoidList
+    mixins: WITH typeNotVoidList            {$$ = $2;}
     ;
 
-    superclassOpt: %empty
-        | EXTENDS typeNotVoid
-        | EXTENDS typeNotVoid mixins
-        | mixins
+    superclassOpt: %empty                   {$$ = create_supeclassOpt_node(NULL, NULL);}
+        | EXTENDS typeNotVoid               {$$ = create_supeclassOpt_node($2, NULL);}
+        | EXTENDS typeNotVoid mixins        {$$ = create_supeclassOpt_node($2, $3);}
+        | mixins                            {$$ = create_supeclassOpt_node(NULL, $1);}
     ;
 
-    interfacesOpt: %empty
-        | IMPLEMENTS typeNotVoidList
+    interfacesOpt: %empty                   {$$ = NULL;}
+        | IMPLEMENTS typeNotVoidList        {$$ = $2;}
     ;
 
-    classDeclaration: CLASS IDENTIFIER superclassOpt interfacesOpt '{' classMemberDeclarations '}'
-        | ABSTRACT CLASS IDENTIFIER superclassOpt interfacesOpt '{' classMemberDeclarations '}'
-        | CLASS identifier '=' typeNotVoid mixins interfacesOpt ';'
-        | ABSTRACT CLASS identifier '=' typeNotVoid mixins interfacesOpt ';'
+    classDeclaration: CLASS IDENTIFIER superclassOpt interfacesOpt '{' classMemberDeclarations '}'  {$$ = create_normal_classDeclaration_node(false, $3, $4, $6, $2);}
+        | ABSTRACT CLASS IDENTIFIER superclassOpt interfacesOpt '{' classMemberDeclarations '}'     {$$ = create_normal_classDeclaration_node(true, $4, $5, $7, $3);}
+        | CLASS identifier '=' typeNotVoid mixins interfacesOpt ';'                                 {$$ = create_alias_classDeclaration_node(false, $4, $5, $6, $2);}
+        | ABSTRACT CLASS identifier '=' typeNotVoid mixins interfacesOpt ';'                        {$$ = create_alias_classDeclaration_node(true, $5, $6, $7, $3);}
     ;
 
     staticFinalDeclaration: identifier '=' expr                     {$$ = create_assign_idInit_node($1, $3);}
@@ -482,42 +488,42 @@ void yyerror(char const *s) {
         | staticFinalDeclarationList ',' staticFinalDeclaration     {$$ = idInitList_add($1, $3);}
     ;
 
-    classMemberDeclaration: declaration ';'
-        | methodSignature functionBody
+    classMemberDeclaration: declaration ';'                     {$$ = $1;}
+        | methodSignature functionBody                          {$$ = create_methodDefinition_classMemberDeclaration_node($1, $2);}
     ;
 
-    classMemberDeclarations: classMemberDeclaration
-        | classMemberDeclarations classMemberDeclaration
+    classMemberDeclarations: classMemberDeclaration             {$$ = $1;}
+        | classMemberDeclarations classMemberDeclaration        {$$ = classMemberDeclarationList_add($1, $2);}
     ;
 
     //Дописать
-    declaration: STATIC CONST type staticFinalDeclarationList
-        | STATIC CONST staticFinalDeclarationList
-        | STATIC FINAL type staticFinalDeclarationList
-        | STATIC FINAL staticFinalDeclarationList
-        | STATIC LATE FINAL type initializedIdentifierList
-        | STATIC LATE FINAL initializedIdentifierList
-        | STATIC LATE VAR initializedIdentifierList
-        | STATIC LATE type initializedIdentifierList
-        | STATIC VAR initializedIdentifierList
-        | STATIC type initializedIdentifierList
-        | LATE FINAL type initializedIdentifierList
-        | LATE FINAL initializedIdentifierList
-        | FINAL type initializedIdentifierList
-        | FINAL initializedIdentifierList
-        | LATE VAR initializedIdentifierList
-        | LATE type initializedIdentifierList
-        | VAR initializedIdentifierList
-        | type initializedIdentifierList
-        | constantConstructorSignature
-        | constantConstructorSignature redirection
-        | constantConstructorSignature initializers
-        | namedConstructorSignature
-        | namedConstructorSignature redirection
-        | namedConstructorSignature initializers
-        | functionSignature
-        | functionSignature redirection
-        | functionSignature initializers
+    declaration: STATIC CONST type staticFinalDeclarationList       {$$ = create_field_classMemberDeclaration_node(true, false, false, true, $3, $4);}
+        | STATIC CONST staticFinalDeclarationList                   {$$ = create_field_classMemberDeclaration_node(true, false, false, true, NULL, $3);}
+        | STATIC FINAL type staticFinalDeclarationList              {$$ = create_field_classMemberDeclaration_node(true, false, true, false, $3, $4);}
+        | STATIC FINAL staticFinalDeclarationList                   {$$ = create_field_classMemberDeclaration_node(true, false, true, false, NULL, $3);}
+        | STATIC LATE FINAL type initializedIdentifierList          {$$ = create_field_classMemberDeclaration_node(true, true, true, false, $4, $5);}
+        | STATIC LATE FINAL initializedIdentifierList               {$$ = create_field_classMemberDeclaration_node(true, true, true, false, NULL, $4);}
+        | STATIC LATE VAR initializedIdentifierList                 {$$ = create_field_classMemberDeclaration_node(true, true, false, false, NULL, $4);}
+        | STATIC LATE type initializedIdentifierList                {$$ = create_field_classMemberDeclaration_node(true, true, false, false, $3, $4);}
+        | STATIC VAR initializedIdentifierList                      {$$ = create_field_classMemberDeclaration_node(true, false, false, false, NULL, $3);}
+        | STATIC type initializedIdentifierList                     {$$ = create_field_classMemberDeclaration_node(true, false, false, false, $2, $3);}
+        | LATE FINAL type initializedIdentifierList                 {$$ = create_field_classMemberDeclaration_node(false, true, true, false, $3, $4);}
+        | LATE FINAL initializedIdentifierList                      {$$ = create_field_classMemberDeclaration_node(false, true, true, false, NULL, $3);}
+        | FINAL type initializedIdentifierList                      {$$ = create_field_classMemberDeclaration_node(false, false, true, false, $2, $3);}
+        | FINAL initializedIdentifierList                           {$$ = create_field_classMemberDeclaration_node(false, false, true, false, NULL, $2);}
+        | LATE VAR initializedIdentifierList                        {$$ = create_field_classMemberDeclaration_node(false, true, false, false, NULL, $3);}
+        | LATE type initializedIdentifierList                       {$$ = create_field_classMemberDeclaration_node(false, true, false, false, $2, $3);}
+        | VAR initializedIdentifierList                             {$$ = create_field_classMemberDeclaration_node(false, false, false, false, NULL, $2);}
+        | type initializedIdentifierList                            {$$ = create_field_classMemberDeclaration_node(false, false, false, false, $1, $2);}
+        | constantConstructorSignature                              {$$ = create_constructSignature_classMemberDeclaration_node($1);}
+        | constantConstructorSignature redirection                  {$$ = create_constructSignature_classMemberDeclaration_node(signature_node_addRedirection($1, $2));}
+        | constantConstructorSignature initializers                 {$$ = create_constructSignature_classMemberDeclaration_node(signature_node_addInitializers($1, $2));}
+        | namedConstructorSignature                                 {$$ = create_constructSignature_classMemberDeclaration_node($1);}
+        | namedConstructorSignature redirection                     {$$ = create_constructSignature_classMemberDeclaration_node(signature_node_addRedirection($1, $2));}
+        | namedConstructorSignature initializers                    {$$ = create_constructSignature_classMemberDeclaration_node(signature_node_addInitializers($1, $2));}
+        | functionSignature                                         {$$ = create_constructSignature_classMemberDeclaration_node($1);}
+        | functionSignature redirection                             {$$ = create_constructSignature_classMemberDeclaration_node(signature_node_addRedirection($1, $2));}
+        | functionSignature initializers                            {$$ = create_constructSignature_classMemberDeclaration_node(signature_node_addInitializers($1, $2));}
     ;
 
     // Дописать

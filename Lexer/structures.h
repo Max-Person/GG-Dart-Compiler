@@ -215,6 +215,7 @@ type_node* typeList_add(type_node* start, type_node* added);
 struct declarator_node {
     int id;
 
+    bool isStatic;
     bool isLate;
     bool isFinal;
     bool isConst;
@@ -223,6 +224,7 @@ struct declarator_node {
     struct type_node* valueType;
 };
 declarator_node* create_declarator_node(bool isLate, bool isFinal, bool isConst, type_node* valueType);
+declarator_node* create_declarator_node(bool isStatic, bool isLate, bool isFinal, bool isConst, type_node* valueType);
 
 struct declaredIdentifier_node {
     int id;
@@ -356,3 +358,46 @@ struct enum_node {
     identifier_node* values;
 };
 enum_node* create_enum_node(identifier_node* name, identifier_node* values);
+
+enum classMemberDeclaration_type {
+    field,
+    constructSignature,
+    methodDefinition,
+};
+struct classMemberDeclaration_node {
+    int id;
+
+    classMemberDeclaration_type type;
+
+    declarator_node* declarator;
+    idInit_node* idList;
+
+    signature_node* signature;
+    stmt_node* body;
+
+    classMemberDeclaration_node* next = NULL;
+};
+classMemberDeclaration_node* create_field_classMemberDeclaration_node(bool isStatic, bool isLate, bool isFinal, bool isConst, type_node* valueType, idInit_node* idList);
+classMemberDeclaration_node* create_constructSignature_classMemberDeclaration_node(signature_node* signature);
+classMemberDeclaration_node* create_methodDefinition_classMemberDeclaration_node(signature_node* signature, stmt_node* body);
+classMemberDeclaration_node* classMemberDeclarationList_add(classMemberDeclaration_node* start, classMemberDeclaration_node* added);
+
+struct supeclassOpt_node {
+    type_node* superclass;
+    type_node* mixins;
+};
+supeclassOpt_node* create_supeclassOpt_node(type_node* superclass, type_node* mixins);
+struct classDeclaration_node {
+    int id;
+
+    bool isAlias;
+    bool isAbstract;
+    type_node* super;
+    type_node* mixins;
+    type_node* interfaces;
+    identifier_node* name;
+
+    classMemberDeclaration_node* classMembers;
+};
+classDeclaration_node* create_normal_classDeclaration_node(bool isAbstract, supeclassOpt_node* superOpt, type_node* interfaces, classMemberDeclaration_node* members, identifier_node* name);
+classDeclaration_node* create_alias_classDeclaration_node(bool isAbstract, type_node* super, type_node* mixins, type_node* interfaces, identifier_node* name);
