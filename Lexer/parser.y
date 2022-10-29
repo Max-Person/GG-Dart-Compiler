@@ -488,10 +488,10 @@ void yyerror(char const *s) {
         | IMPLEMENTS typeNotVoidList        {$$ = $2;}
     ;
 
-    classDeclaration: CLASS IDENTIFIER superclassOpt interfacesOpt '{' classMemberDeclarations '}'  {$$ = create_normal_classDeclaration_node(false, $3, $4, $6, $2);}
-        | ABSTRACT CLASS IDENTIFIER superclassOpt interfacesOpt '{' classMemberDeclarations '}'     {$$ = create_normal_classDeclaration_node(true, $4, $5, $7, $3);}
-        | CLASS IDENTIFIER '=' typeNotVoid mixins interfacesOpt ';'                                 {$$ = create_alias_classDeclaration_node(false, $4, $5, $6, $2);}
-        | ABSTRACT CLASS IDENTIFIER '=' typeNotVoid mixins interfacesOpt ';'                        {$$ = create_alias_classDeclaration_node(true, $5, $6, $7, $3);}
+    classDeclaration: CLASS IDENTIFIER superclassOpt interfacesOpt '{' classMemberDeclarations '}'  {$$ = create_normal_classDeclaration_node(false, $2, $3, $4, $6);}
+        | ABSTRACT CLASS IDENTIFIER superclassOpt interfacesOpt '{' classMemberDeclarations '}'     {$$ = create_normal_classDeclaration_node(true, $3, $4, $5, $7);}
+        | CLASS IDENTIFIER '=' typeNotVoid mixins interfacesOpt ';'                                 {$$ = create_alias_classDeclaration_node(false, $2, $4, $5, $6);}
+        | ABSTRACT CLASS IDENTIFIER '=' typeNotVoid mixins interfacesOpt ';'                        {$$ = create_alias_classDeclaration_node(true, $3, $5, $6, $7);}
     ;
 
     staticFinalDeclaration: identifier '=' expr                     {$$ = create_assign_idInit_node($1, $3);}

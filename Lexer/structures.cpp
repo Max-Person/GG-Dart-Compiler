@@ -802,30 +802,31 @@ supeclassOpt_node* create_supeclassOpt_node(type_node* superclass, type_node* mi
     node->mixins = mixins;
     return node;
 }
-classDeclaration_node* create_normal_classDeclaration_node(bool isAbstract, supeclassOpt_node* superOpt, type_node* interfaces, classMemberDeclaration_node* members, identifier_node* name) {
+classDeclaration_node* create_normal_classDeclaration_node(bool isAbstract, identifier_node* name, supeclassOpt_node* superOpt, type_node* interfaces, classMemberDeclaration_node* members) {
     classDeclaration_node* node = (classDeclaration_node*)malloc(sizeof(classDeclaration_node));
     node->id = newID();
 
     node->isAlias = false;
     node->isAbstract = isAbstract;
+    node->name = name;
     node->super = superOpt->superclass;
     node->mixins = superOpt->mixins;
     free(superOpt);     //look
     node->interfaces = interfaces;
-    node->name = name;
+    node->classMembers = members;
 
     return node;
 }
-classDeclaration_node* create_alias_classDeclaration_node(bool isAbstract, type_node* super, type_node* mixins, type_node* interfaces, identifier_node* name) {
+classDeclaration_node* create_alias_classDeclaration_node(bool isAbstract, identifier_node* name, type_node* super, type_node* mixins, type_node* interfaces) {
     classDeclaration_node* node = (classDeclaration_node*)malloc(sizeof(classDeclaration_node));
     node->id = newID();
 
     node->isAlias = true;
     node->isAbstract = isAbstract;
+    node->name = name;
     node->super = super;
     node->mixins = mixins;
     node->interfaces = interfaces;
-    node->name = name;
 
     return node;
 }

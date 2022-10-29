@@ -394,8 +394,8 @@ struct classDeclaration_node {
 
     classMemberDeclaration_node* classMembers;
 };
-classDeclaration_node* create_normal_classDeclaration_node(bool isAbstract, supeclassOpt_node* superOpt, type_node* interfaces, classMemberDeclaration_node* members, identifier_node* name);
-classDeclaration_node* create_alias_classDeclaration_node(bool isAbstract, type_node* super, type_node* mixins, type_node* interfaces, identifier_node* name);
+classDeclaration_node* create_normal_classDeclaration_node(bool isAbstract, identifier_node* name, supeclassOpt_node* superOpt, type_node* interfaces, classMemberDeclaration_node* members);
+classDeclaration_node* create_alias_classDeclaration_node(bool isAbstract, identifier_node* name, type_node* super, type_node* mixins, type_node* interfaces);
 
 enum topLevelDeclaration_type {
     _class,
