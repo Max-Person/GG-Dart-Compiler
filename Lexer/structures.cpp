@@ -12,6 +12,7 @@ int newID() {
 identifier_node* create_identifier_node(bool isBuiltin, char* stringval) {
     identifier_node* node = (identifier_node*)malloc(sizeof(identifier_node));
     node->id = newID();
+    node->next = NULL;
 
     node->isBuiltin = isBuiltin;
     node->stringval = stringval;
@@ -279,6 +280,7 @@ expr_node* exprList_add(expr_node* start, expr_node* added){
 stmt_node* create_while_stmt_node(expr_node* condition, stmt_node* body){
     stmt_node* node = (stmt_node*)malloc(sizeof(stmt_node));
     node->id = newID();
+    node->nextStmt = NULL;
 
     node->body = body;
     node->condition = condition;
@@ -289,6 +291,7 @@ stmt_node* create_while_stmt_node(expr_node* condition, stmt_node* body){
 stmt_node* create_do_stmt_node(stmt_node* body, expr_node* condition){
     stmt_node* node = (stmt_node*)malloc(sizeof(stmt_node));
     node->id = newID();
+    node->nextStmt = NULL;
 
     node->body = body;
     node->condition = condition;
@@ -299,6 +302,7 @@ stmt_node* create_do_stmt_node(stmt_node* body, expr_node* condition){
 stmt_node* create_break_stmt_node(){
     stmt_node* node = (stmt_node*)malloc(sizeof(stmt_node));
     node->id = newID();
+    node->nextStmt = NULL;
 
     node->body = NULL;
     node->condition = NULL;
@@ -309,6 +313,7 @@ stmt_node* create_break_stmt_node(){
 stmt_node* create_continue_stmt_node(){
     stmt_node* node = (stmt_node*)malloc(sizeof(stmt_node));
     node->id = newID();
+    node->nextStmt = NULL;
 
     node->body = NULL;
     node->condition = NULL;
@@ -319,6 +324,7 @@ stmt_node* create_continue_stmt_node(){
 stmt_node* create_return_stmt_node(expr_node* returnExpr){
     stmt_node* node = (stmt_node*)malloc(sizeof(stmt_node));
     node->id = newID();
+    node->nextStmt = NULL;
 
     node->body = NULL;
     node->condition = NULL;
@@ -331,6 +337,7 @@ stmt_node* create_return_stmt_node(expr_node* returnExpr){
 stmt_node* create_if_stmt_node(expr_node* condition, stmt_node* body, stmt_node* elseBody){
     stmt_node* node = (stmt_node*)malloc(sizeof(stmt_node));
     node->id = newID();
+    node->nextStmt = NULL;
 
     node->body = body;
     node->condition = condition;
@@ -340,9 +347,23 @@ stmt_node* create_if_stmt_node(expr_node* condition, stmt_node* body, stmt_node*
 
     return node;
 }
+stmt_node* create_switch_case_stmt_node(expr_node* condition, switch_case_node* switchCaseList, stmt_node* defaultSwitchActions) {
+    stmt_node* node = (stmt_node*)malloc(sizeof(stmt_node));
+    node->id = newID();
+    node->nextStmt = NULL;
+
+    node->type = switch_statement;
+    node->switchCaseList = switchCaseList;
+    node->condition = condition;
+    node->defaultSwitchActions = defaultSwitchActions;
+
+    return node;
+}
 stmt_node* create_variable_declaration_stmt_node(variableDeclaration_node* variableDeclaration){
     stmt_node* node = (stmt_node*)malloc(sizeof(stmt_node));
     node->id = newID();
+    node->nextStmt = NULL;
+
     node->type = variable_declaration_statement;
     node->variableDeclaration = variableDeclaration;
 
@@ -351,6 +372,8 @@ stmt_node* create_variable_declaration_stmt_node(variableDeclaration_node* varia
 stmt_node* create_expr_stmt_node(expr_node* expr){
     stmt_node* node = (stmt_node*)malloc(sizeof(stmt_node));
     node->id = newID();
+    node->nextStmt = NULL;
+
     node->type = expr_statement;
     node->expr = expr;
 
@@ -359,6 +382,7 @@ stmt_node* create_expr_stmt_node(expr_node* expr){
 stmt_node* create_forN_stmt_node(stmt_node* forInitializerStmt, stmt_node* condition, expr_node* forPostExpr, stmt_node* body) {
     stmt_node* node = (stmt_node*)malloc(sizeof(stmt_node));
     node->id = newID();
+    node->nextStmt = NULL;
 
     node->type = forN_statement;
     node->forInitializerStmt = forInitializerStmt;
@@ -371,6 +395,7 @@ stmt_node* create_forN_stmt_node(stmt_node* forInitializerStmt, stmt_node* condi
 stmt_node* create_forEach_stmt_node(variableDeclaration_node* declaredIdentifier, expr_node* expr, stmt_node* body) {
     stmt_node* node = (stmt_node*)malloc(sizeof(stmt_node));
     node->id = newID();
+    node->nextStmt = NULL;
 
     node->type = forEach_statement;
     node->variableDeclaration = declaredIdentifier;
@@ -383,6 +408,7 @@ stmt_node* create_forEach_stmt_node(variableDeclaration_node* declaredIdentifier
 stmt_node* create_forEach_stmt_node(identifier_node* identifier, expr_node* expr, stmt_node* body) {
     stmt_node* node = (stmt_node*)malloc(sizeof(stmt_node));
     node->id = newID();
+    node->nextStmt = NULL;
 
     node->type = forEach_statement;
     node->variableDeclaration = NULL;
@@ -395,6 +421,7 @@ stmt_node* create_forEach_stmt_node(identifier_node* identifier, expr_node* expr
 stmt_node* create_functionDefinition_stmt_node(struct functionDefinition_node* func) {
     stmt_node* node = (stmt_node*)malloc(sizeof(stmt_node));
     node->id = newID();
+    node->nextStmt = NULL;
 
     node->type = local_function_declaration;
     node->func = func;
@@ -404,6 +431,7 @@ stmt_node* create_functionDefinition_stmt_node(struct functionDefinition_node* f
 stmt_node* create_block_stmt_node(stmt_node* inner) {
     stmt_node* node = (stmt_node*)malloc(sizeof(stmt_node));
     node->id = newID();
+    node->nextStmt = NULL;
 
     node->type = block;
     node->body = inner;
@@ -425,16 +453,6 @@ stmt_node* stmtList_add(stmt_node* start, stmt_node* added){
     return start;
 }
 
-stmt_node* create_switch_case_stmt_node(expr_node* condition, switch_case_node* switchCaseList, stmt_node* defaultSwitchActions){
-    stmt_node* node = (stmt_node*)malloc(sizeof(stmt_node));
-    node->id = newID();
-    node->type = switch_statement;
-    node->switchCaseList = switchCaseList;
-    node->condition = condition;
-    node->defaultSwitchActions = defaultSwitchActions;
-
-    return node;
-}
 type_node* create_named_type_node(identifier_node* name, bool isNullable) {
     type_node* node = (type_node*)malloc(sizeof(type_node));
     node->id = newID();
@@ -665,6 +683,7 @@ signature_node* create_construct_signature_node(bool isConst, identifier_node* n
     if (name->next != NULL && name->next->next != NULL) {
         throw -1;   // имя конструктора может иметь только тип Car.name - дот-лист из двух элементов
     }
+    //todo проверить на built-in. Хотя мб можно и просто на этапе семантики на совпадение с используемым классом
 
     signature_node* node = (signature_node*)malloc(sizeof(signature_node));
     node->id = newID();
@@ -706,8 +725,9 @@ functionDefinition_node* create_functionDefinition_node(signature_node* signatur
 
 switch_case_node* create_switch_case_node(stmt_node* actions, expr_node* condition){
     switch_case_node* node = (switch_case_node*)malloc(sizeof(switch_case_node));
-
     node->id = newID();
+    node->next = NULL;
+
     node->actions = actions;
     node->condition = condition;
 
@@ -737,6 +757,7 @@ enum_node* create_enum_node(identifier_node* name, identifier_node* values){
 classMemberDeclaration_node* create_field_classMemberDeclaration_node(bool isStatic, bool isLate, bool isFinal, bool isConst, type_node* valueType, idInit_node* idList) {
     classMemberDeclaration_node* node = (classMemberDeclaration_node*)malloc(sizeof(classMemberDeclaration_node));
     node->id = newID();
+    node->next = NULL;
 
     node->type = field;
     node->fieldDecl = create_variableDeclaration_node(create_declarator_node(isStatic, isLate, isFinal, isConst, valueType), idList);
@@ -746,6 +767,7 @@ classMemberDeclaration_node* create_field_classMemberDeclaration_node(bool isSta
 classMemberDeclaration_node* create_constructSignature_classMemberDeclaration_node(signature_node* signature) {
     classMemberDeclaration_node* node = (classMemberDeclaration_node*)malloc(sizeof(classMemberDeclaration_node));
     node->id = newID();
+    node->next = NULL;
 
     node->type = constructSignature;
     node->signature = signature;
@@ -755,6 +777,7 @@ classMemberDeclaration_node* create_constructSignature_classMemberDeclaration_no
 classMemberDeclaration_node* create_methodDefinition_classMemberDeclaration_node(signature_node* signature, stmt_node* body) {
     classMemberDeclaration_node* node = (classMemberDeclaration_node*)malloc(sizeof(classMemberDeclaration_node));
     node->id = newID();
+    node->next = NULL;
 
     node->type = methodDefinition;
     node->signature = signature;
@@ -810,6 +833,7 @@ classDeclaration_node* create_alias_classDeclaration_node(bool isAbstract, type_
 topLevelDeclaration_node* create_class_topLevelDeclaration_node(classDeclaration_node* classDecl) {
     topLevelDeclaration_node* node = (topLevelDeclaration_node*)malloc(sizeof(topLevelDeclaration_node));
     node->id = newID();
+    node->next = NULL;
 
     node->type = _class;
     node->classDecl = classDecl;
@@ -819,6 +843,7 @@ topLevelDeclaration_node* create_class_topLevelDeclaration_node(classDeclaration
 topLevelDeclaration_node* create_func_topLevelDeclaration_node(signature_node* signature, stmt_node* body) {
     topLevelDeclaration_node* node = (topLevelDeclaration_node*)malloc(sizeof(topLevelDeclaration_node));
     node->id = newID();
+    node->next = NULL;
 
     node->type = _function;
     node->functionDecl = create_functionDefinition_node(signature, body);
@@ -828,6 +853,7 @@ topLevelDeclaration_node* create_func_topLevelDeclaration_node(signature_node* s
 topLevelDeclaration_node* create_enum_topLevelDeclaration_node(enum_node* enumDecl) {
     topLevelDeclaration_node* node = (topLevelDeclaration_node*)malloc(sizeof(topLevelDeclaration_node));
     node->id = newID();
+    node->next = NULL;
 
     node->type = _enum;
     node->enumDecl = enumDecl;
