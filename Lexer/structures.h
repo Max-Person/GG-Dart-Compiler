@@ -394,3 +394,26 @@ struct classDeclaration_node {
 };
 classDeclaration_node* create_normal_classDeclaration_node(bool isAbstract, supeclassOpt_node* superOpt, type_node* interfaces, classMemberDeclaration_node* members, identifier_node* name);
 classDeclaration_node* create_alias_classDeclaration_node(bool isAbstract, type_node* super, type_node* mixins, type_node* interfaces, identifier_node* name);
+
+enum topLevelDeclaration_type {
+    _class,
+    _function,
+    _enum,
+    _variable,
+};
+struct topLevelDeclaration_node {
+    int id;
+
+    topLevelDeclaration_type type;
+    classDeclaration_node* classDecl;
+    functionDefinition_node* functionDecl;
+    enum_node* enumDecl;
+    variableDeclaration_node* variableDecl;
+
+    topLevelDeclaration_node* next = NULL;
+};
+topLevelDeclaration_node* create_class_topLevelDeclaration_node(classDeclaration_node* classDecl);
+topLevelDeclaration_node* create_func_topLevelDeclaration_node(signature_node* signature, stmt_node* body);
+topLevelDeclaration_node* create_enum_topLevelDeclaration_node(enum_node* enumDecl);
+topLevelDeclaration_node* create_var_topLevelDeclaration_node(bool isLate, bool isFinal, bool isConst, type_node* valueType, idInit_node* identifiers);
+topLevelDeclaration_node* topLevelDeclarationList_add(topLevelDeclaration_node* start, topLevelDeclaration_node* added);

@@ -805,3 +805,54 @@ classDeclaration_node* create_alias_classDeclaration_node(bool isAbstract, type_
 
     return node;
 }
+
+topLevelDeclaration_node* create_class_topLevelDeclaration_node(classDeclaration_node* classDecl) {
+    topLevelDeclaration_node* node = (topLevelDeclaration_node*)malloc(sizeof(topLevelDeclaration_node));
+    node->id = newID();
+
+    node->type = _class;
+    node->classDecl = classDecl;
+
+    return node;
+}
+topLevelDeclaration_node* create_func_topLevelDeclaration_node(signature_node* signature, stmt_node* body) {
+    topLevelDeclaration_node* node = (topLevelDeclaration_node*)malloc(sizeof(topLevelDeclaration_node));
+    node->id = newID();
+
+    node->type = _function;
+    node->functionDecl = create_functionDefinition_node(signature, body);
+
+    return node;
+}
+topLevelDeclaration_node* create_enum_topLevelDeclaration_node(enum_node* enumDecl) {
+    topLevelDeclaration_node* node = (topLevelDeclaration_node*)malloc(sizeof(topLevelDeclaration_node));
+    node->id = newID();
+
+    node->type = _enum;
+    node->enumDecl = enumDecl;
+
+    return node;
+}
+topLevelDeclaration_node* create_var_topLevelDeclaration_node(bool isLate, bool isFinal, bool isConst, type_node* valueType, idInit_node* identifiers) {
+    topLevelDeclaration_node* node = (topLevelDeclaration_node*)malloc(sizeof(topLevelDeclaration_node));
+    node->id = newID();
+
+    node->type = _variable;
+    node->variableDecl = create_variableDeclaration_node(create_declarator_node(isLate, isFinal, isConst, valueType), identifiers);
+
+    return node;
+}
+topLevelDeclaration_node* topLevelDeclarationList_add(topLevelDeclaration_node* start, topLevelDeclaration_node* added) {
+    added->next = NULL;
+    if (start == NULL) {
+        return added;
+    }
+
+    topLevelDeclaration_node* cur = start;
+    while (cur->next != NULL) {
+        cur = cur->next;
+    }
+    cur->next = added;
+
+    return start;
+}

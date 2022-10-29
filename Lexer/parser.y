@@ -85,6 +85,7 @@ void yyerror(char const *s) {
     classMemberDeclaration_node* _classMemberDeclaration_node;
     supeclassOpt_node* _supeclassOpt_node;
     classDeclaration_node* _classDeclaration_node;
+    topLevelDeclaration_node* _topLevelDeclaration_node;
 }
 
 %nterm<_identifier_node>identifier builtInIdentifier identifierList IDDotList idDotList ambiguousArgumentsOrParameterList
@@ -105,28 +106,29 @@ void yyerror(char const *s) {
 %nterm<_classMemberDeclaration_node>declaration classMemberDeclaration classMemberDeclarations
 %nterm<_supeclassOpt_node>superclassOpt
 %nterm<_classDeclaration_node>classDeclaration
+%nterm<_topLevelDeclaration_node>topLevelDeclaration partDeclaration
 
 %%
     //-------------- ВЕРХНИЙ УРОВЕНЬ --------------
 
-    partDeclaration: %empty
-        | partDeclaration topLevelDeclaration
+    partDeclaration: %empty                                 {$$ = NULL;}
+        | partDeclaration topLevelDeclaration               {$$ = topLevelDeclarationList_add($1, $2);}
     ;
 
     //Дописать
-    topLevelDeclaration: classDeclaration
-        | enumType
-        | LATE FINAL type initializedIdentifierList ';'
-        | LATE FINAL initializedIdentifierList ';'
-        | functionSignature functionBody
-        | FINAL type staticFinalDeclarationList ';'
-        | FINAL staticFinalDeclarationList ';'
-        | CONST type staticFinalDeclarationList ';'
-        | CONST staticFinalDeclarationList ';'
-        | LATE VAR initializedIdentifierList ';'
-        | LATE type initializedIdentifierList ';'
-        | VAR initializedIdentifierList ';'
-        | type initializedIdentifierList ';'
+    topLevelDeclaration: classDeclaration                   {$$ = create_class_topLevelDeclaration_node($1);}
+        | enumType                                          {$$ = create_enum_topLevelDeclaration_node($1);}
+        | functionSignature functionBody                    {$$ = create_func_topLevelDeclaration_node($1, $2);}
+        | LATE FINAL type initializedIdentifierList ';'     {$$ = create_var_topLevelDeclaration_node(true, true, false, $3,     $4);}
+        | LATE FINAL initializedIdentifierList ';'          {$$ = create_var_topLevelDeclaration_node(true, true, false, NULL,   $3);}
+        | FINAL type staticFinalDeclarationList ';'         {$$ = create_var_topLevelDeclaration_node(false, true, false, $2,    $3);}
+        | FINAL staticFinalDeclarationList ';'              {$$ = create_var_topLevelDeclaration_node(false, true, false, NULL,  $2);}
+        | CONST type staticFinalDeclarationList ';'         {$$ = create_var_topLevelDeclaration_node(false, false, true, $2,    $3);}
+        | CONST staticFinalDeclarationList ';'              {$$ = create_var_topLevelDeclaration_node(false, false, true, NULL,  $2);}
+        | LATE VAR initializedIdentifierList ';'            {$$ = create_var_topLevelDeclaration_node(true, false, false, NULL,  $3);}
+        | LATE type initializedIdentifierList ';'           {$$ = create_var_topLevelDeclaration_node(true, false, false, $2,    $3);}
+        | VAR initializedIdentifierList ';'                 {$$ = create_var_topLevelDeclaration_node(false, false, false, NULL, $2);}
+        | type initializedIdentifierList ';'                {$$ = create_var_topLevelDeclaration_node(false, false, false, $1,   $2);}
     ;
 
     //-------------- БАЗОВЫЕ ПОНЯТИЯ --------------
