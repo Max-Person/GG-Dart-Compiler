@@ -673,7 +673,8 @@ signature_node* create_funcOrConstruct_signature_node(type_node* returnType, ide
 
     node->type = funcOrConstruct;
     node->isStatic = false;
-    node->returnType = returnType;
+    if (returnType == NULL) node->returnType = create_dynamic_type_node();
+    else node->returnType = returnType;
     node->name = name;
     node->parameters = parameters;
 
