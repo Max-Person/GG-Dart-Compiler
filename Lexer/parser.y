@@ -15,6 +15,7 @@ void yyerror(char const *s) {
 }
 %}
 
+%define parse.trace
 %code requires{ #include "structures.h" }
 %code requires{ extern topLevelDeclaration_node* root; }
 
@@ -101,7 +102,7 @@ void yyerror(char const *s) {
 %nterm<_formalParameter_node>normalFormalParameter normalFormalParameterList formalParameterList fieldFormalParameter constructorFormalParameters constructorFormalParameterList
 %nterm<_initializer_node>initializerListEntry initializers
 %nterm<_redirection_node>redirection
-%nterm<_signature_node>functionSignature methodSignature namedConstructorSignature constantConstructorSignature
+%nterm<_signature_node>functionSignature methodSignature constructorSignature namedConstructorSignature constantConstructorSignature
 %nterm<_switchCase_node> switchCase switchCases
 %nterm<_enumType_node> enumType
 %nterm<_functionDefinition_node>localFunctionDeclaration
@@ -489,8 +490,8 @@ void yyerror(char const *s) {
 
     classDeclaration: CLASS IDENTIFIER superclassOpt interfacesOpt '{' classMemberDeclarations '}'  {$$ = create_normal_classDeclaration_node(false, $3, $4, $6, $2);}
         | ABSTRACT CLASS IDENTIFIER superclassOpt interfacesOpt '{' classMemberDeclarations '}'     {$$ = create_normal_classDeclaration_node(true, $4, $5, $7, $3);}
-        | CLASS identifier '=' typeNotVoid mixins interfacesOpt ';'                                 {$$ = create_alias_classDeclaration_node(false, $4, $5, $6, $2);}
-        | ABSTRACT CLASS identifier '=' typeNotVoid mixins interfacesOpt ';'                        {$$ = create_alias_classDeclaration_node(true, $5, $6, $7, $3);}
+        | CLASS IDENTIFIER '=' typeNotVoid mixins interfacesOpt ';'                                 {$$ = create_alias_classDeclaration_node(false, $4, $5, $6, $2);}
+        | ABSTRACT CLASS IDENTIFIER '=' typeNotVoid mixins interfacesOpt ';'                        {$$ = create_alias_classDeclaration_node(true, $5, $6, $7, $3);}
     ;
 
     staticFinalDeclaration: identifier '=' expr                     {$$ = create_assign_idInit_node($1, $3);}
@@ -533,6 +534,9 @@ void yyerror(char const *s) {
         | namedConstructorSignature                                 {$$ = create_constructSignature_classMemberDeclaration_node($1);}
         | namedConstructorSignature redirection                     {$$ = create_constructSignature_classMemberDeclaration_node(signature_node_addRedirection($1, $2));}
         | namedConstructorSignature initializers                    {$$ = create_constructSignature_classMemberDeclaration_node(signature_node_addInitializers($1, $2));}
+        | constructorSignature                                      {$$ = create_constructSignature_classMemberDeclaration_node($1);}
+        | constructorSignature redirection                          {$$ = create_constructSignature_classMemberDeclaration_node(signature_node_addRedirection($1, $2));}
+        | constructorSignature initializers                         {$$ = create_constructSignature_classMemberDeclaration_node(signature_node_addInitializers($1, $2));}
         | functionSignature                                         {$$ = create_constructSignature_classMemberDeclaration_node($1);}
         | functionSignature redirection                             {$$ = create_constructSignature_classMemberDeclaration_node(signature_node_addRedirection($1, $2));}
         | functionSignature initializers                            {$$ = create_constructSignature_classMemberDeclaration_node(signature_node_addInitializers($1, $2));}
@@ -560,6 +564,9 @@ void yyerror(char const *s) {
 
     constructorFormalParameters: '(' constructorFormalParameterList ',' ')'     {$$ = $2;}
         | '(' constructorFormalParameterList ')'                                {$$ = $2;}
+    ;
+
+    constructorSignature: identifier constructorFormalParameters        {$$ = create_construct_signature_node(false, $1, $2);}
     ;
 
     namedConstructorSignature: IDDotList formalParameterList            {$$ = create_construct_signature_node(false, $1, $2);}
