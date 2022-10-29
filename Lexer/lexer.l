@@ -17,7 +17,7 @@
 #define YY_DECL int yylex()
 
 void _print(const std::string & message)         {
-    std::cout << "lex:" << message << std::endl;
+    //std::cout << "lex:" << message << std::endl;
 }
 
 std::string yytext_str() {

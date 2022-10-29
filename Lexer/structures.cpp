@@ -17,8 +17,6 @@ identifier_node* create_identifier_node(bool isBuiltin, char* stringval) {
     node->stringval = stringval;
     node->next = NULL;
 
-    printf("prs: identifier created \"%s\" (builtin = %d)\n", node-> stringval, node->isBuiltin);
-
     return node;
 }
 identifier_node* identifierLists_add(identifier_node* start, identifier_node* added) {
@@ -90,8 +88,6 @@ selector_node* create_brackets_selector_node(expr_node* inBrackets){
     node->type = brackets;
     node->inBrackets = inBrackets;
 
-    printf("prs: brackets selector created \n");
-
     return node;
 }
 selector_node* create_access_selector_node(identifier_node* accessList){
@@ -100,8 +96,6 @@ selector_node* create_access_selector_node(identifier_node* accessList){
 
     node->type = fieldAccess;
     node->accessList = accessList;
-
-    printf("prs: fieldAccess selector created \n");
 
     return node;
 }
@@ -112,8 +106,6 @@ selector_node* create_methodCall_selector_node(identifier_node* accessList, expr
     node->type = methodCall;
     node->accessList = accessList;
     node->callArguments = callArguments;
-
-    printf("prs: methodCall selector created \n");
 
     return node;
 }
