@@ -64,6 +64,9 @@ enum expr_type{
     less,
     greater_eq,
     less_eq,
+    type_cast,
+    type_check,
+    neg_type_check,
     b_or,
     b_xor,
     b_and,
@@ -74,12 +77,13 @@ enum expr_type{
     mod,
     truncdiv,
     u_minus,
-    excl,
+    _not,
     tilde,
     prefix_inc,
     prefix_dec,
     postfix_inc,
     postfix_dec,
+    bang,
 
     assign,
     and_assign,
@@ -111,6 +115,7 @@ struct expr_node{
 
     struct expr_node* operand;
     struct expr_node* operand2;
+    struct type_node* typeForCheckOrCast;
 
     struct expr_node* next = NULL;
 };
@@ -128,6 +133,7 @@ expr_node* create_constructNew_expr_node(identifier_node* accessList, expr_node*
 expr_node* create_constructConst_expr_node(identifier_node* accessList, expr_node* callArguments);
 expr_node* create_selector_expr_node(expr_node* operand, selector_node* selector);
 expr_node* create_operator_expr_node(expr_type type, expr_node* operand, expr_node* operand2);
+expr_node* create_typeOp_expr_node(expr_type type, expr_node* operand, type_node* typeOp);
 expr_node* exprList_add(expr_node* start, expr_node* added);
 
 enum stmt_type {

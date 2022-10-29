@@ -29,7 +29,7 @@ void yyerror(char const *s) {
 %left OR
 %left AND
 %nonassoc EQ NEQ
-%nonassoc '>' '<' GREATER_EQ LESS_EQ
+%nonassoc '>' '<' GREATER_EQ LESS_EQ AS IS
 %left '|'
 %left '^'
 %left '&'
@@ -47,10 +47,10 @@ void yyerror(char const *s) {
 %token <_identifier_node>IDENTIFIER
 
 //Ключевые слова
-%token ASSERT BREAK CASE CATCH CLASS CONST CONTINUE DEFAULT DO ELSE ENUM EXTENDS FALSE FINAL FINALLY FOR IF IN IS NEW NULL_ RETHROW RETURN SUPER SWITCH THIS THROW TRUE TRY VAR VOID WHILE WITH
+%token AS ASSERT BREAK CASE CATCH CLASS CONST CONTINUE DEFAULT DO ELSE ENUM EXTENDS FALSE FINAL FINALLY FOR IF IN IS NEW NULL_ RETHROW RETURN SUPER SWITCH THIS THROW TRUE TRY VAR VOID WHILE WITH
 
 //Built-in идентификаторы
-%token<_identifier_node> ABSTRACT AS COVARIANT DEFERRED DYNAMIC EXPORT EXTERNAL EXTENSION FACTORY FUNCTION GET IMPLEMENTS IMPORT INTERFACE LATE LIBRARY MIXIN OPERATOR PART REQUIRED SET STATIC TYPEDEF
+%token<_identifier_node> ABSTRACT COVARIANT DEFERRED DYNAMIC EXPORT EXTERNAL EXTENSION FACTORY FUNCTION GET IMPLEMENTS IMPORT INTERFACE LATE LIBRARY MIXIN OPERATOR PART REQUIRED SET STATIC TYPEDEF
 
 //"другие" индентификаторы - надо записать в обычные
 %token ASYNC HIDE OF ON SHOW SYNC YIELD FUNC_ARROW DOUBLE_DOT VOPROS_DOT
@@ -132,7 +132,6 @@ void yyerror(char const *s) {
     //-------------- БАЗОВЫЕ ПОНЯТИЯ --------------
 
     builtInIdentifier: ABSTRACT            {$$ = $1;}
-        | AS                               {$$ = $1;}
         | COVARIANT                        {$$ = $1;}
         | DEFERRED                         {$$ = $1;}
         | DYNAMIC                          {$$ = $1;}
@@ -220,6 +219,7 @@ void yyerror(char const *s) {
         | selectorExpr                          {$$ = $1;}
         | postfixExpr INC %prec POSTFIX_INC     {$$ = create_operator_expr_node(postfix_inc, $1, NULL);}
         | postfixExpr DEC %prec POSTFIX_DEC     {$$ = create_operator_expr_node(postfix_dec, $1, NULL);}
+        | postfixExpr '!'                       {$$ = create_operator_expr_node(bang, $1, NULL);}
     ;
 
     //Можно бы указать exprNotAssign вместо expr, но это не имеет значения из-за приоритетов
@@ -234,6 +234,9 @@ void yyerror(char const *s) {
         | expr '<' expr                 {$$ = create_operator_expr_node(less, $1, $3);}
         | expr GREATER_EQ expr          {$$ = create_operator_expr_node(greater_eq, $1, $3);}
         | expr LESS_EQ expr             {$$ = create_operator_expr_node(less_eq, $1, $3);}
+        | expr AS typeNotVoid           {$$ = create_typeOp_expr_node(type_cast, $1, $3);}
+        | expr IS typeNotVoid           {$$ = create_typeOp_expr_node(type_check, $1, $3);}
+        | expr IS '!' typeNotVoid       {$$ = create_typeOp_expr_node(neg_type_check, $1, $4);}
         | expr '|' expr                 {$$ = create_operator_expr_node(b_or, $1, $3);}
         | expr '^' expr                 {$$ = create_operator_expr_node(b_xor, $1, $3);}
         | expr '&' expr                 {$$ = create_operator_expr_node(b_and, $1, $3);}
@@ -244,7 +247,7 @@ void yyerror(char const *s) {
         | expr '%' expr                 {$$ = create_operator_expr_node(mod, $1, $3);}
         | expr TRUNCDIV  expr           {$$ = create_operator_expr_node(truncdiv, $1, $3);}
         | '-'  expr %prec UMINUS        {$$ = create_operator_expr_node(u_minus, $2, NULL);}
-        | '!'  expr                     {$$ = create_operator_expr_node(excl, $2, NULL);}
+        | '!'  expr                     {$$ = create_operator_expr_node(_not, $2, NULL);}
         | '~'  expr                     {$$ = create_operator_expr_node(tilde, $2, NULL);}
         | INC expr %prec PREFIX_INC     {$$ = create_operator_expr_node(prefix_inc, $2, NULL);}
         | DEC expr %prec PREFIX_DEC     {$$ = create_operator_expr_node(prefix_dec, $2, NULL);}

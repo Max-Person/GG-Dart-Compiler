@@ -262,6 +262,17 @@ expr_node* create_operator_expr_node(expr_type type, expr_node* operand, expr_no
 
     return node;
 }
+expr_node* create_typeOp_expr_node(expr_type type, expr_node* operand, type_node* typeOp) {
+    expr_node* node = (expr_node*)malloc(sizeof(expr_node));
+    node->id = newID();
+    node->next = NULL;
+
+    node->type = type; //TODO проверять на характер оператора
+    node->operand = operand;
+    node->typeForCheckOrCast = typeOp;
+
+    return node;
+}
 expr_node* exprList_add(expr_node* start, expr_node* added){
     expr_node* cur = start;
     while (cur->next != NULL) {
