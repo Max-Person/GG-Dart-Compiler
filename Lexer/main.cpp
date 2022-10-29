@@ -16,6 +16,7 @@ extern void yyerror(char const* s);
 int main(int argc, char** argv) {
     if (argc > 1) {
         yyin = fopen(argv[1], "r");
+        //yydebug = 1;
         int res = yyparse();
         if(res == 0){
             displayInit(root);
