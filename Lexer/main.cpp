@@ -16,8 +16,10 @@ extern void yyerror(char const* s);
 int main(int argc, char** argv) {
     if (argc > 1) {
         yyin = fopen(argv[1], "r");
-        yyparse();
-        display(root);
+        int res = yyparse();
+        if(res == 0){
+            displayInit(root);
+        }
         fclose(yyin);
     }
     else {

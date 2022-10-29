@@ -1,7 +1,30 @@
 #include "dot.h"
 using namespace std;
 
-ofstream out("dotOutput.txt");
+ofstream out("dotOutput.txt", ofstream::trunc);
+bool init = true;
+
+void label(int id, string label) {
+	out << id << "[label=\"" << label << "\"]" << endl;
+}
+void link(int id1, int id2) {
+	out << id1 << "->" << id2 << endl;
+}
+void link(int id1, int id2, string label) {
+	out << id1 << "->" << id2 << "[label=\"" << label << "\"]" << endl;
+}
+void linkList(int id1, int id2) {
+	out << "{rank = same;" << id1 << ";" << id2 << ";}" << endl;
+	link(id1, id2);
+}
+
+void displayInit(topLevelDeclaration_node* root) {
+	out << "digraph {" << endl;
+	out << "subgraph {" << endl;
+	display(root);
+	out << "}" << endl;
+	out << "}" << endl;
+}
 
 void display(topLevelDeclaration_node* node) {
 	if (node == NULL) {
@@ -11,47 +34,45 @@ void display(topLevelDeclaration_node* node) {
 
 	switch (node->type) {
 	case _enum: {
-		out << node->id << "[label=\"enumDecl\"]" << endl;
-		out << node->id << "->" << node->enumDecl->id << endl;
+		label(node->id, "enumDecl");
+		link(node->id, node->enumDecl->id);
 		display(node->enumDecl);
 		break;
 	}
 	case _class: {
-		out << node->id << "[label=\"classDecl\"]" << endl;
-		out << node->id << "->" << node->classDecl->id << endl;
+		label(node->id, "classDecl");
+		link(node->id, node->classDecl->id);
 		break;
 	}
 	case _function: {
-		out << node->id << "[label=\"funcDecl\"]" << endl;
-		out << node->id << "->" << node->functionDecl->id << endl;
+		label(node->id, "funcDecl");
+		link(node->id, node->functionDecl->id);
 		break;
 	}
 	case _variable: {
-		out << node->id << "[label=\"varDecl\"]" << endl;
-		out << node->id << "->" << node->variableDecl->id << endl;
+		label(node->id, "varDecl");
+		link(node->id, node->variableDecl->id);
 		break;
 	}
 	}
 
 	if (node->next != NULL) {
-		out << "{rank = same;" << node->id << ";" << node->next->id << ";}" << endl;
-		out << node->id << "->" << node->next->id << endl;
+		linkList(node->id, node->next->id);
 		display(node->next);
 	}
 }
 
 void display(enum_node* node) {
-	out << node->id << "[label=\"enum: " << node->name->stringval << "\"]" << endl;
-	out << node->id << "->" << node->values->id << "[label=\"values\"]" << endl;
+	label(node->id, "enum: " + string(node->name->stringval));
+	link(node->id, node->values->id, "values");
 	display(node->values);
 }
 
 void display(identifier_node* node) {
-	out << node->id << "[label=\"" << node->stringval << "\"]" << endl;
+	label(node->id, node->stringval);
 
 	if (node->next != NULL) {
-		out << "{rank = same;" << node->id << ";" << node->next->id << ";}" << endl;
-		out << node->id << "->" << node->next->id << endl;
+		linkList(node->id, node->next->id);
 		display(node->next);
 	}
 }
