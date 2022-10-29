@@ -365,17 +365,15 @@ stmt_node* create_forN_stmt_node(stmt_node* forInitializerStmt, stmt_node* condi
 
     return node;
 }
-stmt_node* create_forEach_stmt_node(declaredIdentifier_node* declaredIdentifier, expr_node* expr, stmt_node* body) {
+stmt_node* create_forEach_stmt_node(variableDeclaration_node* declaredIdentifier, expr_node* expr, stmt_node* body) {
     stmt_node* node = (stmt_node*)malloc(sizeof(stmt_node));
     node->id = newID();
 
     node->type = forEach_statement;
-    node->forEachDeclarator = declaredIdentifier->declarator;
-    node->forEachIdentifier = declaredIdentifier->identifier;
+    node->variableDeclaration = declaredIdentifier;
+    node->forEachVariableId = NULL;
     node->forContainerExpr = expr;
     node->body = body;
-
-    free(declaredIdentifier); //look
 
     return node;
 }
@@ -384,8 +382,8 @@ stmt_node* create_forEach_stmt_node(identifier_node* identifier, expr_node* expr
     node->id = newID();
 
     node->type = forEach_statement;
-    node->forEachDeclarator = NULL;
-    node->forEachIdentifier = identifier;
+    node->variableDeclaration = NULL;
+    node->forEachVariableId = identifier;
     node->forContainerExpr = expr;
     node->body = body;
 
@@ -436,13 +434,13 @@ type_node* create_named_type_node(identifier_node* name, bool isNullable) {
 
     return node;
 }
-type_node* create_dynamic_type_node(bool isNullable) {
+type_node* create_dynamic_type_node() {
     type_node* node = (type_node*)malloc(sizeof(type_node));
     node->id = newID();
     node->next = NULL;
 
     node->type = dynamic;
-    node->isNullable = isNullable;
+    node->isNullable = true;
 
     return node;
 }
@@ -489,19 +487,6 @@ declarator_node* create_declarator_node(bool isStatic, bool isLate, bool isFinal
     return node;
 }
 
-declaredIdentifier_node* create_declaredIdentifier_node(declarator_node* declarator, identifier_node* identifier) {
-    declaredIdentifier_node* node = (declaredIdentifier_node*)malloc(sizeof(declaredIdentifier_node));
-    node->id = newID();
-
-    node->declarator = declarator;
-    node->identifier = identifier;
-
-    return node;
-}
-declaredIdentifier_node* create_declaredIdentifier_node(bool isLate, bool isFinal, bool isConst, type_node* valueType, identifier_node* identifier) {
-    return create_declaredIdentifier_node(create_declarator_node(isLate, isFinal, isConst, valueType), identifier);
-}
-
 idInit_node* create_id_idInit_node(identifier_node* identifier) {
     idInit_node* node = (idInit_node*)malloc(sizeof(idInit_node));
     node->id = newID();
@@ -534,48 +519,33 @@ idInit_node* idInitList_add(idInit_node* start, idInit_node* added) {
     return start;
 }
 
-variableDeclaration_node* create_nonAssign_variableDeclaration_node(declaredIdentifier_node* declaredIdentifier) {
+variableDeclaration_node* create_variableDeclaration_node(declarator_node* declarator, idInit_node* identifiers) {
     variableDeclaration_node* node = (variableDeclaration_node*)malloc(sizeof(variableDeclaration_node));
     node->id = newID();
-    node->idInitList = NULL;
 
-    node->isAssign = false;
-    node->declaredIdentifier = declaredIdentifier;
+    node->declarator = declarator;
+    node->idInitList = identifiers;
 
     return node;
 }
-variableDeclaration_node* create_assign_variableDeclaration_node(declaredIdentifier_node* declaredIdentifier, expr_node* value) {
-    variableDeclaration_node* node = (variableDeclaration_node*)malloc(sizeof(variableDeclaration_node));
-    node->id = newID();
-    node->idInitList = NULL;
-
-    node->isAssign = true;
-    node->declaredIdentifier = declaredIdentifier;
-    node->value = value;
-
-    return node;
+variableDeclaration_node* create_variableDeclaration_node(bool isLate, bool isFinal, bool isConst, type_node* valueType, idInit_node* identifiers) {
+    return create_variableDeclaration_node(create_declarator_node(isLate, isFinal, isConst, valueType), identifiers);
 }
-variableDeclaration_node* variableDeclaration_idInitList_add(variableDeclaration_node* declaration, idInit_node* added) {
-    if (declaration->idInitList == NULL) {
-        declaration->idInitList = added;
-    }
-    else {
-        declaration->idInitList = idInitList_add(declaration->idInitList, added);
-    }
-    return declaration;
+variableDeclaration_node* create_single_variableDeclaration_node(bool isLate, bool isFinal, bool isConst, type_node* valueType, identifier_node* identifier) {
+    return create_variableDeclaration_node(create_declarator_node(isLate, isFinal, isConst, valueType), create_id_idInit_node(identifier));
+}
+variableDeclaration_node* create_variableDeclaration_node(bool isStatic, bool isLate, bool isFinal, bool isConst, type_node* valueType, idInit_node* identifiers) {
+    return create_variableDeclaration_node(create_declarator_node(isStatic, isLate, isFinal, isConst, valueType), identifiers);
 }
 
-formalParameter_node* create_normal_formalParameter_node(declaredIdentifier_node* declaredIdentifier) {
+formalParameter_node* create_normal_formalParameter_node(variableDeclaration_node* declaredIdentifier) {
     formalParameter_node* node = (formalParameter_node*)malloc(sizeof(formalParameter_node));
     node->id = newID();
     node->next = NULL;
 
     node->isField = false;
-    node->isDeclared = true;
-    node->declarator = declaredIdentifier->declarator;
-    node->identifier = declaredIdentifier->identifier;
-
-    free(declaredIdentifier); //todo не уверен здесь
+    node->paramDecl = declaredIdentifier;
+    //todo проверять декларатор (не может быть late или конст)
 
     return node;
 }
@@ -585,9 +555,7 @@ formalParameter_node* create_normal_formalParameter_node(identifier_node* identi
     node->next = NULL;
 
     node->isField = false;
-    node->isDeclared = false;
-    node->declarator = NULL;
-    node->identifier = identifier;
+    node->paramDecl = create_single_variableDeclaration_node(false, false, false, create_dynamic_type_node(), identifier);
 
     return node;
 }
@@ -597,9 +565,10 @@ formalParameter_node* create_field_formalParameter_node(declarator_node* declara
     node->next = NULL;
 
     node->isField = true;
-    node->isDeclared = declarator != NULL;
-    node->declarator = declarator;
-    node->identifier = identifier;
+    node->initializedField = identifier;
+    //todo проверять декларатор (не может быть ничем кроме final, тип должен совпадать)
+
+    free(declarator);   //look
 
     return node;
 }
@@ -758,8 +727,7 @@ classMemberDeclaration_node* create_field_classMemberDeclaration_node(bool isSta
     node->id = newID();
 
     node->type = field;
-    node->declarator = create_declarator_node(isStatic, isLate, isFinal, isConst, valueType);
-    node->idList = idList;
+    node->fieldDecl = create_variableDeclaration_node(create_declarator_node(isStatic, isLate, isFinal, isConst, valueType), idList);
 
     return node;
 }
