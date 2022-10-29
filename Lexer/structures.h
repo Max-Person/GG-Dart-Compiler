@@ -1,5 +1,5 @@
 #include <stdlib.h>
-
+#pragma once
 
 struct identifier_node {
     int id;

@@ -8,6 +8,7 @@ extern FILE* yyin;
 int yyparse();
 int yylex();
 
+
 void yyerror(char const *s) {
     fprintf(stderr, "Error: %s on line %d\n", s, yylineno);
     exit(1);
@@ -15,6 +16,7 @@ void yyerror(char const *s) {
 %}
 
 %code requires{ #include "structures.h" }
+%code requires{ extern topLevelDeclaration_node* root; }
 
 %token END
 %token INC
@@ -111,8 +113,8 @@ void yyerror(char const *s) {
 %%
     //-------------- ВЕРХНИЙ УРОВЕНЬ --------------
 
-    partDeclaration: %empty                                 {$$ = NULL;}
-        | partDeclaration topLevelDeclaration               {$$ = topLevelDeclarationList_add($1, $2);}
+    partDeclaration: %empty                                 {$$ = NULL; root = $$;}
+        | partDeclaration topLevelDeclaration               {$$ = topLevelDeclarationList_add($1, $2); root = $$;}
     ;
 
     //Дописать
@@ -595,7 +597,7 @@ void yyerror(char const *s) {
 
 %%
 
-int main(int argc, char** argv) {
+/* int main(int argc, char** argv) {
     if (argc > 1) {
         yyin = fopen(argv[1], "r");
         yyparse();
@@ -604,4 +606,4 @@ int main(int argc, char** argv) {
     else {
         yyerror("Not found file");
     }
-}
+} */
