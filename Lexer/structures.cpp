@@ -409,8 +409,17 @@ stmt_node* create_functionDefinition_stmt_node(struct functionDefinition_node* f
 
     return node;
 }
+stmt_node* create_block_stmt_node(stmt_node* inner) {
+    stmt_node* node = (stmt_node*)malloc(sizeof(stmt_node));
+    node->id = newID();
+
+    node->type = block;
+    node->body = inner;
+
+    return node;
+}
 stmt_node* stmtList_add(stmt_node* start, stmt_node* added){
-    added->nextStmt = NULL;     //look нужно решить че с блоками делать
+    added->nextStmt = NULL;
     if (start == NULL) {
         return added;
     }

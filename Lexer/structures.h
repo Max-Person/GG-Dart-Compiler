@@ -137,6 +137,7 @@ expr_node* create_typeOp_expr_node(expr_type type, expr_node* operand, type_node
 expr_node* exprList_add(expr_node* start, expr_node* added);
 
 enum stmt_type {
+    block,
     expr_statement,
     variable_declaration_statement,
     forN_statement,
@@ -159,7 +160,7 @@ struct stmt_node{
     enum stmt_type type;
     
     struct expr_node* condition;    //для if, switch, while � for
-    struct stmt_node* body;         //для if, while, for
+    struct stmt_node* body;         //для if, while, for и block
 
     struct stmt_node* elseBody;
 
@@ -194,6 +195,7 @@ stmt_node* create_forEach_stmt_node(struct variableDeclaration_node* declaredIde
 stmt_node* create_forEach_stmt_node(struct identifier_node* identifier, struct expr_node* expr, struct stmt_node* body);
 stmt_node* create_switch_case_stmt_node(expr_node* condition, switch_case_node* switchCaseList, stmt_node* defaultSwitchActions);
 stmt_node* create_functionDefinition_stmt_node(struct functionDefinition_node* func);
+stmt_node* create_block_stmt_node(stmt_node* inner);
 stmt_node* stmtList_add(stmt_node* start, stmt_node* added);
 
 enum type_type {

@@ -423,7 +423,7 @@ void yyerror(char const *s) {
         | statements statement              {$$ = stmtList_add($1, $2);}
     ;
 
-    statementBlock: '{' statements '}'               {$$ = $2;}
+    statementBlock: '{' statements '}'               {$$ = create_block_stmt_node($2);}
     ;
 
     //-------------- ФУНКЦИИ --------------
