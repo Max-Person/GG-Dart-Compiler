@@ -17,3 +17,6 @@ void display(declarator_node* node);
 void display(idInit_node* node);
 void display(functionDefinition_node* node);
 void display(signature_node* node);
+void display(expr_node* node);
+void display(stmt_node* node);
+void display(switch_case_node* node);

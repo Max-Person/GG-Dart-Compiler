@@ -150,8 +150,6 @@ enum stmt_type {
     continue_statement,
     return_statement,
     local_function_declaration,
-    statement_block,
-    for_initializer_statement
 };
 
 struct stmt_node{

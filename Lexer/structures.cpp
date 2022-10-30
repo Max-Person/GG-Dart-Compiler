@@ -61,7 +61,9 @@ expr_node* convert_ambiguous_to_arguments(identifier_node* argsOrParams) {
     identifier_node* curId = argsOrParams;
     expr_node* exprList = create_idAccess_expr_node(curId);
     while (curId->next != NULL) {
+        identifier_node* prev = curId;
         curId = curId->next;
+        prev->next = NULL;
         exprList_add(exprList, create_idAccess_expr_node(curId));
     }
 
@@ -75,7 +77,9 @@ formalParameter_node* convert_ambiguous_to_parameters(identifier_node* argsOrPar
     identifier_node* curId = argsOrParams;
     formalParameter_node* exprList = create_normal_formalParameter_node(curId);
     while (curId->next != NULL) {
+        identifier_node* prev = curId;
         curId = curId->next;
+        prev->next = NULL;
         formalParameterList_add(exprList, create_normal_formalParameter_node(curId));
     }
 
