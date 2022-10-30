@@ -205,7 +205,7 @@ expr_node* create_call_expr_node(identifier_node* accessList, expr_node* callArg
     node->id = newID();
     node->next = NULL;
 
-    node->type = idAccess;
+    node->type = call;
     node->accessList = accessList;
     node->callArguments = callArguments;
 
