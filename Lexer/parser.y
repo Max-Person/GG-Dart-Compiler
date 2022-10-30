@@ -552,6 +552,8 @@ void yyerror(char const *s) {
         | STATIC functionSignature                  {$$ = signature_node_setStatic($2);}
         | namedConstructorSignature                 {$$ = $1;}
         | namedConstructorSignature initializers    {$$ = signature_node_addInitializers($1, $2);}
+        | constructorSignature                      {$$ = $1;}
+        | constructorSignature initializers         {$$ = signature_node_addInitializers($1, $2);}
     ;
 
 

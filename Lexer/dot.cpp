@@ -25,16 +25,6 @@ string idDotListToStr(identifier_node* id) {
 	}
 	return s;
 }
-string declaratorToStr(declarator_node* decl) {
-	string s = "";
-	if (decl->isStatic) s += "static ";
-	if (decl->isLate) s += "late ";
-	if (decl->isFinal) s += "final ";
-	if (decl->isConst) s += "const ";
-	if (decl->isTyped) s += idDotListToStr(decl->valueType->name);
-	else if (s.empty()) s += "var";
-	return s;
-}
 
 void displayInit(topLevelDeclaration_node* root) {
 	out << "digraph {" << endl;
@@ -119,7 +109,37 @@ void display(classDeclaration_node* node) {
 	}
 	if (!node->isAlias) {
 		link(node->id, node->classMembers->id, "members");
-		//insert display(node->classMembers);
+		display(node->classMembers);
+	}
+}
+void display(classMemberDeclaration_node* node) {
+	switch (node->type)
+	{
+	case field: {
+		label(node->id, "fieldDecl");
+		link(node->id, node->fieldDecl->id);
+		display(node->fieldDecl);
+		break;
+	}
+	case constructSignature: {
+		label(node->id, "constuctorWithoutBody");
+		link(node->id, node->signature->id);
+		display(node->signature);
+		break;
+	}
+	case methodDefinition: {
+		label(node->id, "methodDefinition");
+		link(node->id, node->signature->id, "signature");
+		display(node->signature);
+		link(node->id, node->body->id, "body");
+		display(node->body);
+		break;
+	}
+	}
+
+	if (node->next != NULL) {
+		linkList(node->id, node->next->id);
+		display(node->next);
 	}
 }
 void display(type_node* node) {
@@ -152,7 +172,17 @@ void display(variableDeclaration_node* node) {
 	display(node->idInitList);
 }
 void display(declarator_node* node) {
-	label(node->id, declaratorToStr(node));
+	string s = "";
+	if (node->isStatic) s += "static ";
+	if (node->isLate) s += "late ";
+	if (node->isFinal) s += "final ";
+	if (node->isConst) s += "const ";
+	label(node->id, s + "decl");
+
+	if (node->isTyped) {
+		link(node->id, node->valueType->id, "type");
+		display(node->valueType);
+	}
 }
 void display(idInit_node* node) {
 	if (node->isAssign) {
@@ -197,11 +227,11 @@ void display(signature_node* node) {
 		}
 		if (node->initializers != NULL) {
 			link(node->id, node->initializers->id, "initializers");
-			//insert display(node->initializers);
+			display(node->initializers);
 		}
 		if (node->redirection != NULL) {
 			link(node->id, node->redirection->id, "redirection");
-			//insert display(node->redirection);
+			display(node->redirection);
 		}
 	}
 	else {
@@ -211,7 +241,60 @@ void display(signature_node* node) {
 	
 	if (node->parameters != NULL) {
 		link(node->id, node->parameters->id, "parameters");
-		//insert display(node->parameters);
+		display(node->parameters);
+	}
+}
+void display(initializer_node* node) {
+	if (node->type == thisAssign) {
+		label(node->id, "fieldInit");
+		link(node->id, node->thisFieldId->id, "field");
+		display(node->thisFieldId);
+		link(node->id, node->value->id, "value");
+		display(node->value);
+	}
+	else {
+		label(node->id, "superConstructCall");
+		if (node->type == superNamedConstructor) {
+			link(node->id, node->superConstructorName->id, "constuctor name");
+			display(node->superConstructorName);
+		}
+		if (node->args != NULL) {
+			link(node->id, node->args->id, "arguments");
+			display(node->args);
+		}
+	}
+
+	if (node->next != NULL) {
+		linkList(node->id, node->next->id);
+		display(node->next);
+	}
+}
+void display(redirection_node* node) {
+	label(node->id, "redirection");
+	if (node->isNamed) {
+		link(node->id, node->name->id, "constuctor name");
+		display(node->name);
+	}
+	if (node->args != NULL) {
+		link(node->id, node->args->id, "arguments");
+		display(node->args);
+	}
+}
+void display(formalParameter_node* node) {
+	if (node->isField) {
+		label(node->id, "fieldInit param");
+		link(node->id, node->initializedField->id, "field");
+		display(node->initializedField);
+	}
+	else {
+		label(node->id, "param");
+		link(node->id, node->paramDecl->id, "declaration");
+		display(node->paramDecl);
+	}
+
+	if (node->next != NULL) {
+		linkList(node->id, node->next->id);
+		display(node->next);
 	}
 }
 void display(expr_node* node) {
