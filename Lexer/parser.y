@@ -189,11 +189,16 @@ void yyerror(char const *s) {
     assignableSelector: '[' expr ']'        {$$ = create_brackets_selector_node($2);}
         | '.' idDotList                     {$$ = create_access_selector_node($2);} 
         | '.' IDDotList                     {$$ = create_access_selector_node($2);}
+        | '.' identifier                    {$$ = create_access_selector_node($2);}
     ;
 
-    selector: '.' identifier arguments      {$$ = create_methodCall_selector_node($2, $3);}
+    selector: '.' identifier arguments                      {$$ = create_methodCall_selector_node($2, $3);}
         | '.' identifier ambiguousArgumentsOrParameterList  {$$ = create_methodCall_selector_node($2, convert_ambiguous_to_arguments($3));}
-        | assignableSelector                {$$ = $1;}
+        | '.' idDotList arguments                           {$$ = create_methodCall_selector_node($2, $3);}
+        | '.' idDotList ambiguousArgumentsOrParameterList   {$$ = create_methodCall_selector_node($2, convert_ambiguous_to_arguments($3));}
+        | '.' IDDotList arguments                           {$$ = create_methodCall_selector_node($2, $3);}
+        | '.' IDDotList ambiguousArgumentsOrParameterList   {$$ = create_methodCall_selector_node($2, convert_ambiguous_to_arguments($3));}
+        | assignableSelector                                {$$ = $1;}
     ;
 
     selectorExpr: idDotList arguments                           {$$ = create_call_expr_node($1, $2);}
