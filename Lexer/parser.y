@@ -71,7 +71,6 @@ void yyerror(char const *s) {
     bool boolval;
     
     identifier_node* _identifier_node;
-    selector_node* _selector_node;
     expr_node* _expr;
     type_node* _type_node;
     declarator_node* _declarator_node;
@@ -91,10 +90,9 @@ void yyerror(char const *s) {
     topLevelDeclaration_node* _topLevelDeclaration_node;
 }
 
-%nterm<_identifier_node>identifier builtInIdentifier identifierList IDDotList idDotList ambiguousArgumentsOrParameterList
-%nterm<_selector_node>assignableSelector selector
+%nterm<_identifier_node>identifier builtInIdentifier identifierList ambiguousArgumentsOrParameterList
 %nterm<_expr>string primary selectorExpr postfixExpr exprNotAssign expr exprList arguments
-%nterm<_type_node>typeName typeNotVoid typeNotVoidList type mixins interfacesOpt
+%nterm<_type_node>typeNotVoid typeNotVoidList type mixins interfacesOpt
 %nterm<_declarator_node>declarator
 %nterm<_idInit_node>staticFinalDeclaration staticFinalDeclarationList initializedIdentifier initializedIdentifierList
 %nterm<_variableDeclaration_node>variableDeclaration declaredIdentifier
@@ -182,51 +180,30 @@ void yyerror(char const *s) {
         | DOUBLE_LITERAL                    {$$ = create_doublelit_expr_node($1);}
         | BOOLEAN_LITERAL                   {$$ = create_boollit_expr_node($1);}
         | string            %prec PRIMARY   {$$ = $1;}
+        | identifier                        {$$ = create_id_expr_node($1);}
         | '[' exprList ']'                  {$$ = $2;}
         | '(' expr ')'                      {$$ = $2;}
     ;
 
-    assignableSelector: '[' expr ']'        {$$ = create_brackets_selector_node($2);}
-        | '.' idDotList                     {$$ = create_access_selector_node($2);} 
-        | '.' IDDotList                     {$$ = create_access_selector_node($2);}
-        | '.' identifier                    {$$ = create_access_selector_node($2);}
-    ;
-
-    selector: '.' identifier arguments                      {$$ = create_methodCall_selector_node($2, $3);}
-        | '.' identifier ambiguousArgumentsOrParameterList  {$$ = create_methodCall_selector_node($2, convert_ambiguous_to_arguments($3));}
-        | '.' idDotList arguments                           {$$ = create_methodCall_selector_node($2, $3);}
-        | '.' idDotList ambiguousArgumentsOrParameterList   {$$ = create_methodCall_selector_node($2, convert_ambiguous_to_arguments($3));}
-        | '.' IDDotList arguments                           {$$ = create_methodCall_selector_node($2, $3);}
-        | '.' IDDotList ambiguousArgumentsOrParameterList   {$$ = create_methodCall_selector_node($2, convert_ambiguous_to_arguments($3));}
-        | assignableSelector                                {$$ = $1;}
-    ;
-
-    selectorExpr: idDotList arguments                           {$$ = create_call_expr_node($1, $2);}
-        | idDotList ambiguousArgumentsOrParameterList           {$$ = create_call_expr_node($1, convert_ambiguous_to_arguments($2));}
-        | IDDotList arguments                                   {$$ = create_call_expr_node($1, $2);}
-        | IDDotList ambiguousArgumentsOrParameterList           {$$ = create_call_expr_node($1, convert_ambiguous_to_arguments($2));}
-        | identifier arguments                                  {$$ = create_call_expr_node($1, $2);}
-        | identifier ambiguousArgumentsOrParameterList          {$$ = create_call_expr_node($1, convert_ambiguous_to_arguments($2));}
-        | idDotList '[' expr ']'                                {$$ = create_selector_expr_node(create_idAccess_expr_node($1), create_brackets_selector_node($3));}
-        | IDDotList '[' expr ']'                                {$$ = create_selector_expr_node(create_idAccess_expr_node($1), create_brackets_selector_node($3));}
-        | identifier '[' expr ']'                               {$$ = create_selector_expr_node(create_idAccess_expr_node($1), create_brackets_selector_node($3));}
-        | NEW IDDotList arguments                               {$$ = create_constructNew_expr_node($2, $3);}
-        | NEW IDDotList ambiguousArgumentsOrParameterList       {$$ = create_constructNew_expr_node($2, convert_ambiguous_to_arguments($3));}
-        | NEW IDENTIFIER arguments                              {$$ = create_constructNew_expr_node($2, $3);}
-        | NEW IDENTIFIER ambiguousArgumentsOrParameterList      {$$ = create_constructNew_expr_node($2, convert_ambiguous_to_arguments($3));}
-        | CONST IDDotList arguments                             {$$ = create_constructConst_expr_node($2, $3);}
-        | CONST IDDotList ambiguousArgumentsOrParameterList     {$$ = create_constructConst_expr_node($2, convert_ambiguous_to_arguments($3));}
-        | CONST IDENTIFIER arguments                            {$$ = create_constructConst_expr_node($2, $3);}
-        | CONST IDENTIFIER ambiguousArgumentsOrParameterList    {$$ = create_constructConst_expr_node($2, convert_ambiguous_to_arguments($3));}
-        | primary                                               {$$ = $1;}
-        | selectorExpr selector                                 {$$ = create_selector_expr_node($1, $2);}
+    selectorExpr: primary                                                       {$$ = $1;}
+        | identifier arguments                                                  {$$ = create_call_expr_node($1, $2);}
+        | identifier ambiguousArgumentsOrParameterList                          {$$ = create_call_expr_node($1, convert_ambiguous_to_arguments($2));}
+        | NEW IDENTIFIER arguments                                              {$$ = create_constructNew_expr_node($2, $3);}
+        | NEW IDENTIFIER ambiguousArgumentsOrParameterList                      {$$ = create_constructNew_expr_node($2, convert_ambiguous_to_arguments($3));}
+        | NEW IDENTIFIER '.' identifier arguments                               {$$ = create_constructNew_expr_node($2, $4, $5);}
+        | NEW IDENTIFIER '.' identifier ambiguousArgumentsOrParameterList       {$$ = create_constructNew_expr_node($2, $4, convert_ambiguous_to_arguments($5));}
+        | CONST IDENTIFIER arguments                                            {$$ = create_constructConst_expr_node($2, $3);}
+        | CONST IDENTIFIER ambiguousArgumentsOrParameterList                    {$$ = create_constructConst_expr_node($2, convert_ambiguous_to_arguments($3));}
+        | CONST IDENTIFIER '.' identifier arguments                             {$$ = create_constructConst_expr_node($2, $4, $5);}
+        | CONST IDENTIFIER '.' identifier ambiguousArgumentsOrParameterList     {$$ = create_constructConst_expr_node($2, $4, convert_ambiguous_to_arguments($5));}
+        | selectorExpr '.' identifier arguments                                 {$$ = create_methodCall_expr_node($1, $3, $4);}
+        | selectorExpr '.' identifier ambiguousArgumentsOrParameterList         {$$ = create_methodCall_expr_node($1, $3, convert_ambiguous_to_arguments($4));}
+        | selectorExpr '[' expr ']'                                             {$$ = create_operator_expr_node(brackets, $1, $3);}
+        | selectorExpr '.' identifier                                           {$$ = create_fieldAccess_expr_node($1, $3);}
     ;
 
     //Можно вставить и в exprNotAssign, но по какой-то причине это вызывает конфликты c POSTFIX_INC/DEC, хотя приоритеты определены.
-    postfixExpr: idDotList                      {$$ = create_idAccess_expr_node($1);}
-        | IDDotList                             {$$ = create_idAccess_expr_node($1);}
-        | identifier                            {$$ = create_idAccess_expr_node($1);}
-        | selectorExpr                          {$$ = $1;}
+    postfixExpr: selectorExpr                          {$$ = $1;}
         | postfixExpr INC %prec POSTFIX_INC     {$$ = create_operator_expr_node(postfix_inc, $1, NULL);}
         | postfixExpr DEC %prec POSTFIX_DEC     {$$ = create_operator_expr_node(postfix_dec, $1, NULL);}
         | postfixExpr '!'                       {$$ = create_operator_expr_node(bang, $1, NULL);}
@@ -287,24 +264,9 @@ void yyerror(char const *s) {
 
     //-------------- ТИПИЗАЦИЯ --------------
     
-    IDDotList: IDENTIFIER '.' IDENTIFIER    {$$ = identifierLists_add($1, $3);}
-        | IDDotList '.' IDENTIFIER          {$$ = identifierLists_add($1, $3);}
-    ;
-
-    idDotList: builtInIdentifier '.' IDENTIFIER     {$$ = identifierLists_add($1, $3);}   
-        | builtInIdentifier '.' builtInIdentifier   {$$ = identifierLists_add($1, $3);}
-        | IDDotList '.' builtInIdentifier           {$$ = identifierLists_add($1, $3);}
-        | idDotList '.' IDENTIFIER                  {$$ = identifierLists_add($1, $3);}
-        | idDotList '.' builtInIdentifier           {$$ = identifierLists_add($1, $3);}
-    ;
-
-    typeName: IDENTIFIER    {$$ = create_named_type_node($1, false);}
-        | IDDotList         {$$ = create_named_type_node($1, false);}
-        | DYNAMIC           {$$ = create_dynamic_type_node();}
-    ;
-
-    typeNotVoid: typeName   {$$ = $1;}
-        | typeName '?'      {$$ = type_node_makeNullable($1, true);}
+    typeNotVoid: IDENTIFIER   {$$ = create_named_type_node($1, false);}
+        | IDENTIFIER '?'      {$$ = create_named_type_node($1, true);}
+        | DYNAMIC             {$$ = create_dynamic_type_node();}
     ; 
 
     typeNotVoidList: typeNotVoid                {$$ = $1;}
@@ -576,14 +538,14 @@ void yyerror(char const *s) {
     constructorSignature: identifier constructorFormalParameters        {$$ = create_construct_signature_node(false, $1, $2);}
     ;
 
-    namedConstructorSignature: IDDotList formalParameterList            {$$ = create_construct_signature_node(false, $1, $2);}
-        | IDDotList constructorFormalParameters                         {$$ = create_construct_signature_node(false, $1, $2);}
-        | IDDotList ambiguousArgumentsOrParameterList                   {$$ = create_construct_signature_node(false, $1, convert_ambiguous_to_parameters($2));}
+    namedConstructorSignature: IDENTIFIER '.' identifier formalParameterList            {$$ = create_construct_signature_node(false, $1, $3, $4);}
+        | IDENTIFIER '.' identifier constructorFormalParameters                         {$$ = create_construct_signature_node(false, $1, $3, $4);}
+        | IDENTIFIER '.' identifier ambiguousArgumentsOrParameterList                   {$$ = create_construct_signature_node(false, $1, $3, convert_ambiguous_to_parameters($4));}
     ;
 
-    constantConstructorSignature: CONST IDDotList formalParameterList       {$$ = create_construct_signature_node(true, $2, $3);}
-        | CONST IDDotList constructorFormalParameters                       {$$ = create_construct_signature_node(true, $2, $3);}
-        | CONST IDDotList ambiguousArgumentsOrParameterList                 {$$ = create_construct_signature_node(true, $2, convert_ambiguous_to_parameters($3));}
+    constantConstructorSignature: CONST IDENTIFIER '.' identifier formalParameterList       {$$ = create_construct_signature_node(true, $2, $4, $5);}
+        | CONST IDENTIFIER '.' identifier constructorFormalParameters                       {$$ = create_construct_signature_node(true, $2, $4, $5);}
+        | CONST IDENTIFIER '.' identifier ambiguousArgumentsOrParameterList                 {$$ = create_construct_signature_node(true, $2, $4, convert_ambiguous_to_parameters($5));}
         | CONST IDENTIFIER formalParameterList                              {$$ = create_construct_signature_node(true, $2, $3);}
         | CONST IDENTIFIER constructorFormalParameters                      {$$ = create_construct_signature_node(true, $2, $3);}
         | CONST IDENTIFIER ambiguousArgumentsOrParameterList                {$$ = create_construct_signature_node(true, $2, convert_ambiguous_to_parameters($3));}

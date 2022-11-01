@@ -18,23 +18,6 @@ struct expr_node* convert_ambiguous_to_arguments(identifier_node* argsOrParams);
 struct formalParameter_node* convert_ambiguous_to_parameters(identifier_node* argsOrParams);
 
 
-enum selector_type{
-    brackets,
-    fieldAccess,
-    methodCall,
-};
-struct selector_node{
-    int id;
-
-    selector_type type;
-    struct expr_node* inBrackets;
-    struct identifier_node* accessList;
-    struct expr_node* callArguments;
-};
-selector_node* create_brackets_selector_node(expr_node* inBrackets);
-selector_node* create_access_selector_node(identifier_node* accessList);
-selector_node* create_methodCall_selector_node(identifier_node* accessList, expr_node* callArguments);
-
 
 enum expr_type{
     this_pr,
@@ -47,13 +30,15 @@ enum expr_type{
 
     string_interpolation,
 
-    selector_expr,
-
     constructNew,
     constructConst,
 
-    idAccess,
+    identifier,
     call,
+
+    brackets,
+    fieldAccess,
+    methodCall,
     
     ifnull,
     _or,
@@ -108,10 +93,10 @@ struct expr_node{
     bool bool_value;
     char* string_value;
     
-    struct identifier_node* accessList;
+    struct identifier_node* identifierAccess;
     struct expr_node* callArguments;
 
-    struct selector_node* selector;
+    struct identifier_node* constructName;
 
     struct expr_node* operand;
     struct expr_node* operand2;
@@ -127,11 +112,14 @@ expr_node* create_doublelit_expr_node(double value);
 expr_node* create_boollit_expr_node(bool value);
 expr_node* create_strlit_expr_node(char* value);
 expr_node* create_strInterpolation_expr_node(expr_node* before, expr_node* interpol, char* after);
-expr_node* create_idAccess_expr_node(identifier_node* accessList);
-expr_node* create_call_expr_node(identifier_node* accessList, expr_node* callArguments);
-expr_node* create_constructNew_expr_node(identifier_node* accessList, expr_node* callArguments);
-expr_node* create_constructConst_expr_node(identifier_node* accessList, expr_node* callArguments);
-expr_node* create_selector_expr_node(expr_node* operand, selector_node* selector);
+expr_node* create_id_expr_node(identifier_node* identifierAccess);
+expr_node* create_call_expr_node(identifier_node* identifierAccess, expr_node* callArguments);
+expr_node* create_constructNew_expr_node(identifier_node* className, expr_node* callArguments);
+expr_node* create_constructNew_expr_node(identifier_node* className, identifier_node* constructname, expr_node* callArguments);
+expr_node* create_constructConst_expr_node(identifier_node* className, expr_node* callArguments);
+expr_node* create_constructConst_expr_node(identifier_node* className, identifier_node* constructname, expr_node* callArguments);
+expr_node* create_fieldAccess_expr_node(expr_node* op, identifier_node* field);
+expr_node* create_methodCall_expr_node(expr_node* op, identifier_node* method, expr_node* callArguments);
 expr_node* create_operator_expr_node(expr_type type, expr_node* operand, expr_node* operand2);
 expr_node* create_typeOp_expr_node(expr_type type, expr_node* operand, type_node* typeOp);
 expr_node* exprList_add(expr_node* start, expr_node* added);
@@ -318,11 +306,13 @@ struct signature_node {
 
     bool isNamed;
     bool isConst;
+    identifier_node* constructName;
     initializer_node* initializers;
     redirection_node* redirection;
 };
 signature_node* create_funcOrConstruct_signature_node(type_node* returnType, identifier_node* name, formalParameter_node* parameters);
-signature_node* create_construct_signature_node(bool isConst, identifier_node* name, formalParameter_node* parameters);
+signature_node* create_construct_signature_node(bool isConst, identifier_node* className, formalParameter_node* parameters);
+signature_node* create_construct_signature_node(bool isConst, identifier_node* className, identifier_node* name, formalParameter_node* parameters);
 signature_node* signature_node_setStatic(signature_node* signature);
 signature_node* signature_node_addInitializers(signature_node* signature, initializer_node* initializers);
 signature_node* signature_node_addRedirection(signature_node* signature, redirection_node* redirection);

@@ -16,15 +16,6 @@ void linkList(int id1, int id2) {
 	out << "{rank = same;" << id1 << ";" << id2 << ";}" << endl;
 	link(id1, id2);
 }
-string idDotListToStr(identifier_node* id) {
-	string s = string(id->stringval);
-	identifier_node* cur = id;
-	while (cur->next != NULL) {
-		s += string(cur->next->stringval);
-		cur = cur->next;
-	}
-	return s;
-}
 
 void displayInit(topLevelDeclaration_node* root) {
 	out << "digraph {" << endl;
@@ -153,10 +144,10 @@ void display(type_node* node) {
 	}
 	
 	if (node->isNullable) {
-		label(node->id, "type: " + idDotListToStr(node->name) + "?");
+		label(node->id, "type: " + string(node->name->stringval) + "?");
 	}
 	else {
-		label(node->id, "type: " + idDotListToStr(node->name));
+		label(node->id, "type: " + string(node->name->stringval));
 	}
 
 	if (node->next != NULL) {
@@ -218,12 +209,14 @@ void display(signature_node* node) {
 		if (node->isNamed) s += "named ";
 		s += "costructor ";
 	}
-	s += "signature: " + idDotListToStr(node->name);
+	s += "signature";
 	label(node->id, s);
 	if (node->type == construct) {
+		link(node->id, node->name->id, "class name");
+		display(node->name);
 		if (node->isNamed) {
-			link(node->id, node->name->id, "constructor name");
-			display(node->name);
+			link(node->id, node->constructName->id, "constructor name");
+			display(node->constructName);
 		}
 		if (node->initializers != NULL) {
 			link(node->id, node->initializers->id, "initializers");
@@ -235,6 +228,8 @@ void display(signature_node* node) {
 		}
 	}
 	else {
+		link(node->id, node->name->id, "name");
+		display(node->name);
 		link(node->id, node->returnType->id, "return type");
 		display(node->returnType);
 	}
@@ -336,61 +331,62 @@ void display(expr_node* node) {
 			display(node->operand2);
 			break;
 		}
-		case selector_expr: {
+		
+		case brackets: {
+			label(node->id, "[ ]");
 			link(node->id, node->operand->id);
 			display(node->operand);
-			switch (node->selector->type) {
-			case selector_type::fieldAccess: {
-				label(node->id, ".");
-				link(node->id, node->selector->accessList->id, "access list");
-				display(node->selector->accessList);
-				break;
-			}
-			case selector_type::methodCall: {
-				label(node->id, ".call()");
-				link(node->id, node->selector->accessList->id, "access list");
-				display(node->selector->accessList);
-				if (node->selector->callArguments != NULL) {
-					link(node->id, node->selector->callArguments->id, "arguments");
-					display(node->selector->callArguments);
-				}
-				break;
-			}
-			case selector_type::brackets: {
-				label(node->id, "[ ]");
-				link(node->id, node->selector->inBrackets->id, "in brackets");
-				display(node->selector->inBrackets);
-				break;
-			}
+			link(node->id, node->operand2->id);
+			display(node->operand2);
+			break;
+		}
+		case fieldAccess: {
+			label(node->id, ".");
+			link(node->id, node->operand->id, "op");
+			display(node->operand);
+			link(node->id, node->identifierAccess->id, "field");
+			display(node->identifierAccess);
+			break;
+		}
+		case methodCall: {
+			label(node->id, ".call()");
+			link(node->id, node->operand->id, "op");
+			display(node->operand);
+			link(node->id, node->identifierAccess->id, "method");
+			display(node->identifierAccess);
+			if (node->callArguments != NULL) {
+				link(node->id, node->callArguments->id, "arguments");
+				display(node->callArguments);
 			}
 			break;
 		}
 		case constructNew: {
 			label(node->id, "new");
-			link(node->id, node->accessList->id, "constructor name");
-			display(node->accessList);
+			link(node->id, node->identifierAccess->id, "constructor name");
+			display(node->identifierAccess);
 			link(node->id, node->callArguments->id, "arguments");
 			display(node->callArguments);
 			break;
 		}
 		case constructConst: {
 			label(node->id, "const");
-			link(node->id, node->accessList->id, "constructor name");
-			display(node->accessList);
+			link(node->id, node->identifierAccess->id, "constructor name");
+			display(node->identifierAccess);
 			link(node->id, node->callArguments->id, "arguments");
 			display(node->callArguments);
 			break;
 		}
-		case idAccess: {
+
+		case identifier: {
 			label(node->id, "id");
-			link(node->id, node->accessList->id, "accessed as");
-			display(node->accessList);
+			link(node->id, node->identifierAccess->id, "accessed as");
+			display(node->identifierAccess);
 			break;
 		}
 		case call: {
 			label(node->id, "call");
-			link(node->id, node->accessList->id, "method accessed as");
-			display(node->accessList);
+			link(node->id, node->identifierAccess->id, "method accessed as");
+			display(node->identifierAccess);
 			if (node->callArguments != NULL) {
 				link(node->id, node->callArguments->id, "arguments");
 				display(node->callArguments);

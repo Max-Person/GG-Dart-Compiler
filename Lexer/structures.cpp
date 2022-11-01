@@ -59,12 +59,12 @@ expr_node* convert_ambiguous_to_arguments(identifier_node* argsOrParams) {
     }
 
     identifier_node* curId = argsOrParams;
-    expr_node* exprList = create_idAccess_expr_node(curId);
+    expr_node* exprList = create_id_expr_node(curId);
     while (curId->next != NULL) {
         identifier_node* prev = curId;
         curId = curId->next;
         prev->next = NULL;
-        exprList_add(exprList, create_idAccess_expr_node(curId));
+        exprList_add(exprList, create_id_expr_node(curId));
     }
 
     return exprList;
@@ -84,35 +84,6 @@ formalParameter_node* convert_ambiguous_to_parameters(identifier_node* argsOrPar
     }
 
     return exprList;
-}
-
-selector_node* create_brackets_selector_node(expr_node* inBrackets){
-    selector_node* node = (selector_node*)malloc(sizeof(selector_node));
-    node->id = newID();
-
-    node->type = brackets;
-    node->inBrackets = inBrackets;
-
-    return node;
-}
-selector_node* create_access_selector_node(identifier_node* accessList){
-    selector_node* node = (selector_node*)malloc(sizeof(selector_node));
-    node->id = newID();
-
-    node->type = fieldAccess;
-    node->accessList = accessList;
-
-    return node;
-}
-selector_node* create_methodCall_selector_node(identifier_node* accessList, expr_node* callArguments){
-    selector_node* node = (selector_node*)malloc(sizeof(selector_node));
-    node->id = newID();
-
-    node->type = methodCall;
-    node->accessList = accessList;
-    node->callArguments = callArguments;
-
-    return node;
 }
 
 expr_node* create_this_expr_node(){
@@ -194,57 +165,93 @@ expr_node* create_strInterpolation_expr_node(expr_node* before, expr_node* inter
 
     return node;
 }
-expr_node* create_idAccess_expr_node(identifier_node* accessList) {
+expr_node* create_id_expr_node(identifier_node* identifierAccess) {
     expr_node* node = (expr_node*)malloc(sizeof(expr_node));
     node->id = newID();
     node->next = NULL;
 
-    node->type = idAccess;
-    node->accessList = accessList;
+    node->type = identifier;
+    node->identifierAccess = identifierAccess;
 
     return node;
 }
-expr_node* create_call_expr_node(identifier_node* accessList, expr_node* callArguments) {
+expr_node* create_call_expr_node(identifier_node* identifierAccess, expr_node* callArguments) {
     expr_node* node = (expr_node*)malloc(sizeof(expr_node));
     node->id = newID();
     node->next = NULL;
 
     node->type = call;
-    node->accessList = accessList;
+    node->identifierAccess = identifierAccess;
     node->callArguments = callArguments;
 
     return node;
 }
-expr_node* create_constructNew_expr_node(identifier_node* accessList, expr_node* callArguments) {
+expr_node* create_constructNew_expr_node(identifier_node* className, expr_node* callArguments) {
     expr_node* node = (expr_node*)malloc(sizeof(expr_node));
     node->id = newID();
     node->next = NULL;
 
     node->type = constructNew;
-    node->accessList = accessList;
+    node->identifierAccess = className;
     node->callArguments = callArguments;
 
     return node;
 }
-expr_node* create_constructConst_expr_node(identifier_node* accessList, expr_node* callArguments) {
+expr_node* create_constructNew_expr_node(identifier_node* className, identifier_node* constructname, expr_node* callArguments) {
+    expr_node* node = (expr_node*)malloc(sizeof(expr_node));
+    node->id = newID();
+    node->next = NULL;
+
+    node->type = constructNew;
+    node->identifierAccess = className;
+    node->constructName = constructname;
+    node->callArguments = callArguments;
+
+    return node;
+}
+expr_node* create_constructConst_expr_node(identifier_node* className, expr_node* callArguments) {
     expr_node* node = (expr_node*)malloc(sizeof(expr_node));
     node->id = newID();
     node->next = NULL;
 
     node->type = constructConst;
-    node->accessList = accessList;
+    node->identifierAccess = className;
     node->callArguments = callArguments;
 
     return node;
 }
-expr_node* create_selector_expr_node(expr_node* operand, selector_node* selector) {
+expr_node* create_constructConst_expr_node(identifier_node* className, identifier_node* constructname, expr_node* callArguments) {
     expr_node* node = (expr_node*)malloc(sizeof(expr_node));
     node->id = newID();
     node->next = NULL;
 
-    node->type = selector_expr;
-    node->operand = operand;
-    node->selector = selector;
+    node->type = constructConst;
+    node->identifierAccess = className;
+    node->constructName = constructname;
+    node->callArguments = callArguments;
+
+    return node;
+}
+expr_node* create_fieldAccess_expr_node(expr_node* op, identifier_node* field) {
+    expr_node* node = (expr_node*)malloc(sizeof(expr_node));
+    node->id = newID();
+    node->next = NULL;
+
+    node->type = fieldAccess;
+    node->operand = op;
+    node->identifierAccess = field;
+
+    return node;
+}
+expr_node* create_methodCall_expr_node(expr_node* op, identifier_node* method, expr_node* callArguments) {
+    expr_node* node = (expr_node*)malloc(sizeof(expr_node));
+    node->id = newID();
+    node->next = NULL;
+
+    node->type = methodCall;
+    node->operand = op;
+    node->identifierAccess = method;
+    node->callArguments = callArguments;
 
     return node;
 }
@@ -684,10 +691,7 @@ signature_node* create_funcOrConstruct_signature_node(type_node* returnType, ide
 
     return node;
 }
-signature_node* create_construct_signature_node(bool isConst, identifier_node* name, formalParameter_node* parameters) {
-    if (name->next != NULL && name->next->next != NULL) {
-        throw -1;   // имя конструктора может иметь только тип Car.name - дот-лист из двух элементов
-    }
+signature_node* create_construct_signature_node(bool isConst, identifier_node* className, formalParameter_node* parameters) {
     //todo проверить на built-in. Хотя мб можно и просто на этапе семантики на совпадение с используемым классом
 
     signature_node* node = (signature_node*)malloc(sizeof(signature_node));
@@ -696,8 +700,27 @@ signature_node* create_construct_signature_node(bool isConst, identifier_node* n
     node->type = construct;
     node->isStatic = false;
     node->isConst = isConst;
-    node->isNamed = name->next != NULL;
-    node->name = name;
+    node->isNamed = false;
+    node->name = className;
+    node->parameters = parameters;
+
+    node->initializers = NULL;
+    node->redirection = NULL;
+
+    return node;
+}
+signature_node* create_construct_signature_node(bool isConst, identifier_node* className, identifier_node* name, formalParameter_node* parameters) {
+    //todo проверить на built-in. Хотя мб можно и просто на этапе семантики на совпадение с используемым классом
+
+    signature_node* node = (signature_node*)malloc(sizeof(signature_node));
+    node->id = newID();
+
+    node->type = construct;
+    node->isStatic = false;
+    node->isConst = isConst;
+    node->isNamed = true;
+    node->name = className;
+    node->constructName = name;
     node->parameters = parameters;
 
     node->initializers = NULL;
