@@ -256,7 +256,6 @@ void yyerror(char const *s) {
     
     typeNotVoid: IDENTIFIER   {$$ = create_named_type_node($1, false);}
         | IDENTIFIER '?'      {$$ = create_named_type_node($1, true);}
-        | DYNAMIC             {$$ = create_dynamic_type_node();}
     ; 
 
     typeNotVoidList: typeNotVoid                {$$ = $1;}
@@ -413,9 +412,7 @@ void yyerror(char const *s) {
     ;
 
     functionSignature: type identifier formalParameterList      {$$ = create_funcOrConstruct_signature_node($1, $2, $3);}
-        | identifier formalParameterList                        {$$ = create_funcOrConstruct_signature_node(NULL, $1, $2);}
         | type identifier ambiguousArgumentsOrParameterList     {$$ = create_funcOrConstruct_signature_node($1, $2, convert_ambiguous_to_parameters($3));}
-        | identifier ambiguousArgumentsOrParameterList          {$$ = create_funcOrConstruct_signature_node(NULL, $1, convert_ambiguous_to_parameters($2));}
     ;
     
     functionBody: FUNC_ARROW expr ';'   {$$ = create_return_stmt_node($2);}

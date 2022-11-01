@@ -1,3 +1,4 @@
+#include "parser.tab.h"
 #include "structures.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -8,6 +9,8 @@ int newID() {
     id += 1;
     return id;
 }
+
+extern void yyerror(char const* s);
 
 identifier_node* create_identifier_node(bool isBuiltin, char* stringval) {
     identifier_node* node = (identifier_node*)malloc(sizeof(identifier_node));
@@ -74,16 +77,10 @@ formalParameter_node* convert_ambiguous_to_parameters(identifier_node* argsOrPar
         return NULL;
     }
 
-    identifier_node* curId = argsOrParams;
-    formalParameter_node* exprList = create_normal_formalParameter_node(curId);
-    while (curId->next != NULL) {
-        identifier_node* prev = curId;
-        curId = curId->next;
-        prev->next = NULL;
-        formalParameterList_add(exprList, create_normal_formalParameter_node(curId));
-    }
+    char const* err = "Untyped function parameters";
+    yyerror(err);
 
-    return exprList;
+    throw -1;
 }
 
 expr_node* create_this_expr_node(){
@@ -469,19 +466,9 @@ type_node* create_named_type_node(identifier_node* name, bool isNullable) {
     node->id = newID();
     node->next = NULL;
 
-    node->type = named;
+    node->isVoid = false;
     node->name = name;
     node->isNullable = isNullable;
-
-    return node;
-}
-type_node* create_dynamic_type_node() {
-    type_node* node = (type_node*)malloc(sizeof(type_node));
-    node->id = newID();
-    node->next = NULL;
-
-    node->type = dynamic;
-    node->isNullable = true;
 
     return node;
 }
@@ -490,12 +477,12 @@ type_node* create_void_type_node() {
     node->id = newID();
     node->next = NULL;
 
-    node->type = _void;
+    node->isVoid = true;
 
     return node;
 }
 type_node* type_node_makeNullable(type_node* node, bool isNullable) {
-    if (node->type != _void) {
+    if (!node->isVoid) {
         node->isNullable = isNullable;
     }
     return node;
@@ -565,7 +552,7 @@ variableDeclaration_node* create_variableDeclaration_node(declarator_node* decla
     node->id = newID();
 
     node->declarator = declarator;
-    node->idInitList = identifiers;
+    node->idInitList = identifiers; //todo проверить на то что если тип не заявлен, все должны быть инициализированы
 
     return node;
 }
@@ -587,16 +574,6 @@ formalParameter_node* create_normal_formalParameter_node(variableDeclaration_nod
     node->isField = false;
     node->paramDecl = declaredIdentifier;
     //todo проверять декларатор (не может быть late или конст)
-
-    return node;
-}
-formalParameter_node* create_normal_formalParameter_node(identifier_node* identifier) {
-    formalParameter_node* node = (formalParameter_node*)malloc(sizeof(formalParameter_node));
-    node->id = newID();
-    node->next = NULL;
-
-    node->isField = false;
-    node->paramDecl = create_single_variableDeclaration_node(false, false, false, create_dynamic_type_node(), identifier);
 
     return node;
 }
@@ -684,10 +661,9 @@ signature_node* create_funcOrConstruct_signature_node(type_node* returnType, ide
 
     node->type = funcOrConstruct;
     node->isStatic = false;
-    if (returnType == NULL) node->returnType = create_dynamic_type_node();
-    else node->returnType = returnType;
+    node->returnType = returnType;
     node->name = name;
-    node->parameters = parameters;
+    node->parameters = parameters;  //todo проверять что все параметры типизированы 
 
     return node;
 }

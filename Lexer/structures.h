@@ -176,15 +176,10 @@ stmt_node* create_functionDefinition_stmt_node(struct functionDefinition_node* f
 stmt_node* create_block_stmt_node(stmt_node* inner);
 stmt_node* stmtList_add(stmt_node* start, stmt_node* added);
 
-enum type_type {
-    named,
-    dynamic,
-    _void,
-};
 struct type_node {
     int id;
 
-    type_type type;
+    bool isVoid;
     bool isNullable;
 
     identifier_node* name;
@@ -192,7 +187,6 @@ struct type_node {
     type_node* next = NULL;
 };
 type_node* create_named_type_node(identifier_node* name, bool isNullable);
-type_node* create_dynamic_type_node();
 type_node* create_void_type_node();
 type_node* type_node_makeNullable(type_node* node, bool isNullable);
 type_node* typeList_add(type_node* start, type_node* added);
@@ -246,7 +240,6 @@ struct formalParameter_node {
     struct formalParameter_node* next = NULL;
 };
 formalParameter_node* create_normal_formalParameter_node(variableDeclaration_node* declaredIdentifier);
-formalParameter_node* create_normal_formalParameter_node(identifier_node* identifier);
 formalParameter_node* create_field_formalParameter_node(declarator_node* declarator, identifier_node* identifier);
 formalParameter_node* formalParameterList_add(formalParameter_node* start, formalParameter_node* added);
 

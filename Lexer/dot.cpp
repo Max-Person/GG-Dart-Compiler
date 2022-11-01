@@ -134,12 +134,8 @@ void display(classMemberDeclaration_node* node) {
 	}
 }
 void display(type_node* node) {
-	if (node->type == _void) {
+	if (node->isVoid) {
 		label(node->id, "type: void");
-		return;
-	}
-	if (node->type == dynamic) {
-		label(node->id, "type: dynamic");
 		return;
 	}
 	
