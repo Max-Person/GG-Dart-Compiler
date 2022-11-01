@@ -490,30 +490,6 @@ void display(expr_node* node) {
 			display(node->typeForCheckOrCast);
 			break;
 		}
-		case b_or: {
-			label(node->id, "|");
-			link(node->id, node->operand->id);
-			display(node->operand);
-			link(node->id, node->typeForCheckOrCast->id);
-			display(node->typeForCheckOrCast);
-			break;
-		}
-		case b_xor: {
-			label(node->id, "^");
-			link(node->id, node->operand->id);
-			display(node->operand);
-			link(node->id, node->operand2->id);
-			display(node->operand2);
-			break;
-		}
-		case b_and: {
-			label(node->id, "&");
-			link(node->id, node->operand->id);
-			display(node->operand);
-			link(node->id, node->operand2->id);
-			display(node->operand2);
-			break;
-		}
 		case add: {
 			label(node->id, "+");
 			link(node->id, node->operand->id);
@@ -546,22 +522,6 @@ void display(expr_node* node) {
 			display(node->operand2);
 			break;
 		}
-		case mod: {
-			label(node->id, "%");
-			link(node->id, node->operand->id);
-			display(node->operand);
-			link(node->id, node->operand2->id);
-			display(node->operand2);
-			break;
-		}
-		case truncdiv: {
-			label(node->id, "~/");
-			link(node->id, node->operand->id);
-			display(node->operand);
-			link(node->id, node->operand2->id);
-			display(node->operand2);
-			break;
-		}
 		case u_minus: {
 			label(node->id, "-");
 			link(node->id, node->operand->id);
@@ -570,12 +530,6 @@ void display(expr_node* node) {
 		}
 		case _not: {
 			label(node->id, "!(not)");
-			link(node->id, node->operand->id);
-			display(node->operand);
-			break;
-		}
-		case tilde: {
-			label(node->id, "~");
 			link(node->id, node->operand->id);
 			display(node->operand);
 			break;
@@ -653,22 +607,6 @@ void display(expr_node* node) {
 		}
 		case div_assign: {
 			label(node->id, "/=");
-			link(node->id, node->operand->id);
-			display(node->operand);
-			link(node->id, node->operand2->id);
-			display(node->operand2);
-			break;
-		}
-		case trunc_div_assign: {
-			label(node->id, "~/=");
-			link(node->id, node->operand->id);
-			display(node->operand);
-			link(node->id, node->operand2->id);
-			display(node->operand2);
-			break;
-		}
-		case mod_assign: {
-			label(node->id, "%=");
 			link(node->id, node->operand->id);
 			display(node->operand);
 			link(node->id, node->operand2->id);

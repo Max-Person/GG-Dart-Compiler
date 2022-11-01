@@ -211,7 +211,6 @@ void yyerror(char const *s) {
 
     //Можно бы указать exprNotAssign вместо expr, но это не имеет значения из-за приоритетов
     exprNotAssign: postfixExpr          {$$ = $1;}
-        /* | expr '?' expr ':' expr           {} */
         | expr IFNULL expr              {$$ = create_operator_expr_node(ifnull, $1, $3);}
         | expr OR expr                  {$$ = create_operator_expr_node(_or, $1, $3);}
         | expr AND expr                 {$$ = create_operator_expr_node(_and, $1, $3);}
@@ -224,18 +223,12 @@ void yyerror(char const *s) {
         | expr AS typeNotVoid           {$$ = create_typeOp_expr_node(type_cast, $1, $3);}
         | expr IS typeNotVoid           {$$ = create_typeOp_expr_node(type_check, $1, $3);}
         | expr IS '!' typeNotVoid       {$$ = create_typeOp_expr_node(neg_type_check, $1, $4);}
-        | expr '|' expr                 {$$ = create_operator_expr_node(b_or, $1, $3);}
-        | expr '^' expr                 {$$ = create_operator_expr_node(b_xor, $1, $3);}
-        | expr '&' expr                 {$$ = create_operator_expr_node(b_and, $1, $3);}
         | expr '+' expr                 {$$ = create_operator_expr_node(add, $1, $3);}
         | expr '-' expr                 {$$ = create_operator_expr_node(sub, $1, $3);}
         | expr '*' expr                 {$$ = create_operator_expr_node(mul, $1, $3);}
         | expr '/' expr                 {$$ = create_operator_expr_node(_div, $1, $3);}
-        | expr '%' expr                 {$$ = create_operator_expr_node(mod, $1, $3);}
-        | expr TRUNCDIV  expr           {$$ = create_operator_expr_node(truncdiv, $1, $3);}
         | '-'  expr %prec UMINUS        {$$ = create_operator_expr_node(u_minus, $2, NULL);}
         | '!'  expr                     {$$ = create_operator_expr_node(_not, $2, NULL);}
-        | '~'  expr                     {$$ = create_operator_expr_node(tilde, $2, NULL);}
         | INC expr %prec PREFIX_INC     {$$ = create_operator_expr_node(prefix_inc, $2, NULL);}
         | DEC expr %prec PREFIX_DEC     {$$ = create_operator_expr_node(prefix_dec, $2, NULL);}
     ;
@@ -244,11 +237,8 @@ void yyerror(char const *s) {
         | expr '=' expr                    {$$ = create_operator_expr_node(assign, $1, $3);}
         | expr AND_ASSIGN expr             {$$ = create_operator_expr_node(and_assign, $1, $3);} 
         | expr OR_ASSIGN expr              {$$ = create_operator_expr_node(or_assign, $1, $3);}
-        | expr XOR_ASSIGN expr             {$$ = create_operator_expr_node(xor_assign, $1, $3);}
         | expr MUL_ASSIGN expr             {$$ = create_operator_expr_node(mul_assign, $1, $3);}
         | expr DIV_ASSIGN expr             {$$ = create_operator_expr_node(div_assign, $1, $3);}
-        | expr TRUNC_DIV_ASSIGN expr       {$$ = create_operator_expr_node(trunc_div_assign, $1, $3);}
-        | expr MOD_ASSIGN expr             {$$ = create_operator_expr_node(mod_assign, $1, $3);}
         | expr ADD_ASSIGN expr             {$$ = create_operator_expr_node(add_assign, $1, $3);}
         | expr SUB_ASSIGN expr             {$$ = create_operator_expr_node(sub_assign, $1, $3);}
         | expr IFNULL_ASSIGN expr          {$$ = create_operator_expr_node(ifnull_assign, $1, $3);}
