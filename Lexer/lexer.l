@@ -246,10 +246,8 @@ r\'[^\'\r\n]*|r\"[^\"\r\r\n]*         {
 }
 
 
-assert          {_print("Keyword ASSERT: " + yytext_str()); return ASSERT;}
 break           {_print("Keyword BREAK: " + yytext_str()); return BREAK;}
 case            {_print("Keyword CASE: " + yytext_str()); return CASE;} 
-catch           {_print("Keyword CATCH: " + yytext_str()); return CATCH;}
 class           {_print("Keyword CLASS: " + yytext_str()); return CLASS;}
 const           {_print("Keyword CONST: " + yytext_str()); return CONST;} 
 continue        {_print("Keyword CONTINUE: " + yytext_str()); return CONTINUE;}
@@ -264,7 +262,6 @@ false           {
     return BOOLEAN_LITERAL;
 }
 final           {_print("Keyword FINAL: " + yytext_str()); return FINAL;}
-finally         {_print("Keyword FINALLY: " + yytext_str()); return FINALLY;}
 
 for             {_print("Keyword FOR: " + yytext_str()); return FOR;}
 if              {_print("Keyword IF: " + yytext_str()); return IF;}
@@ -272,18 +269,15 @@ in              {_print("Keyword IN: " + yytext_str()); return IN;}
 is              {_print("Keyword IS: " + yytext_str()); return IS;}
 new             {_print("Keyword NEW: " + yytext_str()); return NEW;}
 null            {_print("Keyword NULL: " + yytext_str()); return NULL_;}
-rethrow         {_print("Keyword RETHROW: " + yytext_str()); return RETHROW;}
 return          {_print("Keyword RETURN: " + yytext_str()); return RETURN;}
 super           {_print("Keyword SUPER: " + yytext_str()); return SUPER;}
 switch          {_print("Keyword SWITCH: " + yytext_str()); return SWITCH;}
 this            {_print("Keyword THIS: " + yytext_str()); return THIS;}
-throw           {_print("Keyword THROW: " + yytext_str()); return THROW;}
 true            {
     _print("Keyword TRUE: " + yytext_str()); 
     yylval.boolval=true;
     return BOOLEAN_LITERAL;
 }
-try             {_print("Keyword TRY: " + yytext_str()); return TRY;}
 var             {_print("Keyword VAR: " + yytext_str()); return VAR;}
 void            {_print("Keyword VOID: " + yytext_str()); return VOID;}
 while           {_print("Keyword WHILE: " + yytext_str()); return WHILE;}
@@ -312,15 +306,6 @@ required        {_print("Built-in identifier REQUIRED: " + yytext_str());   yylv
 set             {_print("Built-in identifier SET: " + yytext_str());        yylval._identifier_node=create_identifier_node(true, (char*)"set"); return SET;}
 static          {_print("Built-in identifier STATIC: " + yytext_str());     yylval._identifier_node=create_identifier_node(true, (char*)"static"); return STATIC;}
 typedef         {_print("Built-in identifier TYPEDEF: " + yytext_str());    yylval._identifier_node=create_identifier_node(true, (char*)"typedef"); return TYPEDEF;}
-
-async           {_print("Contextual keyword ASYNC: " + yytext_str()); return ASYNC;}
-hide            {_print("Contextual keyword HIDE: " + yytext_str()); return HIDE;}
-of              {_print("Contextual keyword OF: " + yytext_str()); return OF;}
-on              {_print("Contextual keyword ON: " + yytext_str()); return ON;}
-show            {_print("Contextual keyword SHOW: " + yytext_str()); return SHOW;}
-sync            {_print("Contextual keyword SYNC: " + yytext_str()); return SYNC;}
-await           {_print("Contextual keyword AWAIT: " + yytext_str()); return AWAIT;}
-yield           {_print("Contextual keyword YIELD: " + yytext_str()); return YIELD;}
 
 [\t \n\r]+      {_print("WHITESPACE");}
 
@@ -403,9 +388,6 @@ yield           {_print("Contextual keyword YIELD: " + yytext_str()); return YIE
 \%\=        {_print("MODASSIGN LEXEM %=: " + yytext_str()); return MOD_ASSIGN;}
 \+\=        {_print("ADDASSIGN LEXEM +=: " + yytext_str()); return ADD_ASSIGN;}
 \-\=        {_print("SUBASSIGN LEXEM -=: " + yytext_str()); return SUB_ASSIGN;}
-\<\<\=      {_print("SHIFTLASSIGN LEXEM <<=: " + yytext_str()); return SHIFTL_ASSIGN;}
-\>\>\>\=    {_print("TSHIFTRASSIGN LEXEM >>>=: " + yytext_str()); return TSHIFTR_ASSIGN;}
-\>\>\=      {_print("SHIFTRASSIGN LEXEM >>=: " + yytext_str()); return SHIFTR_ASSIGN;}
 \&\=        {_print("ANDASSIGN LEXEM &=: " + yytext_str()); return AND_ASSIGN;}
 \^\=        {_print("XORASSIGN LEXEM ^=: " + yytext_str()); return XOR_ASSIGN;}
 \|\=        {_print("ORASSIGN LEXEM |=: " + yytext_str()); return OR_ASSIGN;}
@@ -428,15 +410,9 @@ yield           {_print("Contextual keyword YIELD: " + yytext_str()); return YIE
 \-           {_print("MINUS LEXEM -: " + yytext_str()); return '-';}
 \*           {_print("MUL LEXEM *: " + yytext_str()); return '*';}
 \/           {_print("DIV LEXEM /: " + yytext_str()); return '/';}
-\%           {_print("MOD LEXEM %: " + yytext_str()); return '%';}
-\~\/         {_print("TRUNCDIV LEXEM ~/: " + yytext_str()); return TRUNCDIV;}
 \=           {_print("EQ LEXEM =: " + yytext_str()); return '=';}
-\&           {_print("AMPERSAND LEXEM &: " + yytext_str()); return '&';}
-\^           {_print("CIRCUMFLEX LEXEM ^: " + yytext_str()); return '^';}
-\|           {_print("BAR LEXEM |: " + yytext_str()); return '|';}
 \!           {_print("EXCLAMATION LEXEM !: " + yytext_str()); return '!';}
 \?           {_print("QUESTION LEXEM ?: " + yytext_str()); return '?';}
-\~           {_print("TILDE LEXEM ~: " + yytext_str()); return '~';}
 
 \(           {_print("PARL LEXEM (: " + yytext_str()); return '(';}
 \)           {_print("PARR LEXEM ): " + yytext_str()); return ')';}
@@ -452,7 +428,7 @@ yield           {_print("Contextual keyword YIELD: " + yytext_str()); return YIE
 \;           {_print("SEMICOLON LEXEM ;: " + yytext_str());  return ';';}
 \:           {_print("COLON LEXEM :: " + yytext_str()); return ':';}
 
-.           {_print("UNKNOWN SYMBOL: " + yytext_str());}
+.           {_print("UNKNOWN SYMBOL: " + yytext_str()); return YYUNDEF;}
 
 
 
