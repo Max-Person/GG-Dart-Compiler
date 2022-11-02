@@ -55,6 +55,47 @@ identifier_node* identifierLists_takeLast(identifier_node* start){
     cur->next = NULL;
     return next;
 }
+bool isAssignable(expr_node* expr) {
+    if (expr->type != identifier && expr->type != fieldAccess && expr->type != brackets) {
+        return false;
+    }
+    expr_node* cur = expr;
+    while (cur != NULL) {
+        if (cur->type != identifier &&
+            cur->type != this_pr &&
+            cur->type != super_pr &&
+            cur->type != call &&
+            cur->type != fieldAccess &&
+            cur->type != methodCall &&
+            cur->type != brackets) {
+            return false;
+        }
+        if ((cur->type == this_pr || cur->type == super_pr) && cur == expr) {
+            return false;
+        }
+        if (cur->type == identifier ||
+            cur->type == this_pr ||
+            cur->type == super_pr ||
+            cur->type == call) {
+            return true;
+        }
+        cur = cur->operand;
+    }
+    return true;
+}
+bool isTypeInferrable(variableDeclaration_node* variableDeclaration) {
+    if (!variableDeclaration->declarator->isTyped) {
+        idInit_node* cur = variableDeclaration->idInitList;
+        while (cur != NULL) {
+            if (!cur->isAssign) {
+                return false;
+                throw - 1;
+            }
+            cur = cur->next;
+        }
+    }
+    return true;
+}
 
 expr_node* convert_ambiguous_to_arguments(identifier_node* argsOrParams) {
     if (argsOrParams == NULL) {
@@ -77,9 +118,7 @@ formalParameter_node* convert_ambiguous_to_parameters(identifier_node* argsOrPar
         return NULL;
     }
 
-    char const* err = "Untyped function parameters";
-    yyerror(err);
-
+    yyerror("Untyped function parameters");
     throw -1;
 }
 
@@ -156,7 +195,9 @@ expr_node* create_strInterpolation_expr_node(expr_node* before, expr_node* inter
     node->next = NULL;
 
     node->type = string_interpolation;
-    node->operand = before; //TODO �������� ����� ��������� ���
+    if (node->operand->type != string_interpolation && node->operand->type != string_pr)
+        yyerror("Compiler err: using string_interpolation node on a non-string expr");
+    node->operand = before;
     node->operand2 = interpol;
     node->string_value = after;
 
@@ -257,7 +298,9 @@ expr_node* create_operator_expr_node(expr_type type, expr_node* operand, expr_no
     node->id = newID();
     node->next = NULL;
 
-    node->type = type; //TODO ��������� ��� ����� ��������, � ���� assign �� ��������� ������ ������� �� ������������ 
+    if (type < brackets) yyerror("Compiler err: using operator node on a non-operator expr");
+    if (type >= assign && !isAssignable(operand)) yyerror("Unassignable expr used in assignment");
+    node->type = type;
     node->operand = operand;
     node->operand2 = operand2;
 
@@ -268,7 +311,9 @@ expr_node* create_typeOp_expr_node(expr_type type, expr_node* operand, type_node
     node->id = newID();
     node->next = NULL;
 
-    node->type = type; //TODO проверять на характер оператора
+    if (type != type_cast && type != type_check && type != neg_type_check)
+        yyerror("Compiler err: using typeOp node on an incompatible expr");
+    node->type = type;
     node->operand = operand;
     node->typeForCheckOrCast = typeOp;
 
@@ -373,6 +418,7 @@ stmt_node* create_variable_declaration_stmt_node(variableDeclaration_node* varia
     node->nextStmt = NULL;
 
     node->type = variable_declaration_statement;
+    if(!isTypeInferrable(variableDeclaration)) yyerror("types can only be inferred if all declared variables are initialized");
     node->variableDeclaration = variableDeclaration;
 
     return node;
@@ -552,7 +598,8 @@ variableDeclaration_node* create_variableDeclaration_node(declarator_node* decla
     node->id = newID();
 
     node->declarator = declarator;
-    node->idInitList = identifiers; //todo проверить на то что если тип не заявлен, все должны быть инициализированы
+    node->idInitList = identifiers;
+    
 
     return node;
 }
@@ -572,8 +619,11 @@ formalParameter_node* create_normal_formalParameter_node(variableDeclaration_nod
     node->next = NULL;
 
     node->isField = false;
+    if (declaredIdentifier->declarator->isStatic) yyerror("Can't have modifier \"static\" here");
+    if (declaredIdentifier->declarator->isConst) yyerror("Can't have modifier \"const\" here");
+    if (declaredIdentifier->declarator->isLate) yyerror("Can't have modifier \"late\" here");
+    if (!declaredIdentifier->declarator->isTyped) yyerror("Untyped function parameter");
     node->paramDecl = declaredIdentifier;
-    //todo проверять декларатор (не может быть late или конст)
 
     return node;
 }
@@ -584,9 +634,13 @@ formalParameter_node* create_field_formalParameter_node(declarator_node* declara
 
     node->isField = true;
     node->initializedField = identifier;
-    //todo проверять декларатор (не может быть ничем кроме final, тип должен совпадать)
+    if (declarator != NULL) {
+        if (declarator->isStatic) yyerror("Can't have modifier \"static\" here");
+        if (declarator->isConst) yyerror("Can't have modifier \"const\" here");
+        if (declarator->isLate) yyerror("Can't have modifier \"late\" here");
 
-    free(declarator);   //look
+        free(declarator);   //look
+    }
 
     return node;
 }
@@ -663,13 +717,11 @@ signature_node* create_funcOrConstruct_signature_node(type_node* returnType, ide
     node->isStatic = false;
     node->returnType = returnType;
     node->name = name;
-    node->parameters = parameters;  //todo проверять что все параметры типизированы 
+    node->parameters = parameters;  
 
     return node;
 }
 signature_node* create_construct_signature_node(bool isConst, identifier_node* className, formalParameter_node* parameters) {
-    //todo проверить на built-in. Хотя мб можно и просто на этапе семантики на совпадение с используемым классом
-
     signature_node* node = (signature_node*)malloc(sizeof(signature_node));
     node->id = newID();
 
@@ -686,8 +738,6 @@ signature_node* create_construct_signature_node(bool isConst, identifier_node* c
     return node;
 }
 signature_node* create_construct_signature_node(bool isConst, identifier_node* className, identifier_node* name, formalParameter_node* parameters) {
-    //todo проверить на built-in. Хотя мб можно и просто на этапе семантики на совпадение с используемым классом
-
     signature_node* node = (signature_node*)malloc(sizeof(signature_node));
     node->id = newID();
 
@@ -765,6 +815,7 @@ classMemberDeclaration_node* create_field_classMemberDeclaration_node(bool isSta
 
     node->type = field;
     node->fieldDecl = create_variableDeclaration_node(create_declarator_node(isStatic, isLate, isFinal, isConst, valueType), idList);
+    if (!isTypeInferrable(node->fieldDecl)) yyerror("types can only be inferred if all declared variables are initialized");
 
     return node;
 }

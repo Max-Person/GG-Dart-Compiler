@@ -18,7 +18,7 @@ struct expr_node* convert_ambiguous_to_arguments(identifier_node* argsOrParams);
 struct formalParameter_node* convert_ambiguous_to_parameters(identifier_node* argsOrParams);
 
 
-
+//не менять порядок в енаме - все операторы должны быть больше определенного числа
 enum expr_type{
     this_pr,
     super_pr,
@@ -36,10 +36,10 @@ enum expr_type{
     identifier,
     call,
 
-    brackets,
     fieldAccess,
     methodCall,
-    
+
+    brackets,
     ifnull,
     _or,
     _and,

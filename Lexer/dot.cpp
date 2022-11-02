@@ -360,16 +360,20 @@ void display(expr_node* node) {
 			label(node->id, "new");
 			link(node->id, node->identifierAccess->id, "constructor name");
 			display(node->identifierAccess);
-			link(node->id, node->callArguments->id, "arguments");
-			display(node->callArguments);
+			if (node->callArguments != NULL) {
+				link(node->id, node->callArguments->id, "arguments");
+				display(node->callArguments);
+			}
 			break;
 		}
 		case constructConst: {
 			label(node->id, "const");
 			link(node->id, node->identifierAccess->id, "constructor name");
 			display(node->identifierAccess);
-			link(node->id, node->callArguments->id, "arguments");
-			display(node->callArguments);
+			if (node->callArguments != NULL) {
+				link(node->id, node->callArguments->id, "arguments");
+				display(node->callArguments);
+			}
 			break;
 		}
 
