@@ -3,293 +3,294 @@ using namespace std;
 
 ofstream out("dotOutput.txt", ofstream::trunc);
 
-void label(int id, string label) {
-	out << id << "[label=\"" << label << "\"]" << endl;
-}
-void link(int id1, int id2) {
-	out << id1 << "->" << id2 << endl;
-}
-void link(int id1, int id2, string label) {
-	out << id1 << "->" << id2 << "[label=\"" << label << "\"]" << endl;
-}
-void linkList(int id1, int id2) {
-	out << "{rank = same;" << id1 << ";" << id2 << ";}" << endl;
-	link(id1, id2);
-}
-
-void displayInit(topLevelDeclaration_node* root) {
-	out << "digraph {" << endl;
-	out << "subgraph {" << endl;
-	display(root);
-	out << "}" << endl;
-	out << "}" << endl;
-}
-void display(topLevelDeclaration_node* node) {
-	if (node == NULL) {
-		out << "empty" << endl;
-		return;
+namespace dotOut {
+	void label(int id, string label) {
+		out << id << "[label=\"" << label << "\"]" << endl;
+	}
+	void link(int id1, int id2) {
+		out << id1 << "->" << id2 << endl;
+	}
+	void link(int id1, int id2, string label) {
+		out << id1 << "->" << id2 << "[label=\"" << label << "\"]" << endl;
+	}
+	void linkList(int id1, int id2) {
+		out << "{rank = same;" << id1 << ";" << id2 << ";}" << endl;
+		link(id1, id2);
 	}
 
-	switch (node->type) {
-	case _enum: {
-		label(node->id, "enumDecl");
-		link(node->id, node->enumDecl->id);
-		display(node->enumDecl);
-		break;
+	void displayInit(topLevelDeclaration_node* root) {
+		out << "digraph {" << endl;
+		out << "subgraph {" << endl;
+		display(root);
+		out << "}" << endl;
+		out << "}" << endl;
 	}
-	case _class: {
-		label(node->id, "classDecl");
-		link(node->id, node->classDecl->id);
-		display(node->classDecl);
-		break;
-	}
-	case _function: {
-		label(node->id, "funcDecl");
-		link(node->id, node->functionDecl->id);
-		display(node->functionDecl);
-		break;
-	}
-	case _variable: {
-		label(node->id, "varDecl");
-		link(node->id, node->variableDecl->id);
-		display(node->variableDecl);
-		break;
-	}
-	}
+	void display(topLevelDeclaration_node* node) {
+		if (node == NULL) {
+			out << "empty" << endl;
+			return;
+		}
 
-	if (node->next != NULL) {
-		linkList(node->id, node->next->id);
-		display(node->next);
-	}
-}
-void display(enum_node* node) {
-	label(node->id, "enum: " + string(node->name->stringval));
-	link(node->id, node->values->id, "values");
-	display(node->values);
-}
-void display(identifier_node* node) {
-	label(node->id, node->stringval);
+		switch (node->type) {
+		case _enum: {
+			label(node->id, "enumDecl");
+			link(node->id, node->enumDecl->id);
+			display(node->enumDecl);
+			break;
+		}
+		case _class: {
+			label(node->id, "classDecl");
+			link(node->id, node->classDecl->id);
+			display(node->classDecl);
+			break;
+		}
+		case _function: {
+			label(node->id, "funcDecl");
+			link(node->id, node->functionDecl->id);
+			display(node->functionDecl);
+			break;
+		}
+		case _variable: {
+			label(node->id, "varDecl");
+			link(node->id, node->variableDecl->id);
+			display(node->variableDecl);
+			break;
+		}
+		}
 
-	if (node->next != NULL) {
-		linkList(node->id, node->next->id);
-		display(node->next);
+		if (node->next != NULL) {
+			linkList(node->id, node->next->id);
+			display(node->next);
+		}
 	}
-}
-void display(classDeclaration_node* node) {
-	string l = "";
-	if(node->isAbstract) {
-		l += "abstract ";
+	void display(enum_node* node) {
+		label(node->id, "enum: " + string(node->name->stringval));
+		link(node->id, node->values->id, "values");
+		display(node->values);
 	}
-	if (node->isAlias) {
-		l += "alias ";
-	}
-	l += "class: " + string(node->name->stringval);
-	label(node->id, l);
+	void display(identifier_node* node) {
+		label(node->id, node->stringval);
 
-	if (node->super != NULL) {
-		link(node->id, node->super->id, "extends");
-		display(node->super);
+		if (node->next != NULL) {
+			linkList(node->id, node->next->id);
+			display(node->next);
+		}
 	}
-	if (node->mixins != NULL) {
-		link(node->id, node->mixins->id, "with");
-		display(node->mixins);
+	void display(classDeclaration_node* node) {
+		string l = "";
+		if (node->isAbstract) {
+			l += "abstract ";
+		}
+		if (node->isAlias) {
+			l += "alias ";
+		}
+		l += "class: " + string(node->name->stringval);
+		label(node->id, l);
+
+		if (node->super != NULL) {
+			link(node->id, node->super->id, "extends");
+			display(node->super);
+		}
+		if (node->mixins != NULL) {
+			link(node->id, node->mixins->id, "with");
+			display(node->mixins);
+		}
+		if (node->interfaces != NULL) {
+			link(node->id, node->interfaces->id, "implements");
+			display(node->interfaces);
+		}
+		if (!node->isAlias) {
+			link(node->id, node->classMembers->id, "members");
+			display(node->classMembers);
+		}
 	}
-	if (node->interfaces != NULL) {
-		link(node->id, node->interfaces->id, "implements");
-		display(node->interfaces);
+	void display(classMemberDeclaration_node* node) {
+		switch (node->type)
+		{
+		case field: {
+			label(node->id, "fieldDecl");
+			link(node->id, node->fieldDecl->id);
+			display(node->fieldDecl);
+			break;
+		}
+		case constructSignature: {
+			label(node->id, "constuctorWithoutBody");
+			link(node->id, node->signature->id);
+			display(node->signature);
+			break;
+		}
+		case methodDefinition: {
+			label(node->id, "methodDefinition");
+			link(node->id, node->signature->id, "signature");
+			display(node->signature);
+			link(node->id, node->body->id, "body");
+			display(node->body);
+			break;
+		}
+		}
+
+		if (node->next != NULL) {
+			linkList(node->id, node->next->id);
+			display(node->next);
+		}
 	}
-	if (!node->isAlias) {
-		link(node->id, node->classMembers->id, "members");
-		display(node->classMembers);
+	void display(type_node* node) {
+		if (node->isVoid) {
+			label(node->id, "type: void");
+			return;
+		}
+
+		if (node->isNullable) {
+			label(node->id, "type: " + string(node->name->stringval) + "?");
+		}
+		else {
+			label(node->id, "type: " + string(node->name->stringval));
+		}
+
+		if (node->next != NULL) {
+			linkList(node->id, node->next->id);
+			display(node->next);
+		}
 	}
-}
-void display(classMemberDeclaration_node* node) {
-	switch (node->type)
-	{
-	case field: {
-		label(node->id, "fieldDecl");
-		link(node->id, node->fieldDecl->id);
-		display(node->fieldDecl);
-		break;
+	void display(variableDeclaration_node* node) {
+		label(node->id, "variable declaration");
+		link(node->id, node->declarator->id, "declaration");
+		display(node->declarator);
+		link(node->id, node->idInitList->id, "variables");
+		display(node->idInitList);
 	}
-	case constructSignature: {
-		label(node->id, "constuctorWithoutBody");
-		link(node->id, node->signature->id);
-		display(node->signature);
-		break;
+	void display(declarator_node* node) {
+		string s = "";
+		if (node->isStatic) s += "static ";
+		if (node->isLate) s += "late ";
+		if (node->isFinal) s += "final ";
+		if (node->isConst) s += "const ";
+		label(node->id, s + "decl");
+
+		if (node->isTyped) {
+			link(node->id, node->valueType->id, "type");
+			display(node->valueType);
+		}
 	}
-	case methodDefinition: {
-		label(node->id, "methodDefinition");
+	void display(idInit_node* node) {
+		if (node->isAssign) {
+			label(node->id, "init");
+			link(node->id, node->identifier->id, "id");
+			display(node->identifier);
+			link(node->id, node->value->id, "value");
+			display(node->value);
+		}
+		else {
+			label(node->id, "not init");
+			link(node->id, node->identifier->id);
+			display(node->identifier);
+		}
+
+		if (node->next != NULL) {
+			linkList(node->id, node->next->id);
+			display(node->next);
+		}
+	}
+	void display(functionDefinition_node* node) {
+		label(node->id, "function declaration");
 		link(node->id, node->signature->id, "signature");
 		display(node->signature);
 		link(node->id, node->body->id, "body");
 		display(node->body);
-		break;
 	}
-	}
+	void display(signature_node* node) {
+		string s = "";
+		if (node->isStatic) s += "static ";
+		if (node->isConst) s += "const ";
+		if (node->type == construct) {
+			if (node->isNamed) s += "named ";
+			s += "costructor ";
+		}
+		s += "signature";
+		label(node->id, s);
+		if (node->type == construct) {
+			link(node->id, node->name->id, "class name");
+			display(node->name);
+			if (node->isNamed) {
+				link(node->id, node->constructName->id, "constructor name");
+				display(node->constructName);
+			}
+			if (node->initializers != NULL) {
+				link(node->id, node->initializers->id, "initializers");
+				display(node->initializers);
+			}
+			if (node->redirection != NULL) {
+				link(node->id, node->redirection->id, "redirection");
+				display(node->redirection);
+			}
+		}
+		else {
+			link(node->id, node->name->id, "name");
+			display(node->name);
+			link(node->id, node->returnType->id, "return type");
+			display(node->returnType);
+		}
 
-	if (node->next != NULL) {
-		linkList(node->id, node->next->id);
-		display(node->next);
+		if (node->parameters != NULL) {
+			link(node->id, node->parameters->id, "parameters");
+			display(node->parameters);
+		}
 	}
-}
-void display(type_node* node) {
-	if (node->isVoid) {
-		label(node->id, "type: void");
-		return;
-	}
-	
-	if (node->isNullable) {
-		label(node->id, "type: " + string(node->name->stringval) + "?");
-	}
-	else {
-		label(node->id, "type: " + string(node->name->stringval));
-	}
+	void display(initializer_node* node) {
+		if (node->type == thisAssign) {
+			label(node->id, "fieldInit");
+			link(node->id, node->thisFieldId->id, "field");
+			display(node->thisFieldId);
+			link(node->id, node->value->id, "value");
+			display(node->value);
+		}
+		else {
+			label(node->id, "superConstructCall");
+			if (node->type == superNamedConstructor) {
+				link(node->id, node->superConstructorName->id, "constuctor name");
+				display(node->superConstructorName);
+			}
+			if (node->args != NULL) {
+				link(node->id, node->args->id, "arguments");
+				display(node->args);
+			}
+		}
 
-	if (node->next != NULL) {
-		linkList(node->id, node->next->id);
-		display(node->next);
+		if (node->next != NULL) {
+			linkList(node->id, node->next->id);
+			display(node->next);
+		}
 	}
-}
-void display(variableDeclaration_node* node) {
-	label(node->id, "variable declaration");
-	link(node->id, node->declarator->id, "declaration");
-	display(node->declarator);
-	link(node->id, node->idInitList->id, "variables");
-	display(node->idInitList);
-}
-void display(declarator_node* node) {
-	string s = "";
-	if (node->isStatic) s += "static ";
-	if (node->isLate) s += "late ";
-	if (node->isFinal) s += "final ";
-	if (node->isConst) s += "const ";
-	label(node->id, s + "decl");
-
-	if (node->isTyped) {
-		link(node->id, node->valueType->id, "type");
-		display(node->valueType);
-	}
-}
-void display(idInit_node* node) {
-	if (node->isAssign) {
-		label(node->id, "init");
-		link(node->id, node->identifier->id, "id");
-		display(node->identifier);
-		link(node->id, node->value->id, "value");
-		display(node->value);
-	}
-	else {
-		label(node->id, "not init");
-		link(node->id, node->identifier->id);
-		display(node->identifier);
-	}
-
-	if (node->next != NULL) {
-		linkList(node->id, node->next->id);
-		display(node->next);
-	}
-}
-void display(functionDefinition_node* node) {
-	label(node->id, "function declaration");
-	link(node->id, node->signature->id, "signature");
-	display(node->signature);
-	link(node->id, node->body->id, "body");
-	display(node->body);
-}
-void display(signature_node* node) {
-	string s = "";
-	if (node->isStatic) s += "static ";
-	if (node->isConst) s += "const ";
-	if (node->type == construct) {
-		if (node->isNamed) s += "named ";
-		s += "costructor ";
-	}
-	s += "signature";
-	label(node->id, s);
-	if (node->type == construct) {
-		link(node->id, node->name->id, "class name");
-		display(node->name);
+	void display(redirection_node* node) {
+		label(node->id, "redirection");
 		if (node->isNamed) {
-			link(node->id, node->constructName->id, "constructor name");
-			display(node->constructName);
-		}
-		if (node->initializers != NULL) {
-			link(node->id, node->initializers->id, "initializers");
-			display(node->initializers);
-		}
-		if (node->redirection != NULL) {
-			link(node->id, node->redirection->id, "redirection");
-			display(node->redirection);
-		}
-	}
-	else {
-		link(node->id, node->name->id, "name");
-		display(node->name);
-		link(node->id, node->returnType->id, "return type");
-		display(node->returnType);
-	}
-	
-	if (node->parameters != NULL) {
-		link(node->id, node->parameters->id, "parameters");
-		display(node->parameters);
-	}
-}
-void display(initializer_node* node) {
-	if (node->type == thisAssign) {
-		label(node->id, "fieldInit");
-		link(node->id, node->thisFieldId->id, "field");
-		display(node->thisFieldId);
-		link(node->id, node->value->id, "value");
-		display(node->value);
-	}
-	else {
-		label(node->id, "superConstructCall");
-		if (node->type == superNamedConstructor) {
-			link(node->id, node->superConstructorName->id, "constuctor name");
-			display(node->superConstructorName);
+			link(node->id, node->name->id, "constuctor name");
+			display(node->name);
 		}
 		if (node->args != NULL) {
 			link(node->id, node->args->id, "arguments");
 			display(node->args);
 		}
 	}
+	void display(formalParameter_node* node) {
+		if (node->isField) {
+			label(node->id, "fieldInit param");
+			link(node->id, node->initializedField->id, "field");
+			display(node->initializedField);
+		}
+		else {
+			label(node->id, "param");
+			link(node->id, node->paramDecl->id, "declaration");
+			display(node->paramDecl);
+		}
 
-	if (node->next != NULL) {
-		linkList(node->id, node->next->id);
-		display(node->next);
+		if (node->next != NULL) {
+			linkList(node->id, node->next->id);
+			display(node->next);
+		}
 	}
-}
-void display(redirection_node* node) {
-	label(node->id, "redirection");
-	if (node->isNamed) {
-		link(node->id, node->name->id, "constuctor name");
-		display(node->name);
-	}
-	if (node->args != NULL) {
-		link(node->id, node->args->id, "arguments");
-		display(node->args);
-	}
-}
-void display(formalParameter_node* node) {
-	if (node->isField) {
-		label(node->id, "fieldInit param");
-		link(node->id, node->initializedField->id, "field");
-		display(node->initializedField);
-	}
-	else {
-		label(node->id, "param");
-		link(node->id, node->paramDecl->id, "declaration");
-		display(node->paramDecl);
-	}
-
-	if (node->next != NULL) {
-		linkList(node->id, node->next->id);
-		display(node->next);
-	}
-}
-void display(expr_node* node) {
-	switch (node->type) {
+	void display(expr_node* node) {
+		switch (node->type) {
 		case this_pr: {
 			label(node->id, "this");
 			break;
@@ -327,7 +328,7 @@ void display(expr_node* node) {
 			display(node->operand2);
 			break;
 		}
-		
+
 		case brackets: {
 			label(node->id, "[ ]");
 			link(node->id, node->operand->id);
@@ -637,149 +638,150 @@ void display(expr_node* node) {
 			display(node->operand2);
 			break;
 		}
-	}
+		}
 
-	if (node->next != NULL) {
-		linkList(node->id, node->next->id);
-		display(node->next);
-	}
-}
-void display(stmt_node* node) {
-	switch (node->type) {
-	case block: {
-		if (node->body != NULL) {
-			label(node->id, "{...}");
-			link(node->id, node->body->id);
-			display(node->body);
+		if (node->next != NULL) {
+			linkList(node->id, node->next->id);
+			display(node->next);
 		}
-		else label(node->id, "{ }");
-		break;
 	}
-	case expr_statement: {
-		if (node->expr != NULL) {
-			label(node->id, "exprStmnt");
-			link(node->id, node->expr->id);
-			display(node->expr);
+	void display(stmt_node* node) {
+		switch (node->type) {
+		case block: {
+			if (node->body != NULL) {
+				label(node->id, "{...}");
+				link(node->id, node->body->id);
+				display(node->body);
+			}
+			else label(node->id, "{ }");
+			break;
 		}
-		else label(node->id, "empty exprStmnt");
-		break;
-	}
-	case variable_declaration_statement: {
-		label(node->id, "varDeclStmnt");
-		link(node->id, node->variableDeclaration->id);
-		display(node->variableDeclaration);
-		break;
-	}
-	case forN_statement: {
-		label(node->id, "forNStmnt");
-		link(node->id, node->forInitializerStmt->id, "(...;");
-		display(node->forInitializerStmt);
-		link(node->id, node->condition->id, ";..;");
-		display(node->condition);
-		if (node->forPostExpr != NULL) {
-			link(node->id, node->forPostExpr->id, ";...)");
-			display(node->forPostExpr);
+		case expr_statement: {
+			if (node->expr != NULL) {
+				label(node->id, "exprStmnt");
+				link(node->id, node->expr->id);
+				display(node->expr);
+			}
+			else label(node->id, "empty exprStmnt");
+			break;
 		}
-		link(node->id, node->body->id, "body");
-		display(node->body);
-		break;
-	}
-	case forEach_statement: {
-		label(node->id, "forEachStmnt");
-		if (node->variableDeclaration != NULL) {
-			link(node->id, node->variableDeclaration->id, "iter");
+		case variable_declaration_statement: {
+			label(node->id, "varDeclStmnt");
+			link(node->id, node->variableDeclaration->id);
 			display(node->variableDeclaration);
+			break;
 		}
-		else {
-			link(node->id, node->forEachVariableId->id, "iter");
-			display(node->forEachVariableId);
+		case forN_statement: {
+			label(node->id, "forNStmnt");
+			link(node->id, node->forInitializerStmt->id, "(...;");
+			display(node->forInitializerStmt);
+			link(node->id, node->condition->id, ";..;");
+			display(node->condition);
+			if (node->forPostExpr != NULL) {
+				link(node->id, node->forPostExpr->id, ";...)");
+				display(node->forPostExpr);
+			}
+			link(node->id, node->body->id, "body");
+			display(node->body);
+			break;
 		}
-		link(node->id, node->forContainerExpr->id, "in");
-		display(node->forContainerExpr);
-		link(node->id, node->body->id, "body");
-		display(node->body);
-		break;
-	}
-	case while_statement: {
-		label(node->id, "whileStmnt");
-		link(node->id, node->condition->id, "condition");
-		display(node->condition);
-		link(node->id, node->body->id, "body");
-		display(node->body);
-		break;
-	}
-	case do_statement: {
-		label(node->id, "doWhileStmnt");
-		link(node->id, node->body->id, "body");
-		display(node->body);
-		link(node->id, node->condition->id, "condition");
-		display(node->condition);
-		break;
-	}
-	case switch_statement: {
-		label(node->id, "switchStmnt");
-		link(node->id, node->condition->id, "switch expr");
-		display(node->condition);
-		link(node->id, node->switchCaseList->id, "cases");
-		display(node->switchCaseList);
-		if (node->defaultSwitchActions != NULL) {
-			link(node->id, node->defaultSwitchActions->id, "default action");
-			display(node->defaultSwitchActions);
+		case forEach_statement: {
+			label(node->id, "forEachStmnt");
+			if (node->variableDeclaration != NULL) {
+				link(node->id, node->variableDeclaration->id, "iter");
+				display(node->variableDeclaration);
+			}
+			else {
+				link(node->id, node->forEachVariableId->id, "iter");
+				display(node->forEachVariableId);
+			}
+			link(node->id, node->forContainerExpr->id, "in");
+			display(node->forContainerExpr);
+			link(node->id, node->body->id, "body");
+			display(node->body);
+			break;
 		}
-		break;
-	}
-	case if_statement: {
-		label(node->id, "ifStmnt");
-		link(node->id, node->condition->id, "condition");
-		display(node->condition);
-		link(node->id, node->body->id, "then");
-		display(node->body);
-		if (node->elseBody != NULL) {
-			link(node->id, node->elseBody->id, "else");
-			display(node->elseBody);
+		case while_statement: {
+			label(node->id, "whileStmnt");
+			link(node->id, node->condition->id, "condition");
+			display(node->condition);
+			link(node->id, node->body->id, "body");
+			display(node->body);
+			break;
 		}
-		break;
-	}
-	case break_statement: {
-		label(node->id, "breakStmnt");
-		break;
-	}
-	case continue_statement: {
-		label(node->id, "continueStmnt");
-		break;
-	}
-	case return_statement: {
-		label(node->id, "returnStmnt");
-		if (node->returnExpr != NULL) {
-			link(node->id, node->returnExpr->id, "val");
-			display(node->returnExpr);
+		case do_statement: {
+			label(node->id, "doWhileStmnt");
+			link(node->id, node->body->id, "body");
+			display(node->body);
+			link(node->id, node->condition->id, "condition");
+			display(node->condition);
+			break;
 		}
-		break;
-	}
-	case local_function_declaration: {
-		label(node->id, "funcDeclStmnt");
-		link(node->id, node->func->id);
-		display(node->func);
-		break; 
-	}
-	}
+		case switch_statement: {
+			label(node->id, "switchStmnt");
+			link(node->id, node->condition->id, "switch expr");
+			display(node->condition);
+			link(node->id, node->switchCaseList->id, "cases");
+			display(node->switchCaseList);
+			if (node->defaultSwitchActions != NULL) {
+				link(node->id, node->defaultSwitchActions->id, "default action");
+				display(node->defaultSwitchActions);
+			}
+			break;
+		}
+		case if_statement: {
+			label(node->id, "ifStmnt");
+			link(node->id, node->condition->id, "condition");
+			display(node->condition);
+			link(node->id, node->body->id, "then");
+			display(node->body);
+			if (node->elseBody != NULL) {
+				link(node->id, node->elseBody->id, "else");
+				display(node->elseBody);
+			}
+			break;
+		}
+		case break_statement: {
+			label(node->id, "breakStmnt");
+			break;
+		}
+		case continue_statement: {
+			label(node->id, "continueStmnt");
+			break;
+		}
+		case return_statement: {
+			label(node->id, "returnStmnt");
+			if (node->returnExpr != NULL) {
+				link(node->id, node->returnExpr->id, "val");
+				display(node->returnExpr);
+			}
+			break;
+		}
+		case local_function_declaration: {
+			label(node->id, "funcDeclStmnt");
+			link(node->id, node->func->id);
+			display(node->func);
+			break;
+		}
+		}
 
-	if (node->nextStmt != NULL) {
-		linkList(node->id, node->nextStmt->id);
-		display(node->nextStmt);
+		if (node->nextStmt != NULL) {
+			linkList(node->id, node->nextStmt->id);
+			display(node->nextStmt);
+		}
 	}
-}
-void display(switch_case_node* node) {
-	label(node->id, "case");
-	link(node->id, node->condition->id, "val");
-	display(node->condition);
-	if (node->actions != NULL) {
-		link(node->id, node->actions->id, "actions");
-		display(node->actions);
-	}
+	void display(switch_case_node* node) {
+		label(node->id, "case");
+		link(node->id, node->condition->id, "val");
+		display(node->condition);
+		if (node->actions != NULL) {
+			link(node->id, node->actions->id, "actions");
+			display(node->actions);
+		}
 
-	if (node->next != NULL) {
-		linkList(node->id, node->next->id);
-		display(node->next);
+		if (node->next != NULL) {
+			linkList(node->id, node->next->id);
+			display(node->next);
+		}
 	}
 }

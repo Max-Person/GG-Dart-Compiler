@@ -1,5 +1,6 @@
 #include "parser.tab.h"
 #include "dot.h"
+#include "xml.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -19,7 +20,8 @@ int main(int argc, char** argv) {
         if (argc > 2 && strcmp(argv[2], "-d")==0) yydebug = 1;
         int res = yyparse();
         if(res == 0){
-            displayInit(root);
+            dotOut::displayInit(root);
+            xmlOut::displayInit(root);
         }
         fclose(yyin);
     }

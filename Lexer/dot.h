@@ -6,21 +6,23 @@
 #include <stdlib.h>
 #include "structures.h"
 
-void displayInit(topLevelDeclaration_node* root);
-void display(topLevelDeclaration_node* node);
-void display(enum_node* node);
-void display(identifier_node* node);
-void display(classDeclaration_node* node);
-void display(classMemberDeclaration_node* node);
-void display(type_node* node);
-void display(variableDeclaration_node* node);
-void display(declarator_node* node);
-void display(idInit_node* node);
-void display(functionDefinition_node* node);
-void display(signature_node* node);
-void display(initializer_node* node);
-void display(redirection_node* node);
-void display(formalParameter_node* node);
-void display(expr_node* node);
-void display(stmt_node* node);
-void display(switch_case_node* node);
+namespace dotOut {
+	void displayInit(topLevelDeclaration_node* root);
+	void display(topLevelDeclaration_node* node);
+	void display(enum_node* node);
+	void display(identifier_node* node);
+	void display(classDeclaration_node* node);
+	void display(classMemberDeclaration_node* node);
+	void display(type_node* node);
+	void display(variableDeclaration_node* node);
+	void display(declarator_node* node);
+	void display(idInit_node* node);
+	void display(functionDefinition_node* node);
+	void display(signature_node* node);
+	void display(initializer_node* node);
+	void display(redirection_node* node);
+	void display(formalParameter_node* node);
+	void display(expr_node* node);
+	void display(stmt_node* node);
+	void display(switch_case_node* node);
+}
