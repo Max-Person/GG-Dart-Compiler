@@ -27,6 +27,7 @@ enum expr_type{
     double_pr,
     bool_pr,
     string_pr,
+    list_pr,
 
     string_interpolation,
 
@@ -103,6 +104,7 @@ expr_node* create_intlit_expr_node(long long value);
 expr_node* create_doublelit_expr_node(double value);
 expr_node* create_boollit_expr_node(bool value);
 expr_node* create_strlit_expr_node(char* value);
+expr_node* create_listlit_expr_node(expr_node* list);
 expr_node* create_strInterpolation_expr_node(expr_node* before, expr_node* interpol, char* after);
 expr_node* create_id_expr_node(identifier_node* identifierAccess);
 expr_node* create_call_expr_node(identifier_node* identifierAccess, expr_node* callArguments);
@@ -331,6 +333,7 @@ enum_node* create_enum_node(identifier_node* name, identifier_node* values);
 enum classMemberDeclaration_type {
     field,
     constructSignature,
+    methodSignature,
     methodDefinition,
 };
 struct classMemberDeclaration_node {
@@ -347,6 +350,7 @@ struct classMemberDeclaration_node {
 };
 classMemberDeclaration_node* create_field_classMemberDeclaration_node(bool isStatic, bool isLate, bool isFinal, bool isConst, type_node* valueType, idInit_node* idList);
 classMemberDeclaration_node* create_constructSignature_classMemberDeclaration_node(signature_node* signature);
+classMemberDeclaration_node* create_methodSignature_classMemberDeclaration_node(signature_node* signature);
 classMemberDeclaration_node* create_methodDefinition_classMemberDeclaration_node(signature_node* signature, stmt_node* body);
 classMemberDeclaration_node* classMemberDeclarationList_add(classMemberDeclaration_node* start, classMemberDeclaration_node* added);
 

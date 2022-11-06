@@ -99,7 +99,7 @@ namespace dotOut {
 			link(node->id, node->interfaces->id, "implements");
 			display(node->interfaces);
 		}
-		if (!node->isAlias) {
+		if (!node->isAlias && node->classMembers != NULL) {
 			link(node->id, node->classMembers->id, "members");
 			display(node->classMembers);
 		}
@@ -111,6 +111,12 @@ namespace dotOut {
 			label(node->id, "fieldDecl");
 			link(node->id, node->fieldDecl->id);
 			display(node->fieldDecl);
+			break;
+		}
+		case methodSignature: {
+			label(node->id, "undefinedMethodDeclaration");
+			link(node->id, node->signature->id);
+			display(node->signature);
 			break;
 		}
 		case constructSignature: {
@@ -200,12 +206,13 @@ namespace dotOut {
 	}
 	void display(signature_node* node) {
 		string s = "";
-		if (node->isStatic) s += "static ";
-		if (node->isConst) s += "const ";
 		if (node->type == construct) {
 			if (node->isNamed) s += "named ";
+			if (node->isConst) s += "const ";
 			s += "costructor ";
 		}
+		else if (node->isStatic) s += "static ";
+
 		s += "signature";
 		label(node->id, s);
 		if (node->type == construct) {
@@ -317,6 +324,14 @@ namespace dotOut {
 		}
 		case string_pr: {
 			label(node->id, string(node->string_value));
+			break;
+		}
+		case list_pr: {
+			label(node->id, "list");
+			if (node->operand != NULL) {
+				link(node->id, node->operand->id, "values");
+				display(node->operand);
+			}
 			break;
 		}
 
@@ -675,8 +690,10 @@ namespace dotOut {
 			label(node->id, "forNStmnt");
 			link(node->id, node->forInitializerStmt->id, "(...;");
 			display(node->forInitializerStmt);
-			link(node->id, node->condition->id, ";..;");
-			display(node->condition);
+			if (node->condition != NULL) {
+				link(node->id, node->condition->id, ";..;");
+				display(node->condition);
+			}
 			if (node->forPostExpr != NULL) {
 				link(node->id, node->forPostExpr->id, ";...)");
 				display(node->forPostExpr);

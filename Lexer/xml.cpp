@@ -93,7 +93,7 @@ namespace xmlOut {
 		if (node->interfaces != NULL) {
 			link(xml, display(node->interfaces), "interfaces");
 		}
-		if (!node->isAlias) {
+		if (!node->isAlias && node->classMembers != NULL) {
 			link(xml, display(node->classMembers), "classMembers");
 		}
 
@@ -108,6 +108,11 @@ namespace xmlOut {
 		case field: {
 			xml->SetAttribute("type", "field");
 			link(xml, display(node->fieldDecl), "fieldDecl");
+			break;
+		}
+		case methodSignature: {
+			xml->SetAttribute("type", "methodSignature");
+			link(xml, display(node->signature), "signature");
 			break;
 		}
 		case constructSignature: {
@@ -185,10 +190,12 @@ namespace xmlOut {
 	list<XMLElement*> display(signature_node* node) {
 		list<XMLElement*> gen;
 		XMLElement* xml = xmlDoc.NewElement("signature_node");
-		xml->SetAttribute("isStatic", node->isStatic);
-		xml->SetAttribute("isConst", node->isConst);
 		xml->SetAttribute("isConstruct", node->type == construct);
-		if(node->type == construct) xml->SetAttribute("isNamed", node->isNamed);
+		if (node->type == construct) {
+			xml->SetAttribute("isConst", node->isConst);
+			xml->SetAttribute("isNamed", node->isNamed);
+		}
+		else xml->SetAttribute("isStatic", node->isStatic);
 
 		link(xml, display(node->name), "name");
 
@@ -280,6 +287,11 @@ namespace xmlOut {
 		case string_pr: {
 			xml->SetAttribute("type", "string_pr");
 			xml->SetAttribute("string_value", node->string_value);
+			break;
+		}
+		case list_pr: {
+			xml->SetAttribute("type", "list_pr");
+			if(node->operand != NULL) link(xml, display(node->operand), "values");
 			break;
 		}
 
@@ -549,7 +561,7 @@ namespace xmlOut {
 		case forN_statement: {
 			xml->SetAttribute("type", "forN_statement");
 			link(xml, display(node->forInitializerStmt), "forInitializerStmt");
-			link(xml, display(node->condition), "condition");
+			if (node->condition != NULL) link(xml, display(node->condition), "condition");
 			if (node->forPostExpr != NULL) link(xml, display(node->forPostExpr), "forPostExpr");
 			link(xml, display(node->body), "body");
 			break;

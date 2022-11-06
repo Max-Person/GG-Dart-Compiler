@@ -22,6 +22,7 @@ int main(int argc, char** argv) {
         if(res == 0){
             dotOut::displayInit(root);
             xmlOut::displayInit(root);
+            printf("Successful\n");
         }
         fclose(yyin);
     }

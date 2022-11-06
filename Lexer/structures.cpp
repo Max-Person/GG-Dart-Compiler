@@ -97,31 +97,6 @@ bool isTypeInferrable(variableDeclaration_node* variableDeclaration) {
     return true;
 }
 
-expr_node* convert_ambiguous_to_arguments(identifier_node* argsOrParams) {
-    if (argsOrParams == NULL) {
-        return NULL;
-    }
-
-    identifier_node* curId = argsOrParams;
-    expr_node* exprList = create_id_expr_node(curId);
-    while (curId->next != NULL) {
-        identifier_node* prev = curId;
-        curId = curId->next;
-        prev->next = NULL;
-        exprList_add(exprList, create_id_expr_node(curId));
-    }
-
-    return exprList;
-}
-formalParameter_node* convert_ambiguous_to_parameters(identifier_node* argsOrParams) {
-    if (argsOrParams == NULL) {
-        return NULL;
-    }
-
-    yyerror("Untyped function parameters");
-    throw -1;
-}
-
 expr_node* create_this_expr_node(){
     expr_node* node = (expr_node*)malloc(sizeof(expr_node));
     node->id = newID();
@@ -189,15 +164,25 @@ expr_node* create_strlit_expr_node(char* value) {
 
     return node;
 }
+expr_node* create_listlit_expr_node(expr_node* list) {
+    expr_node* node = (expr_node*)malloc(sizeof(expr_node));
+    node->id = newID();
+    node->next = NULL;
+
+    node->type = list_pr;
+    node->operand = list;
+
+    return node;
+}
 expr_node* create_strInterpolation_expr_node(expr_node* before, expr_node* interpol, char* after) {
     expr_node* node = (expr_node*)malloc(sizeof(expr_node));
     node->id = newID();
     node->next = NULL;
 
     node->type = string_interpolation;
+    node->operand = before;
     if (node->operand->type != string_interpolation && node->operand->type != string_pr)
         yyerror("Compiler err: using string_interpolation node on a non-string expr");
-    node->operand = before;
     node->operand2 = interpol;
     node->string_value = after;
 
@@ -829,6 +814,16 @@ classMemberDeclaration_node* create_constructSignature_classMemberDeclaration_no
 
     return node;
 }
+classMemberDeclaration_node* create_methodSignature_classMemberDeclaration_node(signature_node* signature) {
+    classMemberDeclaration_node* node = (classMemberDeclaration_node*)malloc(sizeof(classMemberDeclaration_node));
+    node->id = newID();
+    node->next = NULL;
+
+    node->type = methodSignature;
+    node->signature = signature;
+
+    return node;
+}
 classMemberDeclaration_node* create_methodDefinition_classMemberDeclaration_node(signature_node* signature, stmt_node* body) {
     classMemberDeclaration_node* node = (classMemberDeclaration_node*)malloc(sizeof(classMemberDeclaration_node));
     node->id = newID();
@@ -841,11 +836,14 @@ classMemberDeclaration_node* create_methodDefinition_classMemberDeclaration_node
     return node;
 }
 classMemberDeclaration_node* classMemberDeclarationList_add(classMemberDeclaration_node* start, classMemberDeclaration_node* added) {
+    added->next = NULL;
+    if (start == NULL) {
+        return added;
+    }
     classMemberDeclaration_node* cur = start;
     while (cur->next != NULL) {
         cur = cur->next;
     }
-    added->next = NULL;
     cur->next = added;
 
     return start;
