@@ -245,6 +245,7 @@ r\'[^\'\r\n]*|r\"[^\"\r\r\n]*         {
     return YYerror;
 }
 
+List           {_print("List lexem LIST: " + yytext_str()); return LIST;}
 
 break           {_print("Keyword BREAK: " + yytext_str()); return BREAK;}
 case            {_print("Keyword CASE: " + yytext_str()); return CASE;} 

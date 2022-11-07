@@ -51,6 +51,7 @@ void yyerror(char const *s) {
 
 //Ключевые слова
 %token AS ASSERT BREAK CASE CATCH CLASS CONST CONTINUE DEFAULT DO ELSE ENUM EXTENDS FALSE FINAL FINALLY FOR IF IN IS NEW NULL_ RETHROW RETURN SUPER SWITCH THIS THROW TRUE TRY VAR VOID WHILE WITH
+%token LIST
 
 //Built-in идентификаторы
 %token<_identifier_node> ABSTRACT COVARIANT DEFERRED DYNAMIC EXPORT EXTERNAL EXTENSION FACTORY FUNCTION GET IMPLEMENTS IMPORT INTERFACE LATE LIBRARY MIXIN OPERATOR PART REQUIRED SET STATIC TYPEDEF
@@ -251,6 +252,8 @@ void yyerror(char const *s) {
     
     typeNotVoid: IDENTIFIER   {$$ = create_named_type_node($1, false);}
         | IDENTIFIER '?'      {$$ = create_named_type_node($1, true);}
+        | LIST '<' typeNotVoid '>'          {$$ = create_list_type_node($3, false);}
+        | LIST '<' typeNotVoid '>' '?'      {$$ = create_list_type_node($3, true);}    
     ; 
 
     typeNotVoidList: typeNotVoid                {$$ = $1;}

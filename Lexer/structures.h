@@ -178,17 +178,25 @@ stmt_node* create_functionDefinition_stmt_node(struct functionDefinition_node* f
 stmt_node* create_block_stmt_node(stmt_node* inner);
 stmt_node* stmtList_add(stmt_node* start, stmt_node* added);
 
+enum type_type {
+    _void,
+    _named,
+    _list,
+};
 struct type_node {
     int id;
 
-    bool isVoid;
+    type_type type;
     bool isNullable;
+
+    type_node* listValueType;
 
     identifier_node* name;
 
     type_node* next = NULL;
 };
 type_node* create_named_type_node(identifier_node* name, bool isNullable);
+type_node* create_list_type_node(type_node* listValueType, bool isNullable);
 type_node* create_void_type_node();
 type_node* type_node_makeNullable(type_node* node, bool isNullable);
 type_node* typeList_add(type_node* start, type_node* added);

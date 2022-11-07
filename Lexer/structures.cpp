@@ -497,8 +497,19 @@ type_node* create_named_type_node(identifier_node* name, bool isNullable) {
     node->id = newID();
     node->next = NULL;
 
-    node->isVoid = false;
+    node->type = _named;
     node->name = name;
+    node->isNullable = isNullable;
+
+    return node;
+}
+type_node* create_list_type_node(type_node* listValueType, bool isNullable) {
+    type_node* node = (type_node*)malloc(sizeof(type_node));
+    node->id = newID();
+    node->next = NULL;
+
+    node->type = _list;
+    node->listValueType = listValueType;
     node->isNullable = isNullable;
 
     return node;
@@ -508,12 +519,12 @@ type_node* create_void_type_node() {
     node->id = newID();
     node->next = NULL;
 
-    node->isVoid = true;
+    node->type = _void;
 
     return node;
 }
 type_node* type_node_makeNullable(type_node* node, bool isNullable) {
-    if (!node->isVoid) {
+    if (node->type != _void) {
         node->isNullable = isNullable;
     }
     return node;

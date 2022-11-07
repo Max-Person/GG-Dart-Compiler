@@ -141,16 +141,31 @@ namespace dotOut {
 		}
 	}
 	void display(type_node* node) {
-		if (node->isVoid) {
+		switch (node->type) {
+		case _void: {
 			label(node->id, "type: void");
 			return;
 		}
-
-		if (node->isNullable) {
-			label(node->id, "type: " + string(node->name->stringval) + "?");
+		case _named: {
+			if (node->isNullable) {
+				label(node->id, "type: " + string(node->name->stringval) + "?");
+			}
+			else {
+				label(node->id, "type: " + string(node->name->stringval));
+			}
+			break;
 		}
-		else {
-			label(node->id, "type: " + string(node->name->stringval));
+		case _list: {
+			if (node->isNullable) {
+				label(node->id, "type: List<...>?");
+			}
+			else {
+				label(node->id, "type: List<...>");
+			}
+			link(node->id, node->listValueType->id, "value type");
+			display(node->listValueType);
+			break;
+		}
 		}
 
 		if (node->next != NULL) {

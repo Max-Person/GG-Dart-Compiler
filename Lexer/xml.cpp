@@ -135,11 +135,24 @@ namespace xmlOut {
 	list<XMLElement*> display(type_node* node) {
 		list<XMLElement*> gen;
 		XMLElement* xml = xmlDoc.NewElement("type_node");
-		xml->SetAttribute("isVoid", node->isVoid);
-		xml->SetAttribute("isNullable", node->isNullable);
-		if (!node->isVoid) {
-			link(xml, display(node->name), "name");
+		switch (node->type) {
+		case _void: {
+			xml->SetAttribute("type", "_void");
+			gen.push_back(xml);
+			return gen;
 		}
+		case _named: {
+			xml->SetAttribute("type", "_named");
+			link(xml, display(node->name), "name");
+			break;
+		}
+		case _list: {
+			xml->SetAttribute("type", "_list");
+			link(xml, display(node->listValueType), "listValueType");
+			break;
+		}
+		}
+		xml->SetAttribute("isNullable", node->isNullable);
 
 		gen.push_back(xml);
 		if (node->next != NULL) gen.splice(gen.end(), display(node->next));
