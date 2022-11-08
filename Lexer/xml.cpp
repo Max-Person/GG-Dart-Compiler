@@ -97,6 +97,8 @@ namespace xmlOut {
 			link(xml, display(node->classMembers), "classMembers");
 		}
 
+		link(xml, display(node->name), "name");
+
 		gen.push_back(xml);
 		return gen;
 	}
@@ -295,6 +297,7 @@ namespace xmlOut {
 		}
 		case bool_pr: {
 			xml->SetAttribute("type", "bool_pr");
+			xml->SetAttribute("bool_value", node->bool_value);
 			break;
 		}
 		case string_pr: {
@@ -338,12 +341,14 @@ namespace xmlOut {
 		case constructNew: {
 			xml->SetAttribute("type", "constructNew");
 			link(xml, display(node->identifierAccess), "identifierAccess");
+			if (node->constructName != NULL) link(xml, display(node->constructName), "constructName");
 			if (node->callArguments != NULL) link(xml, display(node->callArguments), "callArguments");
 			break;
 		}
 		case constructConst: {
 			xml->SetAttribute("type", "constructConst");
 			link(xml, display(node->identifierAccess), "identifierAccess");
+			if (node->constructName != NULL) link(xml, display(node->constructName), "constructName");
 			if (node->callArguments != NULL) link(xml, display(node->callArguments), "callArguments");
 			break;
 		}
