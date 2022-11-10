@@ -389,8 +389,12 @@ namespace dotOut {
 		}
 		case constructNew: {
 			label(node->id, "new");
-			link(node->id, node->identifierAccess->id, "constructor name");
+			link(node->id, node->identifierAccess->id, "class");
 			display(node->identifierAccess);
+			if (node->constructName != NULL) {
+				link(node->id, node->constructName->id, "construct name");
+				display(node->constructName);
+			}
 			if (node->callArguments != NULL) {
 				link(node->id, node->callArguments->id, "arguments");
 				display(node->callArguments);
@@ -401,6 +405,10 @@ namespace dotOut {
 			label(node->id, "const");
 			link(node->id, node->identifierAccess->id, "constructor name");
 			display(node->identifierAccess);
+			if (node->constructName != NULL) {
+				link(node->id, node->constructName->id, "construct name");
+				display(node->constructName);
+			}
 			if (node->callArguments != NULL) {
 				link(node->id, node->callArguments->id, "arguments");
 				display(node->callArguments);
