@@ -8,8 +8,6 @@ import java.util.List;
 
 public abstract class Node {
 
-    public static List<TopLevelDeclarationNode> topLevelDeclarationNodes = new ArrayList<>();
-
     public static Element unlink(Element element, String container){
         NodeList list = element.getElementsByTagName(container).item(0).getChildNodes();
         for (int i = 0; i < list.getLength(); i++) {
@@ -20,7 +18,6 @@ public abstract class Node {
         }
         return null;
     }
-
     public static List<Element> unlinkList(Element element, String container){
         NodeList list = element.getElementsByTagName(container).item(0).getChildNodes();
         List<Element> elements = new ArrayList<>();
@@ -33,19 +30,13 @@ public abstract class Node {
         return elements;
     }
 
-    public static List<Element> unlinkRoot(Element element, String container){
-        NodeList list = element.getElementsByTagName(container);
-        List<Element> elements = new ArrayList<>();
-        for (int i = 0; i < list.getLength(); i++) {
-            org.w3c.dom.Node node = list.item(i);
-            if(node.getNodeType() == org.w3c.dom.Node.ELEMENT_NODE){
-                elements.add((Element) node);
-            }
-        }
-        return elements;
+    int lineNum;
+    
+    protected Node(Element element){
+        lineNum = Integer.parseInt(element.getAttribute("line"));
     }
-
-    Node(Element element){
-
+    
+    protected Node(){
+        lineNum = -1;
     }
 }

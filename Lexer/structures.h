@@ -3,6 +3,7 @@
 
 struct identifier_node {
     int id;
+    int line;
 
     bool isBuiltin;
     char* stringval;
@@ -78,6 +79,7 @@ enum expr_type{
 };
 struct expr_node{
     int id;
+    int line;
 
     expr_type type;
 
@@ -136,6 +138,7 @@ enum stmt_type {
 
 struct stmt_node{
     int id;
+    int line;
 
     enum stmt_type type;
     
@@ -185,6 +188,7 @@ enum type_type {
 };
 struct type_node {
     int id;
+    int line;
 
     type_type type;
     bool isNullable;
@@ -203,6 +207,7 @@ type_node* typeList_add(type_node* start, type_node* added);
 
 struct declarator_node {
     int id;
+    int line;
 
     bool isStatic;
     bool isLate;
@@ -217,6 +222,7 @@ declarator_node* create_declarator_node(bool isStatic, bool isLate, bool isFinal
 
 struct idInit_node {
     int id;
+    int line;
 
     bool isAssign;
     struct identifier_node* identifier;
@@ -230,6 +236,7 @@ idInit_node* idInitList_add(idInit_node* start, idInit_node* added);
 
 struct variableDeclaration_node {
     int id;
+    int line;
 
     struct declarator_node* declarator;
     struct idInit_node* idInitList;
@@ -241,6 +248,7 @@ variableDeclaration_node* create_variableDeclaration_node(bool isStatic, bool is
 
 struct formalParameter_node {
     int id;
+    int line;
 
     bool isField;
 
@@ -260,6 +268,7 @@ enum initializer_type {
 };
 struct initializer_node {
     int id;
+    int line;
 
     initializer_type type;
 
@@ -278,6 +287,7 @@ initializer_node* initializerList_add(initializer_node* start, initializer_node*
 
 struct redirection_node {
     int id;
+    int line;
 
     bool isNamed;
     identifier_node* name;
@@ -291,6 +301,7 @@ enum signature_type {
 };
 struct signature_node {
     int id;
+    int line;
 
     bool isStatic;
     signature_type type;
@@ -314,6 +325,7 @@ signature_node* signature_node_addRedirection(signature_node* signature, redirec
 
 struct functionDefinition_node {
     int id;
+    int line;
 
     signature_node* signature;
     stmt_node* body;
@@ -322,6 +334,7 @@ functionDefinition_node* create_functionDefinition_node(signature_node* signatur
 
 struct switch_case_node {
     int id;
+    int line;
 
     switch_case_node* next;
     stmt_node* actions;
@@ -332,6 +345,7 @@ switch_case_node* switchCaseList_add(switch_case_node* start, switch_case_node* 
 
 struct enum_node {
     int id;
+    int line;
 
     identifier_node* name;
     identifier_node* values;
@@ -346,6 +360,7 @@ enum classMemberDeclaration_type {
 };
 struct classMemberDeclaration_node {
     int id;
+    int line;
 
     classMemberDeclaration_type type;
 
@@ -369,6 +384,7 @@ struct supeclassOpt_node {
 supeclassOpt_node* create_supeclassOpt_node(type_node* superclass, type_node* mixins);
 struct classDeclaration_node {
     int id;
+    int line;
 
     bool isAlias;
     bool isAbstract;
@@ -390,6 +406,7 @@ enum topLevelDeclaration_type {
 };
 struct topLevelDeclaration_node {
     int id;
+    int line;
 
     topLevelDeclaration_type type;
     classDeclaration_node* classDecl;

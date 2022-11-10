@@ -31,6 +31,7 @@ namespace xmlOut {
 			return gen;
 		}
 		XMLElement* xml = xmlDoc.NewElement("topLevelDeclaration_node");
+		xml->SetAttribute("line", node->line);
 
 		switch (node->type) {
 		case _enum: {
@@ -62,6 +63,7 @@ namespace xmlOut {
 	list<XMLElement*> display(enum_node* node) {
 		list<XMLElement*> gen;
 		XMLElement* xml = xmlDoc.NewElement("enum_node");
+		xml->SetAttribute("line", node->line);
 		link(xml, display(node->name), "name");
 		link(xml, display(node->values), "values");
 		
@@ -71,6 +73,7 @@ namespace xmlOut {
 	list<XMLElement*> display(identifier_node* node) {
 		list<XMLElement*> gen;
 		XMLElement* xml = xmlDoc.NewElement("identifier_node");
+		xml->SetAttribute("line", node->line);
 		xml->SetAttribute("stringval", node->stringval);
 		xml->SetAttribute("isBuiltIn", node->isBuiltin);
 
@@ -81,6 +84,7 @@ namespace xmlOut {
 	list<XMLElement*> display(classDeclaration_node* node) {
 		list<XMLElement*> gen;
 		XMLElement* xml = xmlDoc.NewElement("classDeclaration_node");
+		xml->SetAttribute("line", node->line);
 		xml->SetAttribute("isAbstract", node->isAbstract);
 		xml->SetAttribute("isAlias", node->isAlias);
 
@@ -105,6 +109,7 @@ namespace xmlOut {
 	list<XMLElement*> display(classMemberDeclaration_node* node) {
 		list<XMLElement*> gen;
 		XMLElement* xml = xmlDoc.NewElement("classMemberDeclaration_node");
+		xml->SetAttribute("line", node->line);
 		switch (node->type)
 		{
 		case field: {
@@ -137,6 +142,7 @@ namespace xmlOut {
 	list<XMLElement*> display(type_node* node) {
 		list<XMLElement*> gen;
 		XMLElement* xml = xmlDoc.NewElement("type_node");
+		xml->SetAttribute("line", node->line);
 		switch (node->type) {
 		case _void: {
 			xml->SetAttribute("type", "_void");
@@ -163,6 +169,7 @@ namespace xmlOut {
 	list<XMLElement*> display(variableDeclaration_node* node) {
 		list<XMLElement*> gen;
 		XMLElement* xml = xmlDoc.NewElement("variableDeclaration_node");
+		xml->SetAttribute("line", node->line);
 		link(xml, display(node->declarator), "declarator");
 		link(xml, display(node->idInitList), "idInitList");
 
@@ -172,6 +179,7 @@ namespace xmlOut {
 	list<XMLElement*> display(declarator_node* node) {
 		list<XMLElement*> gen;
 		XMLElement* xml = xmlDoc.NewElement("declarator_node");
+		xml->SetAttribute("line", node->line);
 		xml->SetAttribute("isStatic", node->isStatic);
 		xml->SetAttribute("isLate", node->isLate);
 		xml->SetAttribute("isFinal", node->isFinal);
@@ -185,6 +193,7 @@ namespace xmlOut {
 	list<XMLElement*> display(idInit_node* node) {
 		list<XMLElement*> gen;
 		XMLElement* xml = xmlDoc.NewElement("idInit_node");
+		xml->SetAttribute("line", node->line);
 		xml->SetAttribute("isAssign", node->isAssign);
 		link(xml, display(node->identifier), "identifier");
 		if (node->isAssign) link(xml, display(node->value), "value");
@@ -196,6 +205,7 @@ namespace xmlOut {
 	list<XMLElement*> display(functionDefinition_node* node) {
 		list<XMLElement*> gen;
 		XMLElement* xml = xmlDoc.NewElement("functionDefinition_node");
+		xml->SetAttribute("line", node->line);
 		link(xml, display(node->signature), "signature");
 		link(xml, display(node->body), "body");
 		
@@ -205,6 +215,7 @@ namespace xmlOut {
 	list<XMLElement*> display(signature_node* node) {
 		list<XMLElement*> gen;
 		XMLElement* xml = xmlDoc.NewElement("signature_node");
+		xml->SetAttribute("line", node->line);
 		xml->SetAttribute("isConstruct", node->type == construct);
 		if (node->type == construct) {
 			xml->SetAttribute("isConst", node->isConst);
@@ -229,6 +240,7 @@ namespace xmlOut {
 	list<XMLElement*> display(initializer_node* node) {
 		list<XMLElement*> gen;
 		XMLElement* xml = xmlDoc.NewElement("initializer_node");
+		xml->SetAttribute("line", node->line);
 		if (node->type == thisAssign) {
 			xml->SetAttribute("type", "thisAssign");
 			link(xml, display(node->thisFieldId), "thisFieldId");
@@ -251,6 +263,7 @@ namespace xmlOut {
 	list<XMLElement*> display(redirection_node* node) {
 		list<XMLElement*> gen;
 		XMLElement* xml = xmlDoc.NewElement("redirection_node");
+		xml->SetAttribute("line", node->line);
 		xml->SetAttribute("isNamed", node->isNamed);
 		if (node->isNamed) link(xml, display(node->name), "name");
 		if (node->args != NULL) link(xml, display(node->args), "args");
@@ -261,6 +274,7 @@ namespace xmlOut {
 	list<XMLElement*> display(formalParameter_node* node) {
 		list<XMLElement*> gen;
 		XMLElement* xml = xmlDoc.NewElement("formalParameter_node");
+		xml->SetAttribute("line", node->line);
 		xml->SetAttribute("isField", node->isField);
 		if (node->isField) link(xml, display(node->initializedField), "initializedField");
 		else link(xml, display(node->paramDecl), "paramDecl");
@@ -272,6 +286,7 @@ namespace xmlOut {
 	list<XMLElement*> display(expr_node* node) {
 		list<XMLElement*> gen;
 		XMLElement* xml = xmlDoc.NewElement("expr_node");
+		xml->SetAttribute("line", node->line);
 		switch (node->type) {
 		case this_pr: {
 			xml->SetAttribute("type", "this_pr");
@@ -560,6 +575,7 @@ namespace xmlOut {
 	list<XMLElement*> display(stmt_node* node) {
 		list<XMLElement*> gen;
 		XMLElement* xml = xmlDoc.NewElement("stmt_node");
+		xml->SetAttribute("line", node->line);
 		switch (node->type) {
 		case block: {
 			xml->SetAttribute("type", "block");
@@ -645,6 +661,7 @@ namespace xmlOut {
 	list<XMLElement*> display(switch_case_node* node) {
 		list<XMLElement*> gen;
 		XMLElement* xml = xmlDoc.NewElement("switch_case_node");
+		xml->SetAttribute("line", node->line);
 		link(xml, display(node->condition), "condition");
 		if (node->actions != NULL) link(xml, display(node->actions), "actions");
 

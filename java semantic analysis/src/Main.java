@@ -1,4 +1,5 @@
 import ast.Node;
+import ast.RootNode;
 import ast.TopLevelDeclarationNode;
 import org.w3c.dom.Document;
 import org.xml.sax.SAXException;
@@ -11,10 +12,10 @@ import java.io.IOException;
 public class Main {
     public static void main(String[] args) throws ParserConfigurationException, IOException, SAXException {
 
-        Document document = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(new File("xmlOutput.xml")); // путь к файлу
+        Document document = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(new File("S:\\engRoute\\Dart Compiler\\Debug\\xmlOutput.xml")); // путь к файлу
         document.normalize();
-
-        Node.unlinkRoot(document.getDocumentElement(), "topLevelDeclaration_node").forEach(e->Node.topLevelDeclarationNodes.add(new TopLevelDeclarationNode(e)));
+    
+        RootNode root = new RootNode(document.getDocumentElement());
 
     }
 }

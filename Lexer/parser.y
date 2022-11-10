@@ -16,6 +16,7 @@ void yyerror(char const *s) {
 %}
 
 %define parse.trace
+%define parse.error detailed
 %code requires{ #include "structures.h" }
 %code requires{ extern topLevelDeclaration_node* root; }
 

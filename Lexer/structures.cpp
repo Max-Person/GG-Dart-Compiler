@@ -11,10 +11,12 @@ int newID() {
 }
 
 extern void yyerror(char const* s);
+extern int yylineno;
 
 identifier_node* create_identifier_node(bool isBuiltin, char* stringval) {
     identifier_node* node = (identifier_node*)malloc(sizeof(identifier_node));
     node->id = newID();
+    node->line = yylineno;
     node->next = NULL;
 
     node->isBuiltin = isBuiltin;
@@ -100,6 +102,7 @@ bool isTypeInferrable(variableDeclaration_node* variableDeclaration) {
 expr_node* create_this_expr_node(){
     expr_node* node = (expr_node*)malloc(sizeof(expr_node));
     node->id = newID();
+    node->line = yylineno;
     node->next = NULL;
 
     node->type = this_pr;
@@ -109,6 +112,7 @@ expr_node* create_this_expr_node(){
 expr_node* create_super_expr_node() {
     expr_node* node = (expr_node*)malloc(sizeof(expr_node));
     node->id = newID();
+    node->line = yylineno;
     node->next = NULL;
 
     node->type = super_pr;
@@ -118,6 +122,7 @@ expr_node* create_super_expr_node() {
 expr_node* create_null_expr_node() {
     expr_node* node = (expr_node*)malloc(sizeof(expr_node));
     node->id = newID();
+    node->line = yylineno;
     node->next = NULL;
 
     node->type = null_pr;
@@ -127,6 +132,7 @@ expr_node* create_null_expr_node() {
 expr_node* create_intlit_expr_node(long long value) {
     expr_node* node = (expr_node*)malloc(sizeof(expr_node));
     node->id = newID();
+    node->line = yylineno;
     node->next = NULL;
 
     node->type = int_pr;
@@ -137,6 +143,7 @@ expr_node* create_intlit_expr_node(long long value) {
 expr_node* create_doublelit_expr_node(double value) {
     expr_node* node = (expr_node*)malloc(sizeof(expr_node));
     node->id = newID();
+    node->line = yylineno;
     node->next = NULL;
 
     node->type = double_pr;
@@ -147,6 +154,7 @@ expr_node* create_doublelit_expr_node(double value) {
 expr_node* create_boollit_expr_node(bool value) {
     expr_node* node = (expr_node*)malloc(sizeof(expr_node));
     node->id = newID();
+    node->line = yylineno;
     node->next = NULL;
 
     node->type = bool_pr;
@@ -157,6 +165,7 @@ expr_node* create_boollit_expr_node(bool value) {
 expr_node* create_strlit_expr_node(char* value) {
     expr_node* node = (expr_node*)malloc(sizeof(expr_node));
     node->id = newID();
+    node->line = yylineno;
     node->next = NULL;
 
     node->type = string_pr;
@@ -167,6 +176,7 @@ expr_node* create_strlit_expr_node(char* value) {
 expr_node* create_listlit_expr_node(expr_node* list) {
     expr_node* node = (expr_node*)malloc(sizeof(expr_node));
     node->id = newID();
+    node->line = yylineno;
     node->next = NULL;
 
     node->type = list_pr;
@@ -177,6 +187,7 @@ expr_node* create_listlit_expr_node(expr_node* list) {
 expr_node* create_strInterpolation_expr_node(expr_node* before, expr_node* interpol, char* after) {
     expr_node* node = (expr_node*)malloc(sizeof(expr_node));
     node->id = newID();
+    node->line = yylineno;
     node->next = NULL;
 
     node->type = string_interpolation;
@@ -191,6 +202,7 @@ expr_node* create_strInterpolation_expr_node(expr_node* before, expr_node* inter
 expr_node* create_id_expr_node(identifier_node* identifierAccess) {
     expr_node* node = (expr_node*)malloc(sizeof(expr_node));
     node->id = newID();
+    node->line = yylineno;
     node->next = NULL;
 
     node->type = identifier;
@@ -201,6 +213,7 @@ expr_node* create_id_expr_node(identifier_node* identifierAccess) {
 expr_node* create_call_expr_node(identifier_node* identifierAccess, expr_node* callArguments) {
     expr_node* node = (expr_node*)malloc(sizeof(expr_node));
     node->id = newID();
+    node->line = yylineno;
     node->next = NULL;
 
     node->type = call;
@@ -212,6 +225,7 @@ expr_node* create_call_expr_node(identifier_node* identifierAccess, expr_node* c
 expr_node* create_constructNew_expr_node(identifier_node* className, expr_node* callArguments) {
     expr_node* node = (expr_node*)malloc(sizeof(expr_node));
     node->id = newID();
+    node->line = yylineno;
     node->next = NULL;
 
     node->type = constructNew;
@@ -223,6 +237,7 @@ expr_node* create_constructNew_expr_node(identifier_node* className, expr_node* 
 expr_node* create_constructNew_expr_node(identifier_node* className, identifier_node* constructname, expr_node* callArguments) {
     expr_node* node = (expr_node*)malloc(sizeof(expr_node));
     node->id = newID();
+    node->line = yylineno;
     node->next = NULL;
 
     node->type = constructNew;
@@ -235,6 +250,7 @@ expr_node* create_constructNew_expr_node(identifier_node* className, identifier_
 expr_node* create_constructConst_expr_node(identifier_node* className, expr_node* callArguments) {
     expr_node* node = (expr_node*)malloc(sizeof(expr_node));
     node->id = newID();
+    node->line = yylineno;
     node->next = NULL;
 
     node->type = constructConst;
@@ -246,6 +262,7 @@ expr_node* create_constructConst_expr_node(identifier_node* className, expr_node
 expr_node* create_constructConst_expr_node(identifier_node* className, identifier_node* constructname, expr_node* callArguments) {
     expr_node* node = (expr_node*)malloc(sizeof(expr_node));
     node->id = newID();
+    node->line = yylineno;
     node->next = NULL;
 
     node->type = constructConst;
@@ -258,6 +275,7 @@ expr_node* create_constructConst_expr_node(identifier_node* className, identifie
 expr_node* create_fieldAccess_expr_node(expr_node* op, identifier_node* field) {
     expr_node* node = (expr_node*)malloc(sizeof(expr_node));
     node->id = newID();
+    node->line = yylineno;
     node->next = NULL;
 
     node->type = fieldAccess;
@@ -269,6 +287,7 @@ expr_node* create_fieldAccess_expr_node(expr_node* op, identifier_node* field) {
 expr_node* create_methodCall_expr_node(expr_node* op, identifier_node* method, expr_node* callArguments) {
     expr_node* node = (expr_node*)malloc(sizeof(expr_node));
     node->id = newID();
+    node->line = yylineno;
     node->next = NULL;
 
     node->type = methodCall;
@@ -281,6 +300,7 @@ expr_node* create_methodCall_expr_node(expr_node* op, identifier_node* method, e
 expr_node* create_operator_expr_node(expr_type type, expr_node* operand, expr_node* operand2) {
     expr_node* node = (expr_node*)malloc(sizeof(expr_node));
     node->id = newID();
+    node->line = yylineno;
     node->next = NULL;
 
     if (type < brackets) yyerror("Compiler err: using operator node on a non-operator expr");
@@ -294,6 +314,7 @@ expr_node* create_operator_expr_node(expr_type type, expr_node* operand, expr_no
 expr_node* create_typeOp_expr_node(expr_type type, expr_node* operand, type_node* typeOp) {
     expr_node* node = (expr_node*)malloc(sizeof(expr_node));
     node->id = newID();
+    node->line = yylineno;
     node->next = NULL;
 
     if (type != type_cast && type != type_check && type != neg_type_check)
@@ -318,6 +339,7 @@ expr_node* exprList_add(expr_node* start, expr_node* added){
 stmt_node* create_while_stmt_node(expr_node* condition, stmt_node* body){
     stmt_node* node = (stmt_node*)malloc(sizeof(stmt_node));
     node->id = newID();
+    node->line = yylineno;
     node->nextStmt = NULL;
 
     node->body = body;
@@ -329,6 +351,7 @@ stmt_node* create_while_stmt_node(expr_node* condition, stmt_node* body){
 stmt_node* create_do_stmt_node(stmt_node* body, expr_node* condition){
     stmt_node* node = (stmt_node*)malloc(sizeof(stmt_node));
     node->id = newID();
+    node->line = yylineno;
     node->nextStmt = NULL;
 
     node->body = body;
@@ -340,6 +363,7 @@ stmt_node* create_do_stmt_node(stmt_node* body, expr_node* condition){
 stmt_node* create_break_stmt_node(){
     stmt_node* node = (stmt_node*)malloc(sizeof(stmt_node));
     node->id = newID();
+    node->line = yylineno;
     node->nextStmt = NULL;
 
     node->body = NULL;
@@ -351,6 +375,7 @@ stmt_node* create_break_stmt_node(){
 stmt_node* create_continue_stmt_node(){
     stmt_node* node = (stmt_node*)malloc(sizeof(stmt_node));
     node->id = newID();
+    node->line = yylineno;
     node->nextStmt = NULL;
 
     node->body = NULL;
@@ -362,6 +387,7 @@ stmt_node* create_continue_stmt_node(){
 stmt_node* create_return_stmt_node(expr_node* returnExpr){
     stmt_node* node = (stmt_node*)malloc(sizeof(stmt_node));
     node->id = newID();
+    node->line = yylineno;
     node->nextStmt = NULL;
 
     node->body = NULL;
@@ -375,6 +401,7 @@ stmt_node* create_return_stmt_node(expr_node* returnExpr){
 stmt_node* create_if_stmt_node(expr_node* condition, stmt_node* body, stmt_node* elseBody){
     stmt_node* node = (stmt_node*)malloc(sizeof(stmt_node));
     node->id = newID();
+    node->line = yylineno;
     node->nextStmt = NULL;
 
     node->body = body;
@@ -388,6 +415,7 @@ stmt_node* create_if_stmt_node(expr_node* condition, stmt_node* body, stmt_node*
 stmt_node* create_switch_case_stmt_node(expr_node* condition, switch_case_node* switchCaseList, stmt_node* defaultSwitchActions) {
     stmt_node* node = (stmt_node*)malloc(sizeof(stmt_node));
     node->id = newID();
+    node->line = yylineno;
     node->nextStmt = NULL;
 
     node->type = switch_statement;
@@ -400,6 +428,7 @@ stmt_node* create_switch_case_stmt_node(expr_node* condition, switch_case_node* 
 stmt_node* create_variable_declaration_stmt_node(variableDeclaration_node* variableDeclaration){
     stmt_node* node = (stmt_node*)malloc(sizeof(stmt_node));
     node->id = newID();
+    node->line = yylineno;
     node->nextStmt = NULL;
 
     node->type = variable_declaration_statement;
@@ -411,6 +440,7 @@ stmt_node* create_variable_declaration_stmt_node(variableDeclaration_node* varia
 stmt_node* create_expr_stmt_node(expr_node* expr){
     stmt_node* node = (stmt_node*)malloc(sizeof(stmt_node));
     node->id = newID();
+    node->line = yylineno;
     node->nextStmt = NULL;
 
     node->type = expr_statement;
@@ -421,6 +451,7 @@ stmt_node* create_expr_stmt_node(expr_node* expr){
 stmt_node* create_forN_stmt_node(stmt_node* forInitializerStmt, stmt_node* condition, expr_node* forPostExpr, stmt_node* body) {
     stmt_node* node = (stmt_node*)malloc(sizeof(stmt_node));
     node->id = newID();
+    node->line = yylineno;
     node->nextStmt = NULL;
 
     node->type = forN_statement;
@@ -434,6 +465,7 @@ stmt_node* create_forN_stmt_node(stmt_node* forInitializerStmt, stmt_node* condi
 stmt_node* create_forEach_stmt_node(variableDeclaration_node* declaredIdentifier, expr_node* expr, stmt_node* body) {
     stmt_node* node = (stmt_node*)malloc(sizeof(stmt_node));
     node->id = newID();
+    node->line = yylineno;
     node->nextStmt = NULL;
 
     node->type = forEach_statement;
@@ -447,6 +479,7 @@ stmt_node* create_forEach_stmt_node(variableDeclaration_node* declaredIdentifier
 stmt_node* create_forEach_stmt_node(identifier_node* identifier, expr_node* expr, stmt_node* body) {
     stmt_node* node = (stmt_node*)malloc(sizeof(stmt_node));
     node->id = newID();
+    node->line = yylineno;
     node->nextStmt = NULL;
 
     node->type = forEach_statement;
@@ -460,6 +493,7 @@ stmt_node* create_forEach_stmt_node(identifier_node* identifier, expr_node* expr
 stmt_node* create_functionDefinition_stmt_node(struct functionDefinition_node* func) {
     stmt_node* node = (stmt_node*)malloc(sizeof(stmt_node));
     node->id = newID();
+    node->line = yylineno;
     node->nextStmt = NULL;
 
     node->type = local_function_declaration;
@@ -470,6 +504,7 @@ stmt_node* create_functionDefinition_stmt_node(struct functionDefinition_node* f
 stmt_node* create_block_stmt_node(stmt_node* inner) {
     stmt_node* node = (stmt_node*)malloc(sizeof(stmt_node));
     node->id = newID();
+    node->line = yylineno;
     node->nextStmt = NULL;
 
     node->type = block;
@@ -495,6 +530,7 @@ stmt_node* stmtList_add(stmt_node* start, stmt_node* added){
 type_node* create_named_type_node(identifier_node* name, bool isNullable) {
     type_node* node = (type_node*)malloc(sizeof(type_node));
     node->id = newID();
+    node->line = yylineno;
     node->next = NULL;
 
     node->type = _named;
@@ -506,6 +542,7 @@ type_node* create_named_type_node(identifier_node* name, bool isNullable) {
 type_node* create_list_type_node(type_node* listValueType, bool isNullable) {
     type_node* node = (type_node*)malloc(sizeof(type_node));
     node->id = newID();
+    node->line = yylineno;
     node->next = NULL;
 
     node->type = _list;
@@ -517,6 +554,7 @@ type_node* create_list_type_node(type_node* listValueType, bool isNullable) {
 type_node* create_void_type_node() {
     type_node* node = (type_node*)malloc(sizeof(type_node));
     node->id = newID();
+    node->line = yylineno;
     node->next = NULL;
 
     node->type = _void;
@@ -546,6 +584,7 @@ declarator_node* create_declarator_node(bool isLate, bool isFinal, bool isConst,
 declarator_node* create_declarator_node(bool isStatic, bool isLate, bool isFinal, bool isConst, type_node* valueType) {
     declarator_node* node = (declarator_node*)malloc(sizeof(declarator_node));
     node->id = newID();
+    node->line = yylineno;
 
     node->isStatic = isStatic;
     node->isLate = isLate;
@@ -560,6 +599,7 @@ declarator_node* create_declarator_node(bool isStatic, bool isLate, bool isFinal
 idInit_node* create_id_idInit_node(identifier_node* identifier) {
     idInit_node* node = (idInit_node*)malloc(sizeof(idInit_node));
     node->id = newID();
+    node->line = yylineno;
     node->next = NULL;
 
     node->isAssign = false;
@@ -570,6 +610,7 @@ idInit_node* create_id_idInit_node(identifier_node* identifier) {
 idInit_node* create_assign_idInit_node(identifier_node* identifier, expr_node* value) {
     idInit_node* node = (idInit_node*)malloc(sizeof(idInit_node));
     node->id = newID();
+    node->line = yylineno;
     node->next = NULL;
 
     node->isAssign = true;
@@ -592,6 +633,7 @@ idInit_node* idInitList_add(idInit_node* start, idInit_node* added) {
 variableDeclaration_node* create_variableDeclaration_node(declarator_node* declarator, idInit_node* identifiers) {
     variableDeclaration_node* node = (variableDeclaration_node*)malloc(sizeof(variableDeclaration_node));
     node->id = newID();
+    node->line = yylineno;
 
     node->declarator = declarator;
     node->idInitList = identifiers;
@@ -612,6 +654,7 @@ variableDeclaration_node* create_variableDeclaration_node(bool isStatic, bool is
 formalParameter_node* create_normal_formalParameter_node(variableDeclaration_node* declaredIdentifier) {
     formalParameter_node* node = (formalParameter_node*)malloc(sizeof(formalParameter_node));
     node->id = newID();
+    node->line = yylineno;
     node->next = NULL;
 
     node->isField = false;
@@ -626,6 +669,7 @@ formalParameter_node* create_normal_formalParameter_node(variableDeclaration_nod
 formalParameter_node* create_field_formalParameter_node(declarator_node* declarator, identifier_node* identifier) {
     formalParameter_node* node = (formalParameter_node*)malloc(sizeof(formalParameter_node));
     node->id = newID();
+    node->line = yylineno;
     node->next = NULL;
 
     node->isField = true;
@@ -654,6 +698,7 @@ formalParameter_node* formalParameterList_add(formalParameter_node* start, forma
 initializer_node* create_superConstructor_initializer_node(expr_node* args) {
     initializer_node* node = (initializer_node*)malloc(sizeof(initializer_node));
     node->id = newID();
+    node->line = yylineno;
     node->next = NULL;
 
     node->type = superConstructor;
@@ -664,6 +709,7 @@ initializer_node* create_superConstructor_initializer_node(expr_node* args) {
 initializer_node* create_superNamedConstructor_initializer_node(identifier_node* superConstructorName, expr_node* args) {
     initializer_node* node = (initializer_node*)malloc(sizeof(initializer_node));
     node->id = newID();
+    node->line = yylineno;
     node->next = NULL;
 
     node->type = superNamedConstructor;
@@ -675,6 +721,7 @@ initializer_node* create_superNamedConstructor_initializer_node(identifier_node*
 initializer_node* create_thisAssign_initializer_node(identifier_node* thisFieldId, expr_node* value) {
     initializer_node* node = (initializer_node*)malloc(sizeof(initializer_node));
     node->id = newID();
+    node->line = yylineno;
     node->next = NULL;
 
     node->type = thisAssign;
@@ -697,6 +744,7 @@ initializer_node* initializerList_add(initializer_node* start, initializer_node*
 redirection_node* create_redirection_node(identifier_node* name, expr_node* args) {
     redirection_node* node = (redirection_node*)malloc(sizeof(redirection_node));
     node->id = newID();
+    node->line = yylineno;
 
     node->isNamed = name != NULL;
     node->name = name;
@@ -708,6 +756,7 @@ redirection_node* create_redirection_node(identifier_node* name, expr_node* args
 signature_node* create_funcOrConstruct_signature_node(type_node* returnType, identifier_node* name, formalParameter_node* parameters) {
     signature_node* node = (signature_node*)malloc(sizeof(signature_node));
     node->id = newID();
+    node->line = yylineno;
 
     node->type = funcOrConstruct;
     node->isStatic = false;
@@ -720,6 +769,7 @@ signature_node* create_funcOrConstruct_signature_node(type_node* returnType, ide
 signature_node* create_construct_signature_node(bool isConst, identifier_node* className, formalParameter_node* parameters) {
     signature_node* node = (signature_node*)malloc(sizeof(signature_node));
     node->id = newID();
+    node->line = yylineno;
 
     node->type = construct;
     node->isStatic = false;
@@ -736,6 +786,7 @@ signature_node* create_construct_signature_node(bool isConst, identifier_node* c
 signature_node* create_construct_signature_node(bool isConst, identifier_node* className, identifier_node* name, formalParameter_node* parameters) {
     signature_node* node = (signature_node*)malloc(sizeof(signature_node));
     node->id = newID();
+    node->line = yylineno;
 
     node->type = construct;
     node->isStatic = false;
@@ -766,6 +817,7 @@ signature_node* signature_node_addRedirection(signature_node* signature, redirec
 functionDefinition_node* create_functionDefinition_node(signature_node* signature, stmt_node* body) {
     functionDefinition_node* node = (functionDefinition_node*)malloc(sizeof(functionDefinition_node));
     node->id = newID();
+    node->line = yylineno;
 
     node->signature = signature;
     node->body = body;
@@ -776,6 +828,7 @@ functionDefinition_node* create_functionDefinition_node(signature_node* signatur
 switch_case_node* create_switch_case_node(stmt_node* actions, expr_node* condition){
     switch_case_node* node = (switch_case_node*)malloc(sizeof(switch_case_node));
     node->id = newID();
+    node->line = yylineno;
     node->next = NULL;
 
     node->actions = actions;
@@ -797,6 +850,7 @@ switch_case_node* switchCaseList_add(switch_case_node* start, switch_case_node* 
 enum_node* create_enum_node(identifier_node* name, identifier_node* values){
     enum_node* node = (enum_node*)malloc(sizeof(enum_node));
     node->id = newID();
+    node->line = yylineno;
 
     node->name = name;
     node->values = values;
@@ -807,6 +861,7 @@ enum_node* create_enum_node(identifier_node* name, identifier_node* values){
 classMemberDeclaration_node* create_field_classMemberDeclaration_node(bool isStatic, bool isLate, bool isFinal, bool isConst, type_node* valueType, idInit_node* idList) {
     classMemberDeclaration_node* node = (classMemberDeclaration_node*)malloc(sizeof(classMemberDeclaration_node));
     node->id = newID();
+    node->line = yylineno;
     node->next = NULL;
 
     node->type = field;
@@ -818,6 +873,7 @@ classMemberDeclaration_node* create_field_classMemberDeclaration_node(bool isSta
 classMemberDeclaration_node* create_constructSignature_classMemberDeclaration_node(signature_node* signature) {
     classMemberDeclaration_node* node = (classMemberDeclaration_node*)malloc(sizeof(classMemberDeclaration_node));
     node->id = newID();
+    node->line = yylineno;
     node->next = NULL;
 
     node->type = constructSignature;
@@ -828,6 +884,7 @@ classMemberDeclaration_node* create_constructSignature_classMemberDeclaration_no
 classMemberDeclaration_node* create_methodSignature_classMemberDeclaration_node(signature_node* signature) {
     classMemberDeclaration_node* node = (classMemberDeclaration_node*)malloc(sizeof(classMemberDeclaration_node));
     node->id = newID();
+    node->line = yylineno;
     node->next = NULL;
 
     node->type = methodSignature;
@@ -838,6 +895,7 @@ classMemberDeclaration_node* create_methodSignature_classMemberDeclaration_node(
 classMemberDeclaration_node* create_methodDefinition_classMemberDeclaration_node(signature_node* signature, stmt_node* body) {
     classMemberDeclaration_node* node = (classMemberDeclaration_node*)malloc(sizeof(classMemberDeclaration_node));
     node->id = newID();
+    node->line = yylineno;
     node->next = NULL;
 
     node->type = methodDefinition;
@@ -869,6 +927,7 @@ supeclassOpt_node* create_supeclassOpt_node(type_node* superclass, type_node* mi
 classDeclaration_node* create_normal_classDeclaration_node(bool isAbstract, identifier_node* name, supeclassOpt_node* superOpt, type_node* interfaces, classMemberDeclaration_node* members) {
     classDeclaration_node* node = (classDeclaration_node*)malloc(sizeof(classDeclaration_node));
     node->id = newID();
+    node->line = yylineno;
 
     node->isAlias = false;
     node->isAbstract = isAbstract;
@@ -884,6 +943,7 @@ classDeclaration_node* create_normal_classDeclaration_node(bool isAbstract, iden
 classDeclaration_node* create_alias_classDeclaration_node(bool isAbstract, identifier_node* name, type_node* super, type_node* mixins, type_node* interfaces) {
     classDeclaration_node* node = (classDeclaration_node*)malloc(sizeof(classDeclaration_node));
     node->id = newID();
+    node->line = yylineno;
 
     node->isAlias = true;
     node->isAbstract = isAbstract;
@@ -898,6 +958,7 @@ classDeclaration_node* create_alias_classDeclaration_node(bool isAbstract, ident
 topLevelDeclaration_node* create_class_topLevelDeclaration_node(classDeclaration_node* classDecl) {
     topLevelDeclaration_node* node = (topLevelDeclaration_node*)malloc(sizeof(topLevelDeclaration_node));
     node->id = newID();
+    node->line = yylineno;
     node->next = NULL;
 
     node->type = _class;
@@ -908,6 +969,7 @@ topLevelDeclaration_node* create_class_topLevelDeclaration_node(classDeclaration
 topLevelDeclaration_node* create_func_topLevelDeclaration_node(signature_node* signature, stmt_node* body) {
     topLevelDeclaration_node* node = (topLevelDeclaration_node*)malloc(sizeof(topLevelDeclaration_node));
     node->id = newID();
+    node->line = yylineno;
     node->next = NULL;
 
     node->type = _function;
@@ -918,6 +980,7 @@ topLevelDeclaration_node* create_func_topLevelDeclaration_node(signature_node* s
 topLevelDeclaration_node* create_enum_topLevelDeclaration_node(enum_node* enumDecl) {
     topLevelDeclaration_node* node = (topLevelDeclaration_node*)malloc(sizeof(topLevelDeclaration_node));
     node->id = newID();
+    node->line = yylineno;
     node->next = NULL;
 
     node->type = _enum;
@@ -928,6 +991,7 @@ topLevelDeclaration_node* create_enum_topLevelDeclaration_node(enum_node* enumDe
 topLevelDeclaration_node* create_var_topLevelDeclaration_node(bool isLate, bool isFinal, bool isConst, type_node* valueType, idInit_node* identifiers) {
     topLevelDeclaration_node* node = (topLevelDeclaration_node*)malloc(sizeof(topLevelDeclaration_node));
     node->id = newID();
+    node->line = yylineno;
 
     node->type = _variable;
     node->variableDecl = create_variableDeclaration_node(create_declarator_node(isLate, isFinal, isConst, valueType), identifiers);
