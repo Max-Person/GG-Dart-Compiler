@@ -149,7 +149,7 @@ struct stmt_node{
 
     struct expr_node* returnExpr;
 
-    struct variableDeclaration_node* variableDeclaration;   //для variableDeclarationStatement и forEach
+    struct singleVarDeclaration_node* variableDeclaration;   //для variableDeclarationStatement и forEach
 
     struct expr_node* expr; // для exprStatement
 
@@ -171,10 +171,10 @@ stmt_node* create_if_stmt_node(expr_node* condition, stmt_node* body, stmt_node*
 stmt_node* create_break_stmt_node();
 stmt_node* create_continue_stmt_node();
 stmt_node* create_return_stmt_node(expr_node* returnExpr);
-stmt_node* create_variable_declaration_stmt_node(variableDeclaration_node* variableDeclaration);
+stmt_node* create_variable_declaration_stmt_node(singleVarDeclaration_node* variableDeclaration);
 stmt_node* create_expr_stmt_node(expr_node* expr);
 stmt_node* create_forN_stmt_node(stmt_node* forInitializerStmt, stmt_node* exprStmt, expr_node* exprList, stmt_node* body);
-stmt_node* create_forEach_stmt_node(struct variableDeclaration_node* declaredIdentifier, struct expr_node* expr, struct stmt_node* body);
+stmt_node* create_forEach_stmt_node(struct singleVarDeclaration_node* declaredIdentifier, struct expr_node* expr, struct stmt_node* body);
 stmt_node* create_forEach_stmt_node(struct identifier_node* identifier, struct expr_node* expr, struct stmt_node* body);
 stmt_node* create_switch_case_stmt_node(expr_node* condition, switch_case_node* switchCaseList, stmt_node* defaultSwitchActions);
 stmt_node* create_functionDefinition_stmt_node(struct functionDefinition_node* func);
@@ -234,17 +234,21 @@ idInit_node* create_id_idInit_node(identifier_node* identifier);
 idInit_node* create_assign_idInit_node(identifier_node* identifier, expr_node* value);
 idInit_node* idInitList_add(idInit_node* start, idInit_node* added);
 
-struct variableDeclaration_node {
+struct singleVarDeclaration_node {
     int id;
     int line;
 
     struct declarator_node* declarator;
-    struct idInit_node* idInitList;
+    struct identifier_node* identifier;
+    bool isInitialized;
+    struct expr_node* value;
+
+    struct singleVarDeclaration_node* next = NULL;
 };
-variableDeclaration_node* create_variableDeclaration_node(declarator_node* declarator, idInit_node* identifiers);
-variableDeclaration_node* create_variableDeclaration_node(bool isLate, bool isFinal, bool isConst, type_node* valueType, idInit_node* identifiers);
-variableDeclaration_node* create_single_variableDeclaration_node(bool isLate, bool isFinal, bool isConst, type_node* valueType, identifier_node* identifier);
-variableDeclaration_node* create_variableDeclaration_node(bool isStatic, bool isLate, bool isFinal, bool isConst, type_node* valueType, idInit_node* identifiers);
+singleVarDeclaration_node* create_variableDeclaration_node(declarator_node* declarator, idInit_node* identifiers);
+singleVarDeclaration_node* create_variableDeclaration_node(bool isLate, bool isFinal, bool isConst, type_node* valueType, idInit_node* identifiers);
+singleVarDeclaration_node* create_single_variableDeclaration_node(bool isLate, bool isFinal, bool isConst, type_node* valueType, identifier_node* identifier);
+singleVarDeclaration_node* create_variableDeclaration_node(bool isStatic, bool isLate, bool isFinal, bool isConst, type_node* valueType, idInit_node* identifiers);
 
 struct formalParameter_node {
     int id;
@@ -252,12 +256,12 @@ struct formalParameter_node {
 
     bool isField;
 
-    struct variableDeclaration_node* paramDecl;
+    struct singleVarDeclaration_node* paramDecl;
     struct identifier_node* initializedField;
 
     struct formalParameter_node* next = NULL;
 };
-formalParameter_node* create_normal_formalParameter_node(variableDeclaration_node* declaredIdentifier);
+formalParameter_node* create_normal_formalParameter_node(singleVarDeclaration_node* declaredIdentifier);
 formalParameter_node* create_field_formalParameter_node(declarator_node* declarator, identifier_node* identifier);
 formalParameter_node* formalParameterList_add(formalParameter_node* start, formalParameter_node* added);
 
@@ -364,7 +368,7 @@ struct classMemberDeclaration_node {
 
     classMemberDeclaration_type type;
 
-    variableDeclaration_node* fieldDecl;
+    singleVarDeclaration_node* fieldDecl;
 
     signature_node* signature;
     stmt_node* body;
@@ -412,7 +416,7 @@ struct topLevelDeclaration_node {
     classDeclaration_node* classDecl;
     functionDefinition_node* functionDecl;
     enum_node* enumDecl;
-    variableDeclaration_node* variableDecl;
+    singleVarDeclaration_node* variableDecl;
 
     topLevelDeclaration_node* next = NULL;
 };

@@ -14,9 +14,8 @@ namespace dotOut {
 	void display(classDeclaration_node* node);
 	void display(classMemberDeclaration_node* node);
 	void display(type_node* node);
-	void display(variableDeclaration_node* node);
+	void display(singleVarDeclaration_node* node);
 	void display(declarator_node* node);
-	void display(idInit_node* node);
 	void display(functionDefinition_node* node);
 	void display(signature_node* node);
 	void display(initializer_node* node);

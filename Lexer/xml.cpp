@@ -166,12 +166,18 @@ namespace xmlOut {
 		if (node->next != NULL) gen.splice(gen.end(), display(node->next));
 		return gen;
 	}
-	list<XMLElement*> display(variableDeclaration_node* node) {
+	list<XMLElement*> display(singleVarDeclaration_node* node) {
 		list<XMLElement*> gen;
 		XMLElement* xml = xmlDoc.NewElement("variableDeclaration_node");
 		xml->SetAttribute("line", node->line);
+		xml->SetAttribute("isInitialized", node->isInitialized);
 		link(xml, display(node->declarator), "declarator");
-		link(xml, display(node->idInitList), "idInitList");
+		link(xml, display(node->identifier), "identifier");
+		if(node->isInitialized) link(xml, display(node->value), "value");
+
+		gen.push_back(xml);
+		if (node->next != NULL) gen.splice(gen.end(), display(node->next));
+		return gen;
 
 		gen.push_back(xml);
 		return gen;

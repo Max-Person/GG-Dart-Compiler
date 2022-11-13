@@ -85,16 +85,14 @@ bool isAssignable(expr_node* expr) {
     }
     return true;
 }
-bool isTypeInferrable(variableDeclaration_node* variableDeclaration) {
-    if (!variableDeclaration->declarator->isTyped) {
-        idInit_node* cur = variableDeclaration->idInitList;
-        while (cur != NULL) {
-            if (!cur->isAssign) {
-                return false;
-                throw - 1;
-            }
-            cur = cur->next;
-        }
+bool isTypeInferrable(singleVarDeclaration_node* variableDeclaration) {
+    singleVarDeclaration_node* cur = variableDeclaration;
+    if (!cur->declarator->isTyped && !cur->isInitialized)
+        return false;
+    while (cur->next != NULL) {
+        cur = cur->next;
+        if (!cur->declarator->isTyped && !cur->isInitialized)
+            return false;
     }
     return true;
 }
@@ -425,7 +423,7 @@ stmt_node* create_switch_case_stmt_node(expr_node* condition, switch_case_node* 
 
     return node;
 }
-stmt_node* create_variable_declaration_stmt_node(variableDeclaration_node* variableDeclaration){
+stmt_node* create_variable_declaration_stmt_node(singleVarDeclaration_node* variableDeclaration){
     stmt_node* node = (stmt_node*)malloc(sizeof(stmt_node));
     node->id = newID();
     node->line = loc.first_line;
@@ -462,7 +460,7 @@ stmt_node* create_forN_stmt_node(stmt_node* forInitializerStmt, stmt_node* condi
 
     return node;
 }
-stmt_node* create_forEach_stmt_node(variableDeclaration_node* declaredIdentifier, expr_node* expr, stmt_node* body) {
+stmt_node* create_forEach_stmt_node(singleVarDeclaration_node* declaredIdentifier, expr_node* expr, stmt_node* body) {
     stmt_node* node = (stmt_node*)malloc(sizeof(stmt_node));
     node->id = newID();
     node->line = loc.first_line;
@@ -630,28 +628,53 @@ idInit_node* idInitList_add(idInit_node* start, idInit_node* added) {
     return start;
 }
 
-variableDeclaration_node* create_variableDeclaration_node(declarator_node* declarator, idInit_node* identifiers) {
-    variableDeclaration_node* node = (variableDeclaration_node*)malloc(sizeof(variableDeclaration_node));
+singleVarDeclaration_node* create_singleVarDeclaration_node(declarator_node* declarator, identifier_node* identifier, expr_node* value ) {
+    singleVarDeclaration_node* node = (singleVarDeclaration_node*)malloc(sizeof(singleVarDeclaration_node));
     node->id = newID();
     node->line = loc.first_line;
+    node->next = NULL;
 
     node->declarator = declarator;
-    node->idInitList = identifiers;
-    
+    node->identifier = identifier;
+    node->isInitialized = value != NULL;
+    node->value = value;
 
     return node;
 }
-variableDeclaration_node* create_variableDeclaration_node(bool isLate, bool isFinal, bool isConst, type_node* valueType, idInit_node* identifiers) {
+singleVarDeclaration_node* singleVarDeclarationList_add(singleVarDeclaration_node* start, singleVarDeclaration_node* added) {
+    singleVarDeclaration_node* cur = start;
+    while (cur->next != NULL) {
+        cur = cur->next;
+    }
+    added->next = NULL;
+    cur->next = added;
+
+    return start;
+}
+singleVarDeclaration_node* create_variableDeclaration_node(declarator_node* declarator, idInit_node* identifiers) {
+    idInit_node* cur = identifiers;
+    singleVarDeclaration_node* node = create_singleVarDeclaration_node(declarator, cur->identifier, cur->isAssign ? cur->value : NULL);
+    idInit_node* prev = cur;
+    while (cur->next != NULL) {
+        cur = cur->next;
+        free(prev);
+        prev = cur;
+        singleVarDeclarationList_add(node, create_singleVarDeclaration_node(declarator, cur->identifier, cur->isAssign ? cur->value : NULL));
+    }
+
+    return node;
+}
+singleVarDeclaration_node* create_variableDeclaration_node(bool isLate, bool isFinal, bool isConst, type_node* valueType, idInit_node* identifiers) {
     return create_variableDeclaration_node(create_declarator_node(isLate, isFinal, isConst, valueType), identifiers);
 }
-variableDeclaration_node* create_single_variableDeclaration_node(bool isLate, bool isFinal, bool isConst, type_node* valueType, identifier_node* identifier) {
+singleVarDeclaration_node* create_single_variableDeclaration_node(bool isLate, bool isFinal, bool isConst, type_node* valueType, identifier_node* identifier) {
     return create_variableDeclaration_node(create_declarator_node(isLate, isFinal, isConst, valueType), create_id_idInit_node(identifier));
 }
-variableDeclaration_node* create_variableDeclaration_node(bool isStatic, bool isLate, bool isFinal, bool isConst, type_node* valueType, idInit_node* identifiers) {
+singleVarDeclaration_node* create_variableDeclaration_node(bool isStatic, bool isLate, bool isFinal, bool isConst, type_node* valueType, idInit_node* identifiers) {
     return create_variableDeclaration_node(create_declarator_node(isStatic, isLate, isFinal, isConst, valueType), identifiers);
 }
 
-formalParameter_node* create_normal_formalParameter_node(variableDeclaration_node* declaredIdentifier) {
+formalParameter_node* create_normal_formalParameter_node(singleVarDeclaration_node* declaredIdentifier) {
     formalParameter_node* node = (formalParameter_node*)malloc(sizeof(formalParameter_node));
     node->id = newID();
     node->line = loc.first_line;

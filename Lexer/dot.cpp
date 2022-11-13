@@ -173,12 +173,21 @@ namespace dotOut {
 			display(node->next);
 		}
 	}
-	void display(variableDeclaration_node* node) {
+	void display(singleVarDeclaration_node* node) {
 		label(node->id, "variable declaration");
 		link(node->id, node->declarator->id, "declaration");
 		display(node->declarator);
-		link(node->id, node->idInitList->id, "variables");
-		display(node->idInitList);
+		link(node->id, node->identifier->id, "id");
+		display(node->identifier);
+		if (node->isInitialized) {
+			link(node->id, node->value->id, "value");
+			display(node->value);
+		}
+
+		if (node->next != NULL) {
+			linkList(node->id, node->next->id);
+			display(node->next);
+		}
 	}
 	void display(declarator_node* node) {
 		string s = "";
@@ -191,25 +200,6 @@ namespace dotOut {
 		if (node->isTyped) {
 			link(node->id, node->valueType->id, "type");
 			display(node->valueType);
-		}
-	}
-	void display(idInit_node* node) {
-		if (node->isAssign) {
-			label(node->id, "init");
-			link(node->id, node->identifier->id, "id");
-			display(node->identifier);
-			link(node->id, node->value->id, "value");
-			display(node->value);
-		}
-		else {
-			label(node->id, "not init");
-			link(node->id, node->identifier->id);
-			display(node->identifier);
-		}
-
-		if (node->next != NULL) {
-			linkList(node->id, node->next->id);
-			display(node->next);
 		}
 	}
 	void display(functionDefinition_node* node) {

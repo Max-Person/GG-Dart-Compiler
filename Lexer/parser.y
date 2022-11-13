@@ -98,7 +98,7 @@ void yyerror(char const *s) {
     expr_node* _expr;
     type_node* _type_node;
     declarator_node* _declarator_node;
-    variableDeclaration_node* _variableDeclaration_node;
+    singleVarDeclaration_node* _variableDeclaration_node;
     idInit_node* _idInit_node;
     stmt_node* _stmt_node;
     formalParameter_node* _formalParameter_node;

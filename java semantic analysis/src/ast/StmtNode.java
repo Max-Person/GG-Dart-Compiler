@@ -32,12 +32,13 @@ public class StmtNode extends Node{
 
     ExprNode returnExpr;
 
-    VariableDeclarationNode variableDeclaration;   //для variableDeclarationStatement и forEach
+    List<VariableDeclarationNode> variableDeclaration;   //для variableDeclarationStatement
 
     ExprNode expr; // для exprStatement
 
     StmtNode forInitializerStmt;
     List<ExprNode> forPostExpr = new ArrayList<>();
+    VariableDeclarationNode forEachVariableDecl;
     IdentifierNode forEachVariableId;
     ExprNode forContainerExpr;
 
@@ -59,7 +60,7 @@ public class StmtNode extends Node{
         }
 
         if(type == StmtType.variable_declaration_statement && element.getElementsByTagName("variableDeclaration").getLength() > 0){
-            variableDeclaration = new VariableDeclarationNode(unlink(element, "variableDeclaration"));
+            unlinkList(element, "variableDeclaration").forEach(e -> variableDeclaration.add(new VariableDeclarationNode(e)));
         }
 
         if(type == StmtType.forN_statement){
@@ -75,7 +76,7 @@ public class StmtNode extends Node{
 
         if(type == StmtType.forEach_statement){
             if(element.getElementsByTagName("variableDeclaration").getLength() > 0){
-                variableDeclaration = new VariableDeclarationNode(unlink(element, "variableDeclaration"));
+                forEachVariableDecl = new VariableDeclarationNode(unlink(element, "variableDeclaration"));
             } else {
                 forEachVariableId = new IdentifierNode(unlink(element, "forEachVariableId"));
             }

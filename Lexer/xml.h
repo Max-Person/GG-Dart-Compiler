@@ -18,7 +18,7 @@ namespace xmlOut {
 	list<XMLElement*> display(classDeclaration_node* node);
 	list<XMLElement*> display(classMemberDeclaration_node* node);
 	list<XMLElement*> display(type_node* node);
-	list<XMLElement*> display(variableDeclaration_node* node);
+	list<XMLElement*> display(singleVarDeclaration_node* node);
 	list<XMLElement*> display(declarator_node* node);
 	list<XMLElement*> display(idInit_node* node);
 	list<XMLElement*> display(functionDefinition_node* node);

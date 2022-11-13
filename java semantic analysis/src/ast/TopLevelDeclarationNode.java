@@ -2,6 +2,9 @@ package ast;
 
 import org.w3c.dom.Element;
 
+import java.util.ArrayList;
+import java.util.List;
+
 enum TopLevelDeclarationType {
     _class,
     _function,
@@ -15,7 +18,7 @@ public class TopLevelDeclarationNode extends Node{
     ClassDeclarationNode classDecl;
     FunctionDefinitionNode functionDecl;
     EnumNode enumDecl;
-    VariableDeclarationNode variableDecl;
+    List<VariableDeclarationNode> variableDecl = new ArrayList<>();
 
     public TopLevelDeclarationNode(Element element) {
         super(element);
@@ -28,7 +31,7 @@ public class TopLevelDeclarationNode extends Node{
         } else if(type == TopLevelDeclarationType._class){
             classDecl = new ClassDeclarationNode(unlink(element, "classDecl"));
         } else {
-            variableDecl = new VariableDeclarationNode(unlink(element, "variableDecl"));
+            unlinkList(element, "variableDecl").forEach(e -> variableDecl.add(new VariableDeclarationNode(e)));
         }
     }
 }

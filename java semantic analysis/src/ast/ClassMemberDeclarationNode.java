@@ -2,6 +2,9 @@ package ast;
 
 import org.w3c.dom.Element;
 
+import java.util.ArrayList;
+import java.util.List;
+
 enum ClassMemberDeclarationType {
     field,
     constructSignature,
@@ -13,7 +16,7 @@ public class ClassMemberDeclarationNode extends Node{
 
     ClassMemberDeclarationType type;
 
-    VariableDeclarationNode fieldDecl;
+    List<VariableDeclarationNode> fieldDecl = new ArrayList<>();
 
     SignatureNode signature;
     StmtNode body;
@@ -23,7 +26,7 @@ public class ClassMemberDeclarationNode extends Node{
         type = ClassMemberDeclarationType.valueOf(element.getAttribute("type"));
 
         if(type == ClassMemberDeclarationType.field){
-            fieldDecl = new VariableDeclarationNode(unlink(element, "fieldDecl"));
+            unlinkList(element, "fieldDecl").forEach(e -> fieldDecl.add(new VariableDeclarationNode(e)));
             return;
         }
         if(type == ClassMemberDeclarationType.methodSignature){
