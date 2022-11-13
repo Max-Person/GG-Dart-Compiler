@@ -5,7 +5,7 @@ import org.w3c.dom.Element;
 import java.util.ArrayList;
 import java.util.List;
 
-public class ClassDeclarationNode extends Node{
+public class ClassDeclarationNode extends Node implements ClasslikeDeclaration{
 
     boolean isAlias;
     boolean isAbstract;
@@ -39,5 +39,12 @@ public class ClassDeclarationNode extends Node{
 
         name = new IdentifierNode(unlink(element, "name"));
 
+    }
+    
+    
+    
+    @Override
+    public String name() {
+        return name.stringVal;
     }
 }

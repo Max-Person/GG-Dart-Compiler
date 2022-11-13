@@ -5,7 +5,7 @@ import org.w3c.dom.Element;
 import java.util.ArrayList;
 import java.util.List;
 
-public class VariableDeclarationNode extends Node{
+public class VariableDeclarationNode extends Node implements Declaration{
 
     DeclaratorNode declarator;
     IdentifierNode identifier;
@@ -20,5 +20,10 @@ public class VariableDeclarationNode extends Node{
         if(isAssign){
             value = new ExprNode(unlink(element, "value"));
         }
+    }
+    
+    @Override
+    public String name() {
+        return identifier.stringVal;
     }
 }
