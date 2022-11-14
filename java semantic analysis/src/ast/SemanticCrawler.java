@@ -1,8 +1,10 @@
 package ast;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
 
 public class SemanticCrawler {
 
@@ -10,6 +12,12 @@ public class SemanticCrawler {
 
     public SemanticCrawler() {
         classTable.put(ClassRecord.globalName, ClassRecord.globalClass());
+    }
+
+    public static void printError(String msg, int line) {
+        String err = "Java Segment (semantic) ERR at line " + line + ": " + msg;
+        System.err.println(err);
+        throw new IllegalStateException(err);
     }
 
     public void analyze(RootNode root) {
@@ -31,49 +39,64 @@ public class SemanticCrawler {
             }
         }
         
-        //Проверить правильность объявлений классов (наследование + повторы)
+        //Проверить правильность объявлений классов (наследование + повторы).
+        for(ClassRecord record : classTable.values()){
+            resolveClass(new ArrayList<>(), record);
+        }
 
         //Собрать информацию о названиях полей и методов классов (+ информация об их типах, если она доступна сразу) - формирование соответствующих таблиц
-        //+ проверить на различия имен, наличие унаследованных вещей и тп. (крч проверить все что можно проверить)
+        //+ проверить на различия имен, и тп. (проверить правильность ВНУТРИ класса, без учета наследования)
 
         //Выявить типы для var полей (ну и проверить их соответственно)
+
+        //Проверить правильность наследований/имплементаций/миксинов + перенести методы для миксинов
+
+        //Провести преобразования имплементаций/миксинов
+        //(разделение классов на интерфейсы и классы-реализации + создание геттеров/сеттеров)
 
         //обработать методы (преобразовать к нужному виду - у конструкторов например), сформировать таблицы локалок
     }
 
     public void addClass(ClasslikeDeclaration clazz) {
-        if (classTable.containsKey(clazz.name()) ||
-                classTable.get(ClassRecord.globalName).methods.containsKey(clazz.name()) ||
-                classTable.get(ClassRecord.globalName).fields.containsKey(clazz.name())) {
-            int line = clazz instanceof ClassDeclarationNode ? ((ClassDeclarationNode) clazz).lineNum
-                    : ((EnumNode) clazz).lineNum;
-            printError("'" + clazz.name() + "' is already declared in this scope.", line);
-        }
+        checkInGlobalNamespace(clazz.name(),
+                clazz instanceof ClassDeclarationNode ? ((ClassDeclarationNode) clazz).lineNum : ((EnumNode) clazz).lineNum);
         ClassRecord classRecord = new ClassRecord(clazz);
         classTable.put(classRecord.name(), classRecord);
     }
 
     public void addGlobalFunction(FunctionDefinitionNode func) {
-        if (classTable.containsKey(func.name()) ||
-                classTable.get(ClassRecord.globalName).methods.containsKey(func.name()) ||
-                classTable.get(ClassRecord.globalName).fields.containsKey(func.name())) {
-            printError("'" + func.name() + "' is already declared in this scope.", func.lineNum);
-        }
+        checkInGlobalNamespace(func.name(), func.lineNum);
         MethodRecord methodRecord = new MethodRecord(func);
         classTable.get(ClassRecord.globalName).methods.put(methodRecord.name(), methodRecord);
     }
 
     public void addGlobalVariable(VariableDeclarationNode var) {
-        if (classTable.containsKey(var.name()) ||
-                classTable.get(ClassRecord.globalName).methods.containsKey(var.name()) ||
-                classTable.get(ClassRecord.globalName).fields.containsKey(var.name())) {
-            printError("'" + var.name() + "' is already declared in this scope.", var.lineNum);
-        }
+        checkInGlobalNamespace(var.name(), var.lineNum);
         FieldRecord fieldRecord = new FieldRecord(var);
         classTable.get(ClassRecord.globalName).fields.put(fieldRecord.name(), fieldRecord);
     }
 
+    public void checkInGlobalNamespace(String name, int lineNum){
+        if (standartTypes.contains(name) ||
+                classTable.containsKey(name) ||
+                classTable.get(ClassRecord.globalName).methods.containsKey(name) ||
+                classTable.get(ClassRecord.globalName).fields.containsKey(name)) {
+            printError("'" + name + "' is already declared in this scope.", lineNum);
+        }
+    }
+
+    private static final List<String> standartTypes = new ArrayList<>();
+    static {
+        standartTypes.add("Null");
+        standartTypes.add("int");
+        standartTypes.add("double");
+        standartTypes.add("num");
+        standartTypes.add("bool");
+        standartTypes.add("String");
+    }
+
     public void resolveClass(List<ClassRecord> children, ClassRecord classRecord){
+        if(classRecord.isDeclResolved) return;
         if(classRecord.isEnum()){
             //TODO ?
         }
@@ -118,12 +141,7 @@ public class SemanticCrawler {
                 
             }
         }
-    }
-
-    public static void printError(String msg, int line) {
-        String err = "Java Segment (semantic) ERR at line " + line + ": " + msg;
-        System.err.println(err);
-        throw new IllegalStateException(err);
+        classRecord.isDeclResolved = true;
     }
 
     private ClassRecord checkInheritable(TypeNode node, String action) {
@@ -133,10 +151,64 @@ public class SemanticCrawler {
         if (node.isNullable) {
             printError("a class can't " + action + " a nullable type", node.lineNum);
         }
+        if(standartTypes.contains(node.name.stringVal)){
+            printError("classes can't' " + action + " '"+node.name+"'.", node.lineNum);
+        }
         ClassRecord potentialInheritance = classTable.get(node.name.stringVal);
         if (potentialInheritance == null || potentialInheritance.isEnum()) {
             printError("classes can only " + action + " other classes.", node.lineNum);
         }
         return potentialInheritance;
+    }
+
+    public void resolveClassMembers(ClassRecord classRecord){
+        if(classRecord.isEnum()){
+            //TODO ?
+        }
+        else {
+            ClassDeclarationNode clazz = (ClassDeclarationNode) classRecord.declaration;
+            for(ClassMemberDeclarationNode classMember : clazz.classMembers){
+                switch (classMember.type){
+                    case field -> {
+                        for(VariableDeclarationNode var: classMember.fieldDecl){
+                            String name = var.name();
+                            if(classRecord.name().equals(name)){
+                                printError("a class member can't have the same name as the enclosing class.", var.lineNum);
+                            }
+                            if(classRecord.fields.containsKey(name) || classRecord.methods.containsKey(name)){ //TODO нельзя объявить поле и метод с одинаковым именем
+                                printError("The name '" + name  + "' is already defined.", var.lineNum);
+                            }
+                            if(var.declarator.isTyped && !isValidType(var.declarator.valueType)){
+                                printError("Undefined class.", var.declarator.lineNum); //TODO написать название типа (TypeNode.toString())
+                            }
+                        }
+                    }
+                    case methodSignature -> {
+
+                    }
+                    case methodDefinition -> {
+
+                    }
+                    case constructSignature -> {
+
+                    }
+                }
+            }
+        }
+    }
+
+    private boolean isValidType(TypeNode type){
+        switch (type.type){
+            case _void -> {
+                return true;
+            }
+            case _named -> {
+                return classTable.containsKey(type.name.stringVal) || standartTypes.contains(type.name.stringVal);
+            }
+            case _list -> {
+                return isValidType(type.listValueType);
+            }
+        }
+        return false;
     }
 }

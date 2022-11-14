@@ -27,4 +27,5 @@ public class FieldRecord {
     public boolean isFinal(){
         return declaration.declarator.isFinal;
     }
+    public TypeNode type(){return declaration.declarator.valueType;}
 }

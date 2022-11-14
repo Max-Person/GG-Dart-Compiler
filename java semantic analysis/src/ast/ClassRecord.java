@@ -13,6 +13,8 @@ public class ClassRecord {
     public ClassRecord _super = null;
     public List<ClassRecord> _interfaces = new ArrayList<>();
     public List<ClassRecord> _mixins = new ArrayList<>();
+
+    public boolean isDeclResolved = false;
     
     public ClasslikeDeclaration declaration;
     
