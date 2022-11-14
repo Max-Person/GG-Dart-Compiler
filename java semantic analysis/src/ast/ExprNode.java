@@ -81,6 +81,8 @@ public class ExprNode extends Node {
     ExprNode operand2;
     TypeNode typeForCheckOrCast;
 
+    TypeNode annotatedType = null;
+
     public ExprNode(Element element) {
         super(element);
         type = ExprType.valueOf(element.getAttribute("type"));

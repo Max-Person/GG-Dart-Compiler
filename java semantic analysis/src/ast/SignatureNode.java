@@ -12,12 +12,12 @@ public class SignatureNode extends Node{
 
     TypeNode returnType;
     IdentifierNode name;
-    List<FormalParameterNode> parameters;
+    List<FormalParameterNode> parameters = new ArrayList<>();
 
     boolean isNamed;
     boolean isConst;
     IdentifierNode constructName;
-    List<InitializerNode> initializers;
+    List<InitializerNode> initializers = new ArrayList<>();
     RedirectionNode redirection;
 
     public SignatureNode(Element element) {
@@ -30,7 +30,7 @@ public class SignatureNode extends Node{
                 constructName = new IdentifierNode(unlink(element, "constructName"));
             }
             if(element.getElementsByTagName("initializers").getLength() > 0){
-                initializers = new ArrayList<>(); //TODO сделать
+                unlinkList(element, "initializers").forEach(e -> initializers.add(new InitializerNode(e))); //TODO сделать
             }
             if(element.getElementsByTagName("redirection").getLength() > 0){
                 redirection = new RedirectionNode(unlink(element, "redirection"));
@@ -42,7 +42,7 @@ public class SignatureNode extends Node{
         name = new IdentifierNode(unlink(element, "name"));
 
         if(element.getElementsByTagName("parameters").getLength() > 0){
-            parameters = new ArrayList<>(); //TODO доделать
+            unlinkList(element, "parameters").forEach(e -> parameters.add(new FormalParameterNode(e))); //TODO доделать
         }
     }
 }

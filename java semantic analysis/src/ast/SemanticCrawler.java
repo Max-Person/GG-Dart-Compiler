@@ -1,25 +1,26 @@
 package ast;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
 
 public class SemanticCrawler {
-
+    
     public Map<String, ClassRecord> classTable = new HashMap<>();
-
+    
     public SemanticCrawler() {
         classTable.put(ClassRecord.globalName, ClassRecord.globalClass());
     }
-
+    
     public static void printError(String msg, int line) {
         String err = "Java Segment (semantic) ERR at line " + line + ": " + msg;
         System.err.println(err);
         throw new IllegalStateException(err);
     }
-
+    
     public void analyze(RootNode root) {
         //Собрать информацию о названиях классов
         for (TopLevelDeclarationNode decl : root.topLevelDeclarationNodes) {
@@ -43,39 +44,39 @@ public class SemanticCrawler {
         for(ClassRecord record : classTable.values()){
             resolveClass(new ArrayList<>(), record);
         }
-
+        
         //Собрать информацию о названиях полей и методов классов (+ информация об их типах, если она доступна сразу) - формирование соответствующих таблиц
         //+ проверить на различия имен, и тп. (проверить правильность ВНУТРИ класса, без учета наследования)
-
+        
         //Выявить типы для var полей (ну и проверить их соответственно)
-
+        
         //Проверить правильность наследований/имплементаций/миксинов + перенести методы для миксинов
-
+        
         //Провести преобразования имплементаций/миксинов
         //(разделение классов на интерфейсы и классы-реализации + создание геттеров/сеттеров)
-
+        
         //обработать методы (преобразовать к нужному виду - у конструкторов например), сформировать таблицы локалок
     }
-
+    
     public void addClass(ClasslikeDeclaration clazz) {
         checkInGlobalNamespace(clazz.name(),
                 clazz instanceof ClassDeclarationNode ? ((ClassDeclarationNode) clazz).lineNum : ((EnumNode) clazz).lineNum);
         ClassRecord classRecord = new ClassRecord(clazz);
         classTable.put(classRecord.name(), classRecord);
     }
-
+    
     public void addGlobalFunction(FunctionDefinitionNode func) {
         checkInGlobalNamespace(func.name(), func.lineNum);
         MethodRecord methodRecord = new MethodRecord(func);
         classTable.get(ClassRecord.globalName).methods.put(methodRecord.name(), methodRecord);
     }
-
+    
     public void addGlobalVariable(VariableDeclarationNode var) {
         checkInGlobalNamespace(var.name(), var.lineNum);
         FieldRecord fieldRecord = new FieldRecord(var);
         classTable.get(ClassRecord.globalName).fields.put(fieldRecord.name(), fieldRecord);
     }
-
+    
     public void checkInGlobalNamespace(String name, int lineNum){
         if (standartTypes.contains(name) ||
                 classTable.containsKey(name) ||
@@ -84,17 +85,17 @@ public class SemanticCrawler {
             printError("'" + name + "' is already declared in this scope.", lineNum);
         }
     }
-
-    private static final List<String> standartTypes = new ArrayList<>();
-    static {
-        standartTypes.add("Null");
-        standartTypes.add("int");
-        standartTypes.add("double");
-        standartTypes.add("num");
-        standartTypes.add("bool");
-        standartTypes.add("String");
-    }
-
+    
+    private static final List<String> standartTypes = Arrays.asList("Null", "int", "double", "num", "bool", "String");
+    // static {
+    //     standartTypes.add("Null");
+    //     standartTypes.add("int");
+    //     standartTypes.add("double");
+    //     standartTypes.add("num");
+    //     standartTypes.add("bool");
+    //     standartTypes.add("String");
+    // }
+    
     public void resolveClass(List<ClassRecord> children, ClassRecord classRecord){
         if(classRecord.isDeclResolved) return;
         if(classRecord.isEnum()){
@@ -143,7 +144,7 @@ public class SemanticCrawler {
         }
         classRecord.isDeclResolved = true;
     }
-
+    
     private ClassRecord checkInheritable(TypeNode node, String action) {
         if (node.type == TypeType._list) {
             printError("a class can't " + action + " a List type", node.lineNum);
@@ -160,7 +161,7 @@ public class SemanticCrawler {
         }
         return potentialInheritance;
     }
-
+    
     public void resolveClassMembers(ClassRecord classRecord){
         if(classRecord.isEnum()){
             //TODO ?
@@ -183,20 +184,23 @@ public class SemanticCrawler {
                             }
                         }
                     }
-                    case methodSignature -> {
-
+                    case methodSignature -> { // только у абстрактного класса
+                        if(!clazz.isAbstract){
+                            printError("'" + classMember.signature.name.stringVal + "' must have a method body because '" + clazz.name() +  "' isn't abstract.", classMember.signature.lineNum);
+                        }
+                        isValidParamsInMethod(classMember.signature);
                     }
                     case methodDefinition -> {
-
+                        isValidParamsInMethod(classMember.signature);
                     }
                     case constructSignature -> {
-
+                    
                     }
                 }
             }
         }
     }
-
+    
     private boolean isValidType(TypeNode type){
         switch (type.type){
             case _void -> {
@@ -210,5 +214,91 @@ public class SemanticCrawler {
             }
         }
         return false;
+    }
+    
+    private void isValidParamsInMethod(SignatureNode signature){
+        for (FormalParameterNode param : signature.parameters) {
+            if(param.paramDecl.declarator.isTyped && !isValidType(param.paramDecl.declarator.valueType)){
+                printError("Undefined class.", param.paramDecl.declarator.lineNum); //TODO написать название типа (TypeNode.toString())
+            }
+            if(signature.parameters.stream().filter(parameter->parameter.paramDecl.identifier.stringVal.equals(param.paramDecl.identifier.stringVal)).count() > 1){
+                printError("The name '" + param.paramDecl.identifier.stringVal +"' is already defined.", param.paramDecl.identifier.lineNum);
+            }
+        }
+    }
+    
+    public void inferValueTypes(ClassRecord classRecord){
+        if(classRecord.isEnum()){
+            return; //TODO ?
+        }
+        ClassDeclarationNode clazz = (ClassDeclarationNode) classRecord.declaration;
+        for(FieldRecord fieldRecord : classRecord.fields.values()){
+            if(fieldRecord.type() == null){
+                fieldRecord.declaration.declarator.valueType = annotateTypes(fieldRecord.declaration.value, classRecord, fieldRecord.isStatic());
+                //TODO
+            }
+        }
+    }
+    
+    //TODO преобразовать в resolveExpr - запихнуть всю логику статической типизации и преобразований выражений сюда.
+    public TypeNode annotateTypes(ExprNode node, ClassRecord classRecord, boolean isStatic){
+        TypeNode result = null;
+        if(node.type == ExprType.this_pr){
+            if(isStatic){
+                printError("invoking 'this' in a static context", node.lineNum);
+            }
+            result = new TypeNode(classRecord.name(), false);
+        }
+        else if(node.type == ExprType.super_pr){ //FIXME По идее это невозможно?
+            if(classRecord._super == null){
+                printError("invoking 'super' when no superclass is defined", node.lineNum);
+            }
+            result = new TypeNode(classRecord._super.name(), false); //FIXME или все таки classRecord._super.name() ?
+        }
+        else if(node.type == ExprType.null_pr){
+            result = new TypeNode("NULL", true);
+        }
+        else if(node.type == ExprType.int_pr){
+            result = new TypeNode("int", false);
+        }
+        else if(node.type == ExprType.double_pr){
+            result = new TypeNode("double", false);
+        }
+        else if(node.type == ExprType.bool_pr){
+            result = new TypeNode("bool", false);
+        }
+        else if(node.type == ExprType.string_pr){
+            result = new TypeNode("String", false);
+        }
+        else if(node.type == ExprType.list_pr){
+            TypeNode element = null;
+            for(ExprNode el: node.listValues){
+                TypeNode cur = annotateTypes(el, classRecord, isStatic);
+                if(element == null){
+                    element = cur;
+                }
+                if(!element.equals(cur)){
+                    printError("elements of a List must be of the same type.", el.lineNum);
+                }
+            }
+            result = new TypeNode(element, false);
+        }
+        else if(node.type == ExprType.string_interpolation){
+            annotateTypes(node.operand, classRecord, isStatic);
+            annotateTypes(node.operand2, classRecord, isStatic); //TODO если не стринг то вызвать .toString()
+            result = new TypeNode("String", false);
+        }
+        else if(node.type == ExprType.constructNew){
+            ClassRecord constructed = classTable.get(node.identifierAccess.stringVal);
+            if(constructed == null){
+                printError("Unknown class '"+ node.identifierAccess.stringVal +"'.", node.identifierAccess.lineNum);
+            }
+            String constructorName = node.constructName != null ? node.constructName.stringVal : null;
+            List<TypeNode> argumentTypes = new ArrayList<>();
+            result = new TypeNode("String", false);
+        }
+        
+        node.annotatedType = result;
+        return result;
     }
 }
