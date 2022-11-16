@@ -3,11 +3,11 @@ package ast;
 import org.w3c.dom.Element;
 
 public class FormalParameterNode extends Node{
-
-    boolean isField;
-
-    VariableDeclarationNode paramDecl;
-    IdentifierNode initializedField;
+    
+    public boolean isField;
+    
+    public VariableDeclarationNode paramDecl;
+    public IdentifierNode initializedField;
 
     public FormalParameterNode(Element element) {
         super(element);

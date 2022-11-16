@@ -6,19 +6,19 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class SignatureNode extends Node{
-
-    boolean isStatic;
-    boolean isConstruct;
-
-    TypeNode returnType;
-    IdentifierNode name;
-    List<FormalParameterNode> parameters = new ArrayList<>();
-
-    boolean isNamed;
-    boolean isConst;
-    IdentifierNode constructName;
-    List<InitializerNode> initializers = new ArrayList<>();
-    RedirectionNode redirection;
+    
+    public boolean isStatic;
+    public boolean isConstruct;
+    
+    public TypeNode returnType;
+    public IdentifierNode name;
+    public List<FormalParameterNode> parameters = new ArrayList<>();
+    
+    public boolean isNamed;
+    public boolean isConst;
+    public IdentifierNode constructName;
+    public List<InitializerNode> initializers = new ArrayList<>();
+    public RedirectionNode redirection;
 
     public SignatureNode(Element element) {
         super(element);

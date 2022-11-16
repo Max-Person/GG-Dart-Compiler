@@ -1,4 +1,7 @@
-package ast;
+package ast.semantic;
+
+import ast.TypeNode;
+import ast.VariableDeclarationNode;
 
 public class FieldRecord {
     public VariableDeclarationNode declaration;

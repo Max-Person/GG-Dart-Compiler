@@ -5,21 +5,14 @@ import org.w3c.dom.Element;
 import java.util.ArrayList;
 import java.util.List;
 
-enum ClassMemberDeclarationType {
-    field,
-    constructSignature,
-    methodSignature,
-    methodDefinition,
-}
-
 public class ClassMemberDeclarationNode extends Node{
-
-    ClassMemberDeclarationType type;
-
-    List<VariableDeclarationNode> fieldDecl = new ArrayList<>();
-
-    SignatureNode signature;
-    StmtNode body;
+    
+    public ClassMemberDeclarationType type;
+    
+    public List<VariableDeclarationNode> fieldDecl = new ArrayList<>();
+    
+    public SignatureNode signature;
+    public StmtNode body;
 
     public ClassMemberDeclarationNode(Element element) {
         super(element);

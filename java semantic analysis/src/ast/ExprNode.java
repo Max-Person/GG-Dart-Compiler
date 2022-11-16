@@ -5,83 +5,26 @@ import org.w3c.dom.Element;
 import java.util.ArrayList;
 import java.util.List;
 
-enum ExprType {
-    this_pr,
-    super_pr,
-    null_pr,
-    int_pr,
-    double_pr,
-    bool_pr,
-    string_pr,
-    list_pr,
-
-    string_interpolation,
-
-    constructNew,
-    constructConst,
-
-    identifier,
-    call,
-
-    fieldAccess,
-    methodCall,
-
-    brackets,
-    ifnull,
-    _or,
-    _and,
-    eq,
-    neq,
-    greater,
-    less,
-    greater_eq,
-    less_eq,
-    type_cast,
-    type_check,
-    neg_type_check,
-    add,
-    sub,
-    mul,
-    _div,
-    u_minus,
-    _not,
-    prefix_inc,
-    prefix_dec,
-    postfix_inc,
-    postfix_dec,
-    bang,
-
-    assign,
-    and_assign,
-    or_assign,
-    xor_assign,
-    mul_assign,
-    div_assign,
-    add_assign,
-    sub_assign,
-    ifnull_assign
-}
-
 public class ExprNode extends Node {
-
-    ExprType type;
-
-    long intValue;
-    double doubleValue;
-    boolean boolValue;
-    String stringValue;
-
-    List<ExprNode> listValues = new ArrayList<>();
-    IdentifierNode identifierAccess;
-    List<ExprNode> callArguments = new ArrayList<>();
-
-    IdentifierNode constructName;
-
-    ExprNode operand;
-    ExprNode operand2;
-    TypeNode typeForCheckOrCast;
-
-    TypeNode annotatedType = null;
+    
+    public ExprType type;
+    
+    public long intValue;
+    public double doubleValue;
+    public boolean boolValue;
+    public String stringValue;
+    
+    public List<ExprNode> listValues = new ArrayList<>();
+    public IdentifierNode identifierAccess;
+    public List<ExprNode> callArguments = new ArrayList<>();
+    
+    public IdentifierNode constructName;
+    
+    public ExprNode operand;
+    public ExprNode operand2;
+    public TypeNode typeForCheckOrCast;
+    
+    public TypeNode annotatedType = null;
 
     public ExprNode(Element element) {
         super(element);

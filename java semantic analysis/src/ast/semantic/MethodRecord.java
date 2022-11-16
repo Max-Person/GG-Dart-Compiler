@@ -1,4 +1,6 @@
-package ast;
+package ast.semantic;
+
+import ast.FunctionDefinitionNode;
 
 import java.util.HashMap;
 import java.util.Map;

@@ -6,10 +6,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class RedirectionNode extends Node{
-
-    boolean isNamed;
-    IdentifierNode name;
-    List<ExprNode> args = new ArrayList<>();
+    
+    public boolean isNamed;
+    public IdentifierNode name;
+    public List<ExprNode> args = new ArrayList<>();
 
     public RedirectionNode(Element element) {
         super(element);

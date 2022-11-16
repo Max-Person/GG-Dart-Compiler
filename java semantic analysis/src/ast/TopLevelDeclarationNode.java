@@ -5,20 +5,13 @@ import org.w3c.dom.Element;
 import java.util.ArrayList;
 import java.util.List;
 
-enum TopLevelDeclarationType {
-    _class,
-    _function,
-    _enum,
-    _variable,
-}
-
 public class TopLevelDeclarationNode extends Node{
-
-    TopLevelDeclarationType type;
-    ClassDeclarationNode classDecl;
-    FunctionDefinitionNode functionDecl;
-    EnumNode enumDecl;
-    List<VariableDeclarationNode> variableDecl = new ArrayList<>();
+    
+    public TopLevelDeclarationType type;
+    public ClassDeclarationNode classDecl;
+    public FunctionDefinitionNode functionDecl;
+    public EnumNode enumDecl;
+    public List<VariableDeclarationNode> variableDecl = new ArrayList<>();
 
     public TopLevelDeclarationNode(Element element) {
         super(element);

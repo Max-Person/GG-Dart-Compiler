@@ -3,9 +3,9 @@ package ast;
 import org.w3c.dom.Element;
 
 public class IdentifierNode extends Node{
-
-    boolean isBuiltin;
-    String stringVal;
+    
+    public boolean isBuiltin;
+    public String stringVal;
 
     public IdentifierNode(Element element) {
         super(element);

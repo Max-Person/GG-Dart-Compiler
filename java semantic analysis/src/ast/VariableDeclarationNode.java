@@ -6,11 +6,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class VariableDeclarationNode extends Node implements Declaration{
-
-    DeclaratorNode declarator;
-    IdentifierNode identifier;
-    boolean isAssign;
-    ExprNode value;
+    
+    public DeclaratorNode declarator;
+    public IdentifierNode identifier;
+    public boolean isAssign;
+    public ExprNode value;
 
     public VariableDeclarationNode(Element element) {
         super(element);

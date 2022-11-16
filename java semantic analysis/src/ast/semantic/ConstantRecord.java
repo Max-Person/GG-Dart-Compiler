@@ -1,19 +1,20 @@
-package ast;
+package ast.semantic;
 
 import java.util.Objects;
 
-enum ConstantType{
-    Utf8,
-    Integer,
-    Float,
-    String,
-    Class,
-    NameAndType,
-    FieldRef,
-    MethodRef,
-}
-
 public class ConstantRecord {
+    
+    public enum ConstantType{
+        Utf8,
+        Integer,
+        Float,
+        String,
+        Class,
+        NameAndType,
+        FieldRef,
+        MethodRef,
+    }
+    
     public int number;
     public final ConstantType type;
     public final int intval;

@@ -3,14 +3,14 @@ package ast;
 import org.w3c.dom.Element;
 
 public class DeclaratorNode extends Node{
-
-    boolean isStatic;
-    boolean isLate;
-    boolean isFinal;
-    boolean isConst;
-    boolean isTyped;
-
-    TypeNode valueType;
+    
+    public boolean isStatic;
+    public boolean isLate;
+    public boolean isFinal;
+    public boolean isConst;
+    public boolean isTyped;
+    
+    public TypeNode valueType;
 
     public DeclaratorNode(Element element) {
         super(element);

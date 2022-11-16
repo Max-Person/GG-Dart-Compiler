@@ -29,8 +29,8 @@ public abstract class Node {
         }
         return elements;
     }
-
-    int lineNum;
+    
+    public int lineNum;
     
     protected Node(Element element){
         lineNum = Integer.parseInt(element.getAttribute("line"));

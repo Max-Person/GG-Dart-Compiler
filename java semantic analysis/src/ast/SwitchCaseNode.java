@@ -6,9 +6,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class SwitchCaseNode extends Node{
-
-    List<StmtNode> actions = new ArrayList<>();
-    ExprNode condition;
+    
+    public List<StmtNode> actions = new ArrayList<>();
+    public ExprNode condition;
 
     public SwitchCaseNode(Element element) {
         super(element);

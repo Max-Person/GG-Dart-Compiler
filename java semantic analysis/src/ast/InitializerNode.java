@@ -5,21 +5,15 @@ import org.w3c.dom.Element;
 import java.util.ArrayList;
 import java.util.List;
 
-enum InitializerType {
-    superConstructor,
-    superNamedConstructor,
-    thisAssign,
-}
-
 public class InitializerNode extends Node{
-
-    InitializerType type;
-
-    IdentifierNode superConstructorName;
-    List<ExprNode> args = new ArrayList<>();
-
-    IdentifierNode thisFieldId;
-    ExprNode value;
+    
+    public InitializerType type;
+    
+    public IdentifierNode superConstructorName;
+    public List<ExprNode> args = new ArrayList<>();
+    
+    public IdentifierNode thisFieldId;
+    public ExprNode value;
 
     public InitializerNode(Element element) {
         super(element);

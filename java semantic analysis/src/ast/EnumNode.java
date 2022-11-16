@@ -6,9 +6,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class EnumNode extends Node implements ClasslikeDeclaration {
-
-    IdentifierNode name;
-    List<IdentifierNode> values = new ArrayList<>();
+    
+    public IdentifierNode name;
+    public List<IdentifierNode> values = new ArrayList<>();
 
     public EnumNode(Element element) {
         super(element);

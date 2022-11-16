@@ -4,19 +4,14 @@ import org.w3c.dom.Element;
 
 import java.util.Objects;
 
-enum TypeType{
-    _void,
-    _named,
-    _list,
-}
 public class TypeNode extends Node{
-
-    TypeType type;
-
-    boolean isNullable;
-    TypeNode listValueType;
-
-    IdentifierNode name;
+    
+    public TypeType type;
+    
+    public boolean isNullable;
+    public TypeNode listValueType;
+    
+    public IdentifierNode name;
 
     public TypeNode(Element element) {
         super(element);

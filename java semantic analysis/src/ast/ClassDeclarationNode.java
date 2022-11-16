@@ -7,14 +7,14 @@ import java.util.List;
 
 public class ClassDeclarationNode extends Node implements ClasslikeDeclaration{
 
-    boolean isAlias;
-    boolean isAbstract;
-    TypeNode _super;
-    List<TypeNode> mixins = new ArrayList<>();
-    List<TypeNode> interfaces = new ArrayList<>();
-    IdentifierNode name;
-
-    List<ClassMemberDeclarationNode> classMembers = new ArrayList<>();
+    public boolean isAlias;
+    public boolean isAbstract;
+    public TypeNode _super;
+    public List<TypeNode> mixins = new ArrayList<>();
+    public List<TypeNode> interfaces = new ArrayList<>();
+    public IdentifierNode name;
+    
+    public List<ClassMemberDeclarationNode> classMembers = new ArrayList<>();
 
     public ClassDeclarationNode(Element element) {
         super(element);

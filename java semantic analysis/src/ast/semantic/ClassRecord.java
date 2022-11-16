@@ -1,4 +1,8 @@
-package ast;
+package ast.semantic;
+
+import ast.ClassDeclarationNode;
+import ast.ClasslikeDeclaration;
+import ast.EnumNode;
 
 import java.util.ArrayList;
 import java.util.HashMap;

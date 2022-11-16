@@ -3,9 +3,9 @@ package ast;
 import org.w3c.dom.Element;
 
 public class FunctionDefinitionNode extends Node implements Declaration{
-
-    SignatureNode signature;
-    StmtNode body;
+    
+    public  SignatureNode signature;
+    public StmtNode body;
 
     public FunctionDefinitionNode(Element element) {
         super(element);

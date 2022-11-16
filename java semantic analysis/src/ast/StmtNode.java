@@ -5,47 +5,31 @@ import org.w3c.dom.Element;
 import java.util.ArrayList;
 import java.util.List;
 
-enum StmtType {
-    block,
-    expr_statement,
-    variable_declaration_statement,
-    forN_statement,
-    forEach_statement,
-    while_statement,
-    do_statement,
-    switch_statement,
-    if_statement,
-    break_statement,
-    continue_statement,
-    return_statement,
-    local_function_declaration,
-}
-
 public class StmtNode extends Node{
-
-    StmtType type;
-
-    ExprNode condition;    //для if, switch, while � for
-    StmtNode body;         //для if, while, for и block
-
-    StmtNode elseBody;
-
-    ExprNode returnExpr;
-
-    List<VariableDeclarationNode> variableDeclaration;   //для variableDeclarationStatement
-
-    ExprNode expr; // для exprStatement
-
-    StmtNode forInitializerStmt;
-    List<ExprNode> forPostExpr = new ArrayList<>();
-    VariableDeclarationNode forEachVariableDecl;
-    IdentifierNode forEachVariableId;
-    ExprNode forContainerExpr;
-
-    FunctionDefinitionNode func;
-
-    List<SwitchCaseNode> switchCaseList = new ArrayList<>();
-    List<StmtNode> defaultSwitchActions = new ArrayList<>();
+    
+    public StmtType type;
+    
+    public ExprNode condition;    //для if, switch, while � for
+    public StmtNode body;         //для if, while, for и block
+    
+    public StmtNode elseBody;
+    
+    public ExprNode returnExpr;
+    
+    public List<VariableDeclarationNode> variableDeclaration;   //для variableDeclarationStatement
+    
+    public ExprNode expr; // для exprStatement
+    
+    public StmtNode forInitializerStmt;
+    public List<ExprNode> forPostExpr = new ArrayList<>();
+    public VariableDeclarationNode forEachVariableDecl;
+    public IdentifierNode forEachVariableId;
+    public ExprNode forContainerExpr;
+    
+    public FunctionDefinitionNode func;
+    
+    public List<SwitchCaseNode> switchCaseList = new ArrayList<>();
+    public List<StmtNode> defaultSwitchActions = new ArrayList<>();
 
     public StmtNode(Element element) {
         super(element);
