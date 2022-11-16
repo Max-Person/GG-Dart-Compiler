@@ -2,19 +2,24 @@ package ast.semantic;
 
 import ast.TypeNode;
 import ast.VariableDeclarationNode;
+import ast.semantic.typization.VariableType;
 
 public class FieldRecord {
     public VariableDeclarationNode declaration;
+    public ConstantRecord descriptorConst;
+    public ConstantRecord nameConst;
+    public VariableType varType;
     
-    public FieldRecord(VariableDeclarationNode declaration){
+    public FieldRecord(VariableDeclarationNode declaration, VariableType varType, ConstantRecord nameConst,  ConstantRecord descriptorConst){
         if(declaration == null)
             throw new IllegalArgumentException();
         
         this.declaration = declaration;
-        this.descriptor = null; //TODO
+        this.varType = varType;
+        this.nameConst = nameConst;
+        this.descriptorConst = descriptorConst;
     }
-    
-    public ConstantRecord descriptor;
+
     public String name(){
         return declaration.identifier.stringVal;
     }
@@ -30,5 +35,5 @@ public class FieldRecord {
     public boolean isFinal(){
         return declaration.declarator.isFinal;
     }
-    public TypeNode type(){return declaration.declarator.valueType;}
+    public VariableType type(){return varType;}
 }

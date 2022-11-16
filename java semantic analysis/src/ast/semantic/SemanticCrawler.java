@@ -1,9 +1,9 @@
 package ast.semantic;
 
 import ast.*;
+import ast.semantic.typization.StandartType;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -68,34 +68,24 @@ public class SemanticCrawler {
     
     public void addGlobalFunction(FunctionDefinitionNode func) {
         checkInGlobalNamespace(func.name(), func.lineNum);
-        MethodRecord methodRecord = new MethodRecord(func);
-        classTable.get(ClassRecord.globalName).methods.put(methodRecord.name(), methodRecord);
+        func.signature.isStatic = true;
+        classTable.get(ClassRecord.globalName).addMethod(classTable, func.signature, func.body);
     }
     
     public void addGlobalVariable(VariableDeclarationNode var) {
         checkInGlobalNamespace(var.name(), var.lineNum);
-        FieldRecord fieldRecord = new FieldRecord(var);
-        classTable.get(ClassRecord.globalName).fields.put(fieldRecord.name(), fieldRecord);
+        var.declarator.isStatic = true;
+        classTable.get(ClassRecord.globalName).addField(classTable, var);
     }
     
     public void checkInGlobalNamespace(String name, int lineNum){
-        if (standartTypes.contains(name) ||
+        if (StandartType.isStandartName(name) ||
                 classTable.containsKey(name) ||
                 classTable.get(ClassRecord.globalName).methods.containsKey(name) ||
                 classTable.get(ClassRecord.globalName).fields.containsKey(name)) {
             printError("'" + name + "' is already declared in this scope.", lineNum);
         }
     }
-    
-    private static final List<String> standartTypes = Arrays.asList("Null", "int", "double", "num", "bool", "String");
-    // static {
-    //     standartTypes.add("Null");
-    //     standartTypes.add("int");
-    //     standartTypes.add("double");
-    //     standartTypes.add("num");
-    //     standartTypes.add("bool");
-    //     standartTypes.add("String");
-    // }
     
     public void resolveClass(List<ClassRecord> children, ClassRecord classRecord){
         if(classRecord.isDeclResolved) return;
@@ -153,7 +143,7 @@ public class SemanticCrawler {
         if (node.isNullable) {
             printError("a class can't " + action + " a nullable type", node.lineNum);
         }
-        if(standartTypes.contains(node.name.stringVal)){
+        if(StandartType.isStandartName(node.name.stringVal)){
             printError("classes can't' " + action + " '"+node.name+"'.", node.lineNum);
         }
         ClassRecord potentialInheritance = classTable.get(node.name.stringVal);
@@ -170,60 +160,16 @@ public class SemanticCrawler {
         else {
             ClassDeclarationNode clazz = (ClassDeclarationNode) classRecord.declaration;
             for(ClassMemberDeclarationNode classMember : clazz.classMembers){
-                switch (classMember.type){
-                    case field -> {
-                        for(VariableDeclarationNode var: classMember.fieldDecl){
-                            String name = var.name();
-                            if(classRecord.name().equals(name)){
-                                printError("a class member can't have the same name as the enclosing class.", var.lineNum);
-                            }
-                            if(classRecord.fields.containsKey(name) || classRecord.methods.containsKey(name)){ //TODO нельзя объявить поле и метод с одинаковым именем
-                                printError("The name '" + name  + "' is already defined.", var.lineNum);
-                            }
-                            if(var.declarator.isTyped && !isValidType(var.declarator.valueType)){
-                                printError("Undefined class.", var.declarator.lineNum); //TODO написать название типа (TypeNode.toString())
-                            }
-                        }
-                    }
-                    case methodSignature -> { // только у абстрактного класса
-                        if(!clazz.isAbstract){
-                            printError("'" + classMember.signature.name.stringVal + "' must have a method body because '" + clazz.name() +  "' isn't abstract.", classMember.signature.lineNum);
-                        }
-                        isValidParamsInMethod(classMember.signature);
-                    }
-                    case methodDefinition -> {
-                        isValidParamsInMethod(classMember.signature);
-                    }
-                    case constructSignature -> {
-                    
+                if(classMember.type == ClassMemberDeclarationType.field){
+                    for(VariableDeclarationNode var: classMember.fieldDecl){
+                        classRecord.addField(classTable, var);
                     }
                 }
-            }
-        }
-    }
-    
-    private boolean isValidType(TypeNode type){
-        switch (type.type){
-            case _void -> {
-                return true;
-            }
-            case _named -> {
-                return classTable.containsKey(type.name.stringVal) || standartTypes.contains(type.name.stringVal);
-            }
-            case _list -> {
-                return isValidType(type.listValueType);
-            }
-        }
-        return false;
-    }
-    
-    private void isValidParamsInMethod(SignatureNode signature){
-        for (FormalParameterNode param : signature.parameters) {
-            if(param.paramDecl.declarator.isTyped && !isValidType(param.paramDecl.declarator.valueType)){
-                printError("Undefined class.", param.paramDecl.declarator.lineNum); //TODO написать название типа (TypeNode.toString())
-            }
-            if(signature.parameters.stream().filter(parameter->parameter.paramDecl.identifier.stringVal.equals(param.paramDecl.identifier.stringVal)).count() > 1){
-                printError("The name '" + param.paramDecl.identifier.stringVal +"' is already defined.", param.paramDecl.identifier.lineNum);
+                else{
+                    StmtNode body = null;
+                    if(classMember.type == ClassMemberDeclarationType.methodDefinition) body = classMember.body;
+                    classRecord.addMethod(classTable, classMember.signature, body);
+                }
             }
         }
     }

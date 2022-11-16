@@ -1,6 +1,9 @@
 package ast.semantic;
 
 import ast.FunctionDefinitionNode;
+import ast.SignatureNode;
+import ast.StmtNode;
+import ast.semantic.typization.FunctionType;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -8,27 +11,37 @@ import java.util.Map;
 public class MethodRecord {
     public Map<String, Integer> locals = new HashMap<>();
     
-    public FunctionDefinitionNode definition;
+    public SignatureNode signature;
+    public StmtNode body;
+    public FunctionType type;
+    public ConstantRecord nameConst;
+    public ConstantRecord descriptorConst;
     
-    public MethodRecord(FunctionDefinitionNode definition){
-        this.definition = definition; //TODO
+    public MethodRecord(SignatureNode signature, StmtNode body, FunctionType type,  ConstantRecord nameConst,  ConstantRecord descriptorConst){
+        this.signature = signature;
+        this.body = body;
+        this.type = type;
+        this.nameConst = nameConst;
+        this.descriptorConst = descriptorConst;
     }
     
-    public ConstantRecord descriptor;
     public String name(){
-        if(definition.signature.isConstruct){
-            return definition.signature.isNamed ? "<init>" : "<init>"; //TODO
+        if(signature.isConstruct){
+            return signature.isNamed ? "<init>" : "<init>"; //TODO
         }
-        else return definition.signature.name.stringVal;
+        else return signature.name.stringVal;
+    }
+    public boolean isConstruct(){
+        return signature.isConstruct;
     }
     public boolean isConst(){
-        if(!definition.signature.isConstruct)
+        if(!signature.isConstruct)
             throw new IllegalStateException();
-        return definition.signature.isConst;
+        return signature.isConst;
     }
     public boolean isStatic(){
-        if(definition.signature.isConstruct)
+        if(signature.isConstruct)
             throw new IllegalStateException();
-        return definition.signature.isStatic;
+        return signature.isStatic;
     }
 }

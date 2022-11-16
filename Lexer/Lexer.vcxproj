@@ -145,14 +145,23 @@
     </Flex>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="dot.cpp" />
     <ClCompile Include="lexer.flex.cpp" />
+    <ClCompile Include="main.cpp" />
     <ClCompile Include="parser.tab.cpp" />
+    <ClCompile Include="structures.cpp" />
+    <ClCompile Include="tinyxml2.cpp" />
+    <ClCompile Include="xml.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Bison Include="parser.y" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="dot.h" />
     <ClInclude Include="parser.tab.h" />
+    <ClInclude Include="structures.h" />
+    <ClInclude Include="tinyxml2.h" />
+    <ClInclude Include="xml.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
