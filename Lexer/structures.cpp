@@ -227,6 +227,7 @@ expr_node* create_constructNew_expr_node(identifier_node* className, expr_node* 
     node->next = NULL;
 
     node->type = constructNew;
+    node->constructName = NULL;
     node->identifierAccess = className;
     node->callArguments = callArguments;
 
@@ -253,6 +254,7 @@ expr_node* create_constructConst_expr_node(identifier_node* className, expr_node
 
     node->type = constructConst;
     node->identifierAccess = className;
+    node->constructName = NULL;
     node->callArguments = callArguments;
 
     return node;

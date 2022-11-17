@@ -21,6 +21,8 @@ class Cat {
     print("Cat");
   }
 
+  static void name(String name,) => print("cat $name");
+
 }
 
 void main() {

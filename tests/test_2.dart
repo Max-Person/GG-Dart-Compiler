@@ -1,6 +1,4 @@
-import 'package:cli/cli.dart' as cli;
-
-void main( arguments) {
+void main(List<String> arguments) {
 
   if (year >= 2001) {
     print('21st century');

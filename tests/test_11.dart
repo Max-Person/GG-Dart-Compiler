@@ -22,7 +22,7 @@ class Worker{
 }
 class Employee extends Person with Worker{
      
-  Employee(name, comp) : super(name){
+  Employee(int name, int comp) : super(name){
     company = comp;
   }
 }

@@ -12,5 +12,5 @@ void main() {
       This is tutorial on dart strings.
   """;
 
-  String text4 = '''This is a multiline line invalid string """;
+  String text4 = '''This is a multiline line invalid string ''';
 }

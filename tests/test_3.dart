@@ -1,12 +1,10 @@
-import 'package:cli/cli.dart' as cli;
-
-void main( arguments) {
+void main(List<String> arguments) {
 
   /// This is a documentation comment, used to document libraries  
-  const oneSecond = Duration(seconds: 1);
+  const oneSecond = Duration(seconds);
   // ···
-  Future<void> printWithDelay(String message) async {
-    await Future.delayed(oneSecond);
+  void printWithDelay(String message) {
+    Future.delayed(oneSecond);
     print(message);
   }
 
@@ -15,6 +13,6 @@ void main( arguments) {
   /* Comments like these are also supported. 
     /*
     Invalid comment
-    
+    */
   */
 }

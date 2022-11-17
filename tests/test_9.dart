@@ -17,12 +17,12 @@ class APIConstant {
 
 class RequestKeys {
   const RequestKeys();
-  String get email => 'email';
-  String get password => 'password';
+  String email() => 'email';
+  String password() => 'password';
 }
 
 class ResponseKeys {
   const ResponseKeys();
-  String get data => 'data';
-  String get status => 'status';
+  String data() => 'data';
+  String status() => 'status';
 }

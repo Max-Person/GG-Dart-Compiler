@@ -1,4 +1,4 @@
-void main{
+void main(){
     int num = 8;
     switch(num){ // с defualt
              

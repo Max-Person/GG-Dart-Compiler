@@ -43,8 +43,26 @@ class Person{
     String name = "";
     int age = 0;
       
-    Person(userName, userAge) : name=userName, age = userAge 
+    Person(String userName,int userAge) : name=userName, age = userAge 
     {
         print("Person ctor!");
     }
+}
+
+class Customer {
+  String? name;
+  int? age;
+  String? location;
+
+  Customer(this.name, this.age, this.location);
+
+Customer.withoutLocation(this.name, this.age);
+
+Customer.empty() {
+  name = "";
+  age = 0;
+  location = "";
+}
+   Customer.empty2() : this("", 0, "");
+  Customer.withoutLocation2(String name, int age) : this.empty();
 }

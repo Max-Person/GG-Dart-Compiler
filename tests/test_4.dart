@@ -2,7 +2,7 @@ class Spacecraft {
   String name;
   DateTime? launchDate;
 
-  int? get launchYear => launchDate?.year;
+  int? launchYear() => launchDate.year;
 
   Spacecraft(this.name, this.launchDate) {}
 
