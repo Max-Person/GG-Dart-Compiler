@@ -3,6 +3,7 @@ package ast.semantic.typization;
 import ast.FormalParameterNode;
 import ast.SignatureNode;
 import ast.TypeNode;
+import ast.TypeType;
 import ast.semantic.ClassRecord;
 
 import java.util.ArrayList;
@@ -22,6 +23,9 @@ public class FunctionType extends VariableType{
     }
     
     public static FunctionType from(Map<String, ClassRecord> classTable, SignatureNode signatureNode){
+        if(signatureNode.isConstruct){
+            signatureNode.returnType.type = TypeType._void;
+        }
         VariableType returnType = VariableType.from(classTable, signatureNode.returnType);
         if(returnType == null) return null;
         List<VariableType> paramTypes = new ArrayList<>();

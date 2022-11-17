@@ -20,6 +20,7 @@ public class ClassRecord {
     public Map<String, FieldRecord> fields = new HashMap<>();
     public Map<String, MethodRecord> methods = new HashMap<>();
     public Map<Integer, ConstantRecord> constants = new HashMap<>();
+    public Map<String, MethodRecord> constructors = new HashMap<>();
     
     public ClassRecord _super = null;
     public List<ClassRecord> _interfaces = new ArrayList<>();
@@ -85,13 +86,28 @@ public class ClassRecord {
 
     public void addMethod(Map<String, ClassRecord> classTable, SignatureNode signature, StmtNode body){
         if(signature.isConstruct){
-            String name = signature.name.stringVal;
             if(!signature.name.stringVal.equals(this.name())){
                 printError("The name of a constructor must match the name of the enclosing class.", signature.lineNum);
             }
+            if(signature.isNamed && constructors.containsKey(signature.constructName.stringVal)){
+                printError("The constructor with name '" + signature.name.stringVal +"' is already defined.", signature.lineNum);
+            }
+            if(!signature.isNamed && constructors.containsKey("")){
+                printError("The unnamed constructor is already defined.", signature.lineNum);
+            }
+            // TODO проверка на this.поле
+            FunctionType type = FunctionType.from(classTable, signature);
+            if(type == null) return;
+            ConstantRecord nameConst = addConstant(ConstantRecord.newUtf8("<init>")); // TODO если конструктор именованный то другое имя????????
+            ConstantRecord descriptorConst = addConstant(ConstantRecord.newUtf8(type.descriptor()));
+            MethodRecord methodRecord = new MethodRecord(signature, body, type, nameConst, descriptorConst); //TODO переделать
+            if (signature.name.stringVal.equals(this.name())){
+                methods.put("", methodRecord);
+            }
+            methods.put(signature.name.stringVal, methodRecord);
         }
         else{
-            if(!this.isAbstract() && body == null){
+            if(!this.isAbstract() && body == null){ // Абстрактный метод не абстрактного класса
                 printError("'" + signature.name.stringVal + "' must have a method body because '" + this.name() +  "' isn't abstract.", signature.lineNum);
             }
             if(fields.containsKey(signature.name.stringVal) || methods.containsKey(signature.name.stringVal)){ //TODO В дарте нельзя объявить поле и метод с одинаковым именем, но у нас мб можно??
