@@ -303,10 +303,10 @@ public class ExprNode extends Node {
             operand2.annotateTypes(dependencyStack, context);
             if(this.type == ExprType.add || this.type == ExprType.sub || this.type == ExprType.mul || this.type == ExprType._div){
                 if(!StandartType._double().isAssignableFrom(operand.annotatedType)){
-                    printError("Cannot perform arithmetic on type '"+ operand.annotatedType.toString() +"' .", operand.lineNum);
+                    printError("Cannot perform arithmetic on type '"+ operand.annotatedType.toString() +"'.", operand.lineNum);
                 }
                 if(!StandartType._double().isAssignableFrom(operand2.annotatedType)){
-                    printError("Cannot perform arithmetic on type '"+ operand2.annotatedType.toString() +"' .", operand2.lineNum);
+                    printError("Cannot perform arithmetic on type '"+ operand2.annotatedType.toString() +"'.", operand2.lineNum);
                 }
                 
                 if(this.type == ExprType._div){
@@ -347,10 +347,10 @@ public class ExprNode extends Node {
             }
             else if(this.type == ExprType._or || this.type == ExprType._and){
                 if(!StandartType._bool().isAssignableFrom(operand.annotatedType)){
-                    printError("Cannot perform logic on type '"+ operand.annotatedType.toString() +"' .", operand.lineNum);
+                    printError("Cannot perform logic on type '"+ operand.annotatedType.toString() +"'.", operand.lineNum);
                 }
                 if(!StandartType._bool().isAssignableFrom(operand2.annotatedType)){
-                    printError("Cannot perform logic on type '"+ operand2.annotatedType.toString() +"' .", operand2.lineNum);
+                    printError("Cannot perform logic on type '"+ operand2.annotatedType.toString() +"'.", operand2.lineNum);
                 }
                 result = StandartType._bool();
             }
@@ -377,7 +377,7 @@ public class ExprNode extends Node {
             operand.annotateTypes(dependencyStack, context);
             if(this.type == ExprType._not){
                 if(!StandartType._bool().isAssignableFrom(operand.annotatedType)){
-                    printError("Cannot perform logic on type '"+ operand.annotatedType.toString() +"' .", operand.lineNum);
+                    printError("Cannot perform logic on type '"+ operand.annotatedType.toString() +"'.", operand.lineNum);
                 }
                 result = StandartType._bool();
             }
@@ -388,7 +388,7 @@ public class ExprNode extends Node {
             else {
                 //Арифметические унарные
                 if(!StandartType._double().isAssignableFrom(operand.annotatedType)){
-                    printError("Cannot perform arithmetic on type '"+ operand.annotatedType.toString() +"' .", operand.lineNum);
+                    printError("Cannot perform arithmetic on type '"+ operand.annotatedType.toString() +"'.", operand.lineNum);
                 }
                 result = operand.annotatedType;
             }

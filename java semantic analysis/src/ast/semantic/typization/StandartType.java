@@ -9,6 +9,7 @@ public class StandartType extends VariableType{
     
     StandartType(String descriptor) {
         this.descriptor = descriptor;
+        this.isNullable = false;
     }
     
     @Override
@@ -36,13 +37,6 @@ public class StandartType extends VariableType{
     
     public static boolean isStandartName(String name){
         return standartTypes.containsKey(name);
-    }
-    
-    @Override
-    public boolean isAssignableFrom(VariableType o) {
-        return o instanceof StandartType &&
-                (this.descriptor.equals(((StandartType) o).descriptor) || (this.descriptor.equals("D") && ((StandartType) o).descriptor.equals("I"))) &&
-                (this.isNullable || !o.isNullable);
     }
     
     @Override

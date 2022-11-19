@@ -42,7 +42,7 @@ public class FunctionType extends ValueType{
             if(param.isField){
                 if(typeInferenceDependencies != null){
                     paramName = param.initializedField.stringVal;
-                    FieldRecord field = currentClass.staticFields().get(paramName);
+                    FieldRecord field = currentClass.nonStaticFields().get(paramName);
                     if(field == null){
                         printError("Undefined field name '"+ paramName +"'.", param.lineNum);
                     }

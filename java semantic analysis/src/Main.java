@@ -1,14 +1,10 @@
-import ast.Node;
 import ast.RootNode;
-import ast.TopLevelDeclarationNode;
+import ast.semantic.SemanticCrawler;
+import ast.semantic.SemanticError;
 import org.w3c.dom.Document;
-import org.xml.sax.SAXException;
 
 import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.parsers.ParserConfigurationException;
 import java.io.File;
-import java.io.IOException;
-import java.util.Arrays;
 
 public class Main {
     public static void main(String[] args){
@@ -22,18 +18,39 @@ public class Main {
             document = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(new File(args[0]));
             document.normalize();
         } catch (Exception e) {
-            System.err.println("Java Segment (semantic) ERR: " + e.getLocalizedMessage().toUpperCase());
+            System.out.println("Java Segment (semantic) ERR: " + e.getLocalizedMessage());
+            e.printStackTrace();
             return;
         }
         
+        RootNode root;
         try{
-            RootNode root = new RootNode(document.getDocumentElement());
+            root = new RootNode(document.getDocumentElement());
         } catch (Exception e) {
-            System.err.println("Java Segment (semantic) ERR: " + e.getLocalizedMessage().toUpperCase());
+            System.out.println("Java Segment (semantic) ERR: " + e.getLocalizedMessage());
+            e.printStackTrace();
             return;
         }
-        
+    
         System.out.println("Java Segment (semantic): tree building SUCCESS!");
+    
+        SemanticCrawler crawler = new SemanticCrawler();
+        try{
+            crawler.analyze(root);
+        }
+        catch (SemanticError e){
+            //System.out.println(e.getLocalizedMessage());
+            return;
+        }
+        catch (Exception e) {
+            System.out.println("Java Segment (semantic) ERR: " + e.getLocalizedMessage());
+            e.printStackTrace();
+            return;
+        }
+    
+        System.out.println("Java Segment (semantic): semantic analysis SUCCESS!");
+        System.out.println("Java Segment (semantic): Class Table description:\n");
+        System.out.println(crawler.describe());
 
     }
 }

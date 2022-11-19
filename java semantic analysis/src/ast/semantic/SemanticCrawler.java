@@ -19,7 +19,15 @@ public class SemanticCrawler {
     public static void printError(String msg, int line) {
         String err = "Java Segment (semantic) ERR at line " + line + ": " + msg;
         System.err.println(err);
-        throw new IllegalStateException(err);
+        throw new SemanticError(err);
+    }
+    
+    public String describe(){
+        StringBuilder description = new StringBuilder();
+        for(ClassRecord classRecord : classTable.values()){
+            description.append(classRecord.describe()).append("\n\n");
+        }
+        return description.toString();
     }
     
     public void analyze(RootNode root) {

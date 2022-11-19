@@ -20,13 +20,6 @@ public class ListType extends VariableType{
     }
     
     @Override
-    public boolean isAssignableFrom(VariableType o) {
-        return o instanceof ListType &&
-                this.valueType.equals(((ListType) o).valueType) &&
-                (this.isNullable || !o.isNullable);
-    }
-    
-    @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (!(o instanceof ListType)) return false;

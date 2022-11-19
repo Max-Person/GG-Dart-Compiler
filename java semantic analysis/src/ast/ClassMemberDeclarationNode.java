@@ -22,11 +22,11 @@ public class ClassMemberDeclarationNode extends Node{
             unlinkList(element, "fieldDecl").forEach(e -> fieldDecl.add(new VariableDeclarationNode(e)));
             return;
         }
-        if(type == ClassMemberDeclarationType.methodSignature){
+        else if(type == ClassMemberDeclarationType.methodSignature || type == ClassMemberDeclarationType.constructSignature){
             signature = new SignatureNode(unlink(element, "signature"));
             return;
         }
-        if(type == ClassMemberDeclarationType.methodDefinition){
+        else if(type == ClassMemberDeclarationType.methodDefinition){
             signature = new SignatureNode(unlink(element, "signature"));
             body = new StmtNode(unlink(element, "body"));
         }

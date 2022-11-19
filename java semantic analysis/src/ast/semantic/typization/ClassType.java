@@ -22,13 +22,6 @@ public class ClassType extends VariableType{
     }
     
     @Override
-    public boolean isAssignableFrom(VariableType o) {
-        return o instanceof ClassType
-                && this.clazz.equals(((ClassType) o).clazz) &&
-                (this.isNullable || !o.isNullable);
-    }
-    
-    @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (!(o instanceof ClassType)) return false;

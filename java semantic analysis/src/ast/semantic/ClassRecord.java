@@ -51,7 +51,7 @@ public class ClassRecord implements NamedRecord{
     private int constantCount = 0;
     public ConstantRecord addConstant(ConstantRecord constant){
         ConstantRecord existing = constants.values().stream().filter(c -> c.number == constant.number).findFirst().orElse(null);
-        if(existing != null){
+        if(existing == null){
             constantCount++;
             constant.number = constantCount;
             constants.put(constant.number, constant);
@@ -159,6 +159,9 @@ public class ClassRecord implements NamedRecord{
     public Map<String, FieldRecord> staticFields(){
         return Utils.filterByValue(fields, field -> field.isStatic());
     }
+    public Map<String, FieldRecord> nonStaticFields(){
+        return Utils.filterByValue(fields, field -> !field.isStatic());
+    }
     public Map<String, MethodRecord> staticMethods(){
         return Utils.filterByValue(methods, method -> method.isStatic());
     }
@@ -179,5 +182,18 @@ public class ClassRecord implements NamedRecord{
     }
     public boolean isEnum(){
         return declaration != null && declaration instanceof EnumNode;
+    }
+    public String describe(){
+        StringBuilder description = new StringBuilder(this.name() + ":\n");
+        for(FieldRecord fieldRecord : fields.values()){
+            description.append("\t").append(fieldRecord.descriptorConst.stringval).append(" ").append(fieldRecord.name()).append("\n");
+        }
+        for(MethodRecord methodRecord : methods.values()){
+            description.append("\t").append(methodRecord.descriptorConst.stringval).append(" ").append(methodRecord.name()).append("\n");
+        }
+        for(MethodRecord methodRecord : constructors.values()){
+            description.append("\t").append(methodRecord.descriptorConst.stringval).append(" ").append(methodRecord.name()).append("\n");
+        }
+        return description.toString();
     }
 }

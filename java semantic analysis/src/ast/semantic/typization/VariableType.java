@@ -19,7 +19,7 @@ public abstract class VariableType extends ValueType{
             }
             case _named -> {
                 if(StandartType.isStandartName((typeNode.name.stringVal))){
-                    result = StandartType.standartTypes.get(typeNode.name.stringVal);
+                    result = (VariableType) StandartType.standartTypes.get(typeNode.name.stringVal).clone();
                 }
                 else if(classTable.containsKey(typeNode.name.stringVal)){
                     result = new ClassType(classTable.get(typeNode.name.stringVal));
@@ -41,7 +41,15 @@ public abstract class VariableType extends ValueType{
         return result;
     }
     
-    public abstract boolean isAssignableFrom(VariableType o);
+    @Override
+    public String toString() {
+        return descriptor() + (isNullable? "?" : ""); //TODO расписать нормально для всех типов
+    }
+    
+    public boolean isAssignableFrom(VariableType o){
+        return (this.descriptor().equals(o.descriptor()) || (this.descriptor().equals("D") && o.descriptor().equals("I"))) &&
+                (this.isNullable || !o.isNullable);
+    }
     
     @Override
     public boolean equals(Object o) {

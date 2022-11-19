@@ -16,7 +16,7 @@ public class StmtNode extends Node{
     
     public ExprNode returnExpr;
     
-    public List<VariableDeclarationNode> variableDeclaration;   //для variableDeclarationStatement
+    public List<VariableDeclarationNode> variableDeclaration = new ArrayList<>();   //для variableDeclarationStatement
     
     public ExprNode expr; // для exprStatement
     
