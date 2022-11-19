@@ -2,6 +2,7 @@ package ast.semantic.typization;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 public class StandartType extends VariableType{
     private String descriptor;
@@ -37,4 +38,24 @@ public class StandartType extends VariableType{
         return standartTypes.containsKey(name);
     }
     
+    @Override
+    public boolean isAssignableFrom(VariableType o) {
+        return o instanceof StandartType &&
+                (this.descriptor.equals(((StandartType) o).descriptor) || (this.descriptor.equals("D") && ((StandartType) o).descriptor.equals("I"))) &&
+                (this.isNullable || !o.isNullable);
+    }
+    
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof StandartType)) return false;
+        if (!super.equals(o)) return false;
+        StandartType that = (StandartType) o;
+        return descriptor.equals(that.descriptor);
+    }
+    
+    @Override
+    public int hashCode() {
+        return Objects.hash(super.hashCode(), descriptor);
+    }
 }

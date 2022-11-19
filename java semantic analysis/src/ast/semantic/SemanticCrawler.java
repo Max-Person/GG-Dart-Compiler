@@ -43,13 +43,19 @@ public class SemanticCrawler {
         
         //Проверить правильность объявлений классов (наследование + повторы).
         for(ClassRecord record : classTable.values()){
-            resolveClass(new ArrayList<>(), record);
+            if(!record.isGlobal()) resolveClass(new ArrayList<>(), record);
         }
         
         //Собрать информацию о названиях полей и методов классов (+ информация об их типах, если она доступна сразу) - формирование соответствующих таблиц
         //+ проверить на различия имен, и тп. (проверить правильность ВНУТРИ класса, без учета наследования)
+        for(ClassRecord record : classTable.values()){
+            record.resolveClassMembers();
+        }
         
         //Выявить типы для var полей (ну и проверить их соответственно)
+        for(ClassRecord record : classTable.values()){
+            record.inferTypes();
+        }
         
         //Проверить правильность наследований/имплементаций/миксинов + перенести методы для миксинов
         
@@ -62,20 +68,20 @@ public class SemanticCrawler {
     public void addClass(ClasslikeDeclaration clazz) {
         checkInGlobalNamespace(clazz.name(),
                 clazz instanceof ClassDeclarationNode ? ((ClassDeclarationNode) clazz).lineNum : ((EnumNode) clazz).lineNum);
-        ClassRecord classRecord = new ClassRecord(clazz);
+        ClassRecord classRecord = new ClassRecord(classTable, clazz);
         classTable.put(classRecord.name(), classRecord);
     }
     
     public void addGlobalFunction(FunctionDefinitionNode func) {
         checkInGlobalNamespace(func.name(), func.lineNum);
         func.signature.isStatic = true;
-        classTable.get(ClassRecord.globalName).addMethod(classTable, func.signature, func.body);
+        classTable.get(ClassRecord.globalName).addMethod(func.signature, func.body);
     }
     
     public void addGlobalVariable(VariableDeclarationNode var) {
         checkInGlobalNamespace(var.name(), var.lineNum);
         var.declarator.isStatic = true;
-        classTable.get(ClassRecord.globalName).addField(classTable, var);
+        classTable.get(ClassRecord.globalName).addField(var);
     }
     
     public void checkInGlobalNamespace(String name, int lineNum){
@@ -153,99 +159,5 @@ public class SemanticCrawler {
         return potentialInheritance;
     }
     
-    public void resolveClassMembers(ClassRecord classRecord){
-        if(classRecord.isEnum()){
-            //TODO ?
-        }
-        else {
-            ClassDeclarationNode clazz = (ClassDeclarationNode) classRecord.declaration;
-            for(ClassMemberDeclarationNode classMember : clazz.classMembers){
-                if(classMember.type == ClassMemberDeclarationType.field){
-                    for(VariableDeclarationNode var: classMember.fieldDecl){
-                        classRecord.addField(classTable, var);
-                    }
-                }
-                else{
-                    StmtNode body = null;
-                    if(classMember.type == ClassMemberDeclarationType.methodDefinition) body = classMember.body;
-                    classRecord.addMethod(classTable, classMember.signature, body);
-                }
-            }
-        }
-    }
     
-    public void inferValueTypes(ClassRecord classRecord){
-        if(classRecord.isEnum()){
-            return; //TODO ?
-        }
-        ClassDeclarationNode clazz = (ClassDeclarationNode) classRecord.declaration;
-        for(FieldRecord fieldRecord : classRecord.fields.values()){
-            if(fieldRecord.type() == null){
-                fieldRecord.declaration.declarator.valueType = annotateTypes(fieldRecord.declaration.value, classRecord, fieldRecord.isStatic());
-                //TODO
-            }
-        }
-    }
-    
-    //TODO преобразовать в resolveExpr - запихнуть всю логику статической типизации и преобразований выражений сюда.
-    public TypeNode annotateTypes(ExprNode node, ClassRecord classRecord, boolean isStatic){
-        TypeNode result = null;
-        if(node.type == ExprType.this_pr){
-            if(isStatic){
-                printError("invoking 'this' in a static context", node.lineNum);
-            }
-            result = new TypeNode(classRecord.name(), false);
-        }
-        else if(node.type == ExprType.super_pr){ //FIXME По идее это невозможно?
-            if(classRecord._super == null){
-                printError("invoking 'super' when no superclass is defined", node.lineNum);
-            }
-            result = new TypeNode(classRecord._super.name(), false); //FIXME или все таки classRecord._super.name() ?
-        }
-        else if(node.type == ExprType.null_pr){
-            result = new TypeNode("NULL", true);
-        }
-        else if(node.type == ExprType.int_pr){
-            result = new TypeNode("int", false);
-        }
-        else if(node.type == ExprType.double_pr){
-            result = new TypeNode("double", false);
-        }
-        else if(node.type == ExprType.bool_pr){
-            result = new TypeNode("bool", false);
-        }
-        else if(node.type == ExprType.string_pr){
-            result = new TypeNode("String", false);
-        }
-        else if(node.type == ExprType.list_pr){
-            TypeNode element = null;
-            for(ExprNode el: node.listValues){
-                TypeNode cur = annotateTypes(el, classRecord, isStatic);
-                if(element == null){
-                    element = cur;
-                }
-                if(!element.equals(cur)){
-                    printError("elements of a List must be of the same type.", el.lineNum);
-                }
-            }
-            result = new TypeNode(element, false);
-        }
-        else if(node.type == ExprType.string_interpolation){
-            annotateTypes(node.operand, classRecord, isStatic);
-            annotateTypes(node.operand2, classRecord, isStatic); //TODO если не стринг то вызвать .toString()
-            result = new TypeNode("String", false);
-        }
-        else if(node.type == ExprType.constructNew){
-            ClassRecord constructed = classTable.get(node.identifierAccess.stringVal);
-            if(constructed == null){
-                printError("Unknown class '"+ node.identifierAccess.stringVal +"'.", node.identifierAccess.lineNum);
-            }
-            String constructorName = node.constructName != null ? node.constructName.stringVal : null;
-            List<TypeNode> argumentTypes = new ArrayList<>();
-            result = new TypeNode("String", false);
-        }
-        
-        node.annotatedType = result;
-        return result;
-    }
 }

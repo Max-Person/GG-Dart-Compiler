@@ -1,11 +1,6 @@
 package ast.semantic;
 
-import ast.ClassDeclarationNode;
-import ast.ClasslikeDeclaration;
-import ast.EnumNode;
-import ast.SignatureNode;
-import ast.StmtNode;
-import ast.VariableDeclarationNode;
+import ast.*;
 import ast.semantic.typization.FunctionType;
 import ast.semantic.typization.VariableType;
 
@@ -16,7 +11,9 @@ import java.util.Map;
 
 import static ast.semantic.SemanticCrawler.printError;
 
-public class ClassRecord {
+public class ClassRecord implements NamedRecord{
+    public Map<String, ClassRecord> containerClassTable = null;
+    
     public Map<String, FieldRecord> fields = new HashMap<>();
     public Map<String, MethodRecord> methods = new HashMap<>();
     public Map<Integer, ConstantRecord> constants = new HashMap<>();
@@ -30,7 +27,8 @@ public class ClassRecord {
     
     public ClasslikeDeclaration declaration;
     
-    public ClassRecord(ClasslikeDeclaration declaration){
+    public ClassRecord(Map<String, ClassRecord> containerClassTable, ClasslikeDeclaration declaration){
+        this.containerClassTable = containerClassTable;
         this.declaration = declaration;
         addConstant(ConstantRecord.newUtf8("Code"));
         ConstantRecord className = ConstantRecord.newUtf8(declaration.name());
@@ -62,7 +60,7 @@ public class ClassRecord {
         else return existing;
     }
 
-    public void addField(Map<String, ClassRecord> classTable, VariableDeclarationNode var){
+    public void addField(VariableDeclarationNode var){
         String varName = var.name();
         if(name().equals(varName)){
             printError("a class member can't have the same name as the enclosing class.", var.lineNum);
@@ -74,17 +72,17 @@ public class ClassRecord {
         }
         VariableType type = null;
         if(var.declarator.isTyped){
-            type = VariableType.from(classTable, var.declarator.valueType);
+            type = VariableType.from(containerClassTable, var.declarator.valueType);
             if(type == null) return;
         }
         ConstantRecord nameConst = addConstant(ConstantRecord.newUtf8(var.name()));
         ConstantRecord descriptorConst = type != null ? addConstant(ConstantRecord.newUtf8(type.descriptor())) : null;
         
-        FieldRecord fieldRecord = new FieldRecord(var, type, nameConst, descriptorConst);
+        FieldRecord fieldRecord = new FieldRecord(this, var, type, nameConst, descriptorConst);
         fields.put(fieldRecord.name(), fieldRecord);
     }
 
-    public void addMethod(Map<String, ClassRecord> classTable, SignatureNode signature, StmtNode body){
+    public void addMethod(SignatureNode signature, StmtNode body){
         if(signature.isConstruct){
             if(!signature.name.stringVal.equals(this.name())){
                 printError("The name of a constructor must match the name of the enclosing class.", signature.lineNum);
@@ -95,16 +93,16 @@ public class ClassRecord {
             if(!signature.isNamed && constructors.containsKey("")){
                 printError("The unnamed constructor is already defined.", signature.lineNum);
             }
-            // TODO проверка на this.поле
-            FunctionType type = FunctionType.from(classTable, signature);
-            if(type == null) return;
-            ConstantRecord nameConst = addConstant(ConstantRecord.newUtf8("<init>")); // TODO если конструктор именованный то другое имя????????
-            ConstantRecord descriptorConst = addConstant(ConstantRecord.newUtf8(type.descriptor()));
-            MethodRecord methodRecord = new MethodRecord(signature, body, type, nameConst, descriptorConst); //TODO переделать
-            if (signature.name.stringVal.equals(this.name())){
-                methods.put("", methodRecord);
+            FunctionType type = null;
+            if(signature.parameters.stream().noneMatch(p -> p.isField)){
+                type = FunctionType.from(containerClassTable, signature);
+                if(type == null) return;
             }
-            methods.put(signature.name.stringVal, methodRecord);
+            ConstantRecord nameConst = addConstant(ConstantRecord.newUtf8("<init>")); // TODO если конструктор именованный то другое имя????????
+            ConstantRecord descriptorConst = type != null ? addConstant(ConstantRecord.newUtf8(type.descriptor())) : null;
+            
+            MethodRecord methodRecord = new MethodRecord(this, signature, body, type, nameConst, descriptorConst);
+            constructors.put(signature.isNamed ? signature.constructName.stringVal : "", methodRecord);
         }
         else{
             if(!this.isAbstract() && body == null){ // Абстрактный метод не абстрактного класса
@@ -113,18 +111,64 @@ public class ClassRecord {
             if(fields.containsKey(signature.name.stringVal) || methods.containsKey(signature.name.stringVal)){ //TODO В дарте нельзя объявить поле и метод с одинаковым именем, но у нас мб можно??
                 printError("The name '" + signature.name.stringVal + "' is already defined.", signature.name.lineNum);
             }
-            FunctionType type = FunctionType.from(classTable, signature);
+            FunctionType type = FunctionType.from(containerClassTable, signature);
             if(type == null) return;
             ConstantRecord nameConst = addConstant(ConstantRecord.newUtf8(signature.name.stringVal));
             ConstantRecord descriptorConst = addConstant(ConstantRecord.newUtf8(type.descriptor()));
 
-            MethodRecord methodRecord = new MethodRecord(signature, body, type, nameConst, descriptorConst);
-            methods.put(signature.name.stringVal, methodRecord);
+            MethodRecord methodRecord = new MethodRecord(this, signature, body, type, nameConst, descriptorConst);
+            methods.put(methodRecord.name(), methodRecord);
         }
+    }
+    
+    public void resolveClassMembers(){
+        if(this.isGlobal()) return;
+        
+        if(this.isEnum()){
+            //TODO ?
+        }
+        else {
+            ClassDeclarationNode clazz = (ClassDeclarationNode) declaration;
+            for(ClassMemberDeclarationNode classMember : clazz.classMembers){
+                if(classMember.type == ClassMemberDeclarationType.field){
+                    for(VariableDeclarationNode var: classMember.fieldDecl){
+                        this.addField(var);
+                    }
+                }
+                else{
+                    StmtNode body = null;
+                    if(classMember.type == ClassMemberDeclarationType.methodDefinition) body = classMember.body;
+                    this.addMethod(classMember.signature, body);
+                }
+            }
+        }
+    }
+    
+    public void inferTypes(){
+        if(this.isEnum()){
+            return; //TODO ?
+        }
+        for(FieldRecord fieldRecord : this.fields.values()){
+            fieldRecord.inferType(new ArrayList<>());
+        }
+        for(MethodRecord constructor : this.constructors.values()){
+            constructor.inferType(new ArrayList<>());
+        }
+    }
+    
+    public Map<String, FieldRecord> staticFields(){
+        return Utils.filterByValue(fields, field -> field.isStatic());
+    }
+    public Map<String, MethodRecord> staticMethods(){
+        return Utils.filterByValue(methods, method -> method.isStatic());
     }
     
     public String name(){
         return declaration != null ? declaration.name() : globalName;
+    }
+    public boolean isGlobal() {
+        //FIXME не сработает для определения других синтетических классов
+        return declaration == null;
     }
     public boolean isAbstract(){
         if(declaration == null)

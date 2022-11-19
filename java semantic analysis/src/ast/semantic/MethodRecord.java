@@ -1,14 +1,17 @@
 package ast.semantic;
 
-import ast.FunctionDefinitionNode;
 import ast.SignatureNode;
 import ast.StmtNode;
 import ast.semantic.typization.FunctionType;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
-public class MethodRecord {
+public class MethodRecord implements NamedRecord{
+    public ClassRecord containerClass;
+    
     public Map<String, Integer> locals = new HashMap<>();
     
     public SignatureNode signature;
@@ -17,7 +20,8 @@ public class MethodRecord {
     public ConstantRecord nameConst;
     public ConstantRecord descriptorConst;
     
-    public MethodRecord(SignatureNode signature, StmtNode body, FunctionType type,  ConstantRecord nameConst,  ConstantRecord descriptorConst){
+    public MethodRecord(ClassRecord containerClass, SignatureNode signature, StmtNode body, FunctionType type,  ConstantRecord nameConst,  ConstantRecord descriptorConst){
+        this.containerClass = containerClass;
         this.signature = signature;
         this.body = body;
         this.type = type;
@@ -43,5 +47,12 @@ public class MethodRecord {
         if(signature.isConstruct)
             throw new IllegalStateException();
         return signature.isStatic;
+    }
+    
+    public void inferType(List<FieldRecord> dependencyStack){
+        if(this.type == null){
+            this.type = FunctionType.from(containerClass.containerClassTable, signature, containerClass, new ArrayList<>());
+            this.descriptorConst = containerClass.addConstant(ConstantRecord.newUtf8(this.type.descriptor()));
+        }
     }
 }

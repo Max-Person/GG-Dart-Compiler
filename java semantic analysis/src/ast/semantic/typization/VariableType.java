@@ -1,6 +1,7 @@
 package ast.semantic.typization;
 
 import java.util.Map;
+import java.util.Objects;
 
 import ast.TypeNode;
 import ast.semantic.ClassRecord;
@@ -38,5 +39,20 @@ public abstract class VariableType extends ValueType{
         }
         result.isNullable = typeNode.isNullable;
         return result;
+    }
+    
+    public abstract boolean isAssignableFrom(VariableType o);
+    
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof VariableType)) return false;
+        VariableType that = (VariableType) o;
+        return isNullable == that.isNullable;
+    }
+    
+    @Override
+    public int hashCode() {
+        return Objects.hash(isNullable);
     }
 }

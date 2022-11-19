@@ -1,5 +1,8 @@
 package ast;
 
+import java.util.HashMap;
+import java.util.Map;
+
 public enum ExprType {
     this_pr,
     super_pr,
@@ -54,5 +57,16 @@ public enum ExprType {
     div_assign,
     add_assign,
     sub_assign,
-    ifnull_assign
+    ifnull_assign;
+    
+    static final Map<ExprType, ExprType> complexAssignToOp = new HashMap<>();
+    static {
+        complexAssignToOp.put(and_assign, _and);
+        complexAssignToOp.put(or_assign, _or);
+        complexAssignToOp.put(mul_assign, mul);
+        complexAssignToOp.put(div_assign, _div);
+        complexAssignToOp.put(add_assign, add);
+        complexAssignToOp.put(sub_assign, sub);
+        complexAssignToOp.put(ifnull_assign, ifnull);
+    }
 }
