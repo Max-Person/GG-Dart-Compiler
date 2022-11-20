@@ -22,4 +22,12 @@ public class RedirectionNode extends Node{
             unlinkList(element, "args").forEach(e->args.add(new ExprNode(e)));
         }
     }
+
+    public ExprNode toExpr(){
+        ExprNode expr = new ExprNode(ExprType.constructRedirect);
+        expr.constructName = isNamed ? this.name : null;
+        expr.callArguments = this.args;
+        expr.lineNum = this.lineNum;
+        return expr;
+    }
 }

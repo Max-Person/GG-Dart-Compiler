@@ -17,6 +17,7 @@ public enum ExprType {
 
     constructNew,
     constructConst,
+    constructRedirect,
 
     identifier,
     call,

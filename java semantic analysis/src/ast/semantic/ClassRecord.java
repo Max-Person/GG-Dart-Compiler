@@ -155,7 +155,19 @@ public class ClassRecord implements NamedRecord{
             constructor.inferType(new ArrayList<>());
         }
     }
-    
+
+    public void checkMethods(){
+        if(this.isEnum()){
+            return; //TODO ?
+        }
+        for (MethodRecord method : methods.values()) {
+            method.checkMethod();
+        }
+        for (MethodRecord constructor : constructors.values()) {
+            constructor.checkMethod();
+        }
+    }
+
     public Map<String, FieldRecord> staticFields(){
         return Utils.filterByValue(fields, field -> field.isStatic());
     }

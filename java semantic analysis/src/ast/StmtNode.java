@@ -10,7 +10,8 @@ public class StmtNode extends Node{
     public StmtType type;
     
     public ExprNode condition;    //для if, switch, while � for
-    public StmtNode body;         //для if, while, for и block
+    public StmtNode body;         //для if, while, for
+    public List<StmtNode> blockStmts = new ArrayList<>();
     
     public StmtNode elseBody;
     
@@ -36,7 +37,7 @@ public class StmtNode extends Node{
         type = StmtType.valueOf(element.getAttribute("type"));
 
         if(type == StmtType.block && element.getElementsByTagName("body").getLength() > 0){
-            body = new StmtNode(unlink(element, "body")); // TODO подумать
+            unlinkList(element, "body").forEach(e -> blockStmts.add(new StmtNode(e)));
         }
 
         if(type == StmtType.expr_statement && element.getElementsByTagName("expr").getLength() > 0){
@@ -96,5 +97,9 @@ public class StmtNode extends Node{
         if(type == StmtType.local_function_declaration){
             func = new FunctionDefinitionNode(unlink(element, "func"));
         }
+    }
+
+    public StmtNode(StmtType type) {
+        this.type = type;
     }
 }
