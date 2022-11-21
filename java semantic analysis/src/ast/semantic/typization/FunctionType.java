@@ -56,9 +56,7 @@ public class FunctionType extends ValueType{
                 if(paramType == null) return null;
             }
             if(signatureNode.parameters.subList(0, signatureNode.parameters.indexOf(param))
-                    .stream().anyMatch(parameter-> parameter.isField?
-                            parameter.initializedField.stringVal.equals(paramName) :
-                            parameter.paramDecl.identifier.stringVal.equals(paramName))){
+                    .stream().anyMatch(parameter-> parameter.name().equals(paramName))){
                 printError("The name '" + paramName +"' is already defined.", param.lineNum);
                 return null;
             }

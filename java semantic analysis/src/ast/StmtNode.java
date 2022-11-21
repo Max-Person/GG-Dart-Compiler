@@ -102,4 +102,29 @@ public class StmtNode extends Node{
     public StmtNode(StmtType type) {
         this.type = type;
     }
+
+    public void validateStmt(){
+        if(type == StmtType.block){
+            for (StmtNode block: blockStmts) {
+                block.validateStmt();
+            }
+        }
+        if (type == StmtType.expr_statement){
+            //expr.annotateTypes(, );
+        }
+        if(type == StmtType.if_statement){
+
+        }
+        if(type == StmtType.do_statement){
+
+        }
+        if(body == null)
+            return; // TODO итс окей?????
+        for (StmtNode block: body.blockStmts) {
+            if(block.blockStmts != null){
+                block.validateStmt();
+            }
+            //body.
+        }
+    }
 }

@@ -32,7 +32,7 @@ public class InitializerNode extends Node{
         }
     }
 
-    public ExprNode toExpr(InitializerType type){
+    public ExprNode toExpr(){
         ExprNode expr = new ExprNode();
         if(type == InitializerType.superNamedConstructor || type == InitializerType.superConstructor){
             expr.type = ExprType.constructSuper;

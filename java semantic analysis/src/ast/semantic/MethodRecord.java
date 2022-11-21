@@ -62,11 +62,27 @@ public class MethodRecord implements NamedRecord{
             if(this.body == null){
                 this.body = new StmtNode(StmtType.block);
             }
+            else if(this.body.type == StmtType.return_statement){
+                printError("Constructors can't return values.", body.lineNum);
+            }
             RedirectionNode redirection = signature.redirection;
             if(redirection != null){
+
+                if(signature.parameters.stream().anyMatch(formalParameterNode -> formalParameterNode.isField)){
+                    printError("The redirecting constructor can't have a field initializer.", redirection.lineNum);
+                }
+                RedirectionNode curRedir = redirection;
+                while(curRedir != null && containerClass.constructors.containsKey(curRedir.isNamed ? curRedir.name.stringVal : "")){
+                    MethodRecord constructor = containerClass.constructors.get(curRedir.isNamed ? curRedir.name.stringVal : "");
+                    if(constructor.equals(this)){
+                        printError("Constructors can't redirect to themselves either directly or indirectly.", redirection.lineNum);
+                    }
+                    curRedir = constructor.signature.redirection;
+                }
                 StmtNode redir = new StmtNode(StmtType.expr_statement);
                 redir.expr = redirection.toExpr();
                 this.body.blockStmts.add(0, redir);
+
             }
             if(this.signature.initializers != null){
                 boolean isSuper = false;
@@ -92,10 +108,15 @@ public class MethodRecord implements NamedRecord{
                         }
                     }
                     StmtNode init = new StmtNode(StmtType.expr_statement);
-                    init.expr = initializer.toExpr(initializer.type);
-                    this.body.blockStmts.add(init);
+                    init.expr = initializer.toExpr();
+                    this.body.blockStmts.add(0, init);
                 }
             }
+            signature.parameters.stream().filter(formalParameterNode -> formalParameterNode.isField).forEach(param->{
+                StmtNode field = new StmtNode(StmtType.expr_statement);
+                field.expr = param.normalize();
+                this.body.blockStmts.add(0, field);
+            });
         }
     }
 }
