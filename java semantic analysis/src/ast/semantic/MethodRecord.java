@@ -91,6 +91,9 @@ public class MethodRecord implements NamedRecord{
                             printError("'" + initializer.thisFieldId.stringVal +"' was already initialized by this constructor.", initializer.thisFieldId.lineNum);
                         }
                     }
+                    StmtNode init = new StmtNode(StmtType.expr_statement);
+                    init.expr = initializer.toExpr(initializer.type);
+                    this.body.blockStmts.add(init);
                 }
             }
         }

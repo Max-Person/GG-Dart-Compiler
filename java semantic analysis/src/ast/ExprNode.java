@@ -125,6 +125,9 @@ public class ExprNode extends Node {
         this.type = type;
     }
 
+    public ExprNode() {
+    }
+
     private boolean isBinaryOp(){
         return type == ExprType.brackets || type == ExprType.ifnull || type == ExprType._or || type == ExprType._and || type == ExprType.eq
                 || type == ExprType.neq || type == ExprType.greater || type == ExprType.less || type == ExprType.greater_eq || type == ExprType.less_eq
