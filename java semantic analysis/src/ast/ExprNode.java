@@ -1,9 +1,6 @@
 package ast;
 
-import ast.semantic.ClassRecord;
-import ast.semantic.FieldRecord;
-import ast.semantic.MethodRecord;
-import ast.semantic.NamedRecord;
+import ast.semantic.*;
 import ast.semantic.context.ClassInitContext;
 import ast.semantic.context.Context;
 import ast.semantic.typization.ClassType;
@@ -213,13 +210,16 @@ public class ExprNode extends Node {
             else if(foundRecord instanceof MethodRecord){
                 printError("'"+ this.identifierAccess.stringVal + "' is a method and must be called", this.lineNum);
             }
-            else {
+            else if(foundRecord instanceof FieldRecord){
                 FieldRecord field = (FieldRecord) foundRecord;
                 field.inferType(dependencyStack);
-                if(context instanceof ClassInitContext && field.containerClass.equals(((ClassInitContext) context).classRecord) && !context.isStatic() && !field.isStatic()){
+                if(context.getClass().equals(ClassInitContext.class) && field.containerClass.equals(((ClassInitContext) context).classRecord) && !field.isStatic()){
                     printError("The instance member '" + field.name() + "' can't be accessed in an initializer.", this.lineNum);
                 }
                 result = field.varType;
+            }
+            else {
+                result = ((LocalVarRecord) foundRecord).varType;
             }
         }
         else if(this.type == ExprType.call){
@@ -227,7 +227,7 @@ public class ExprNode extends Node {
             if(foundRecord == null){
                 printError("Undefined name '"+ this.identifierAccess.stringVal +"'.", this.lineNum);
             }
-            else if(foundRecord instanceof FieldRecord){
+            else if(foundRecord instanceof VariableRecord){
                 printError("'"+ this.identifierAccess.stringVal + "' is a variable and cannot be called", this.lineNum);
             }
             else if(foundRecord instanceof ClassRecord){
@@ -255,13 +255,13 @@ public class ExprNode extends Node {
                     printError("Cannot find field '"+ this.identifierAccess.stringVal +"' in '"+ op.toString() +"'.", this.lineNum);
                 }
                 classRecord = ((ClassType) op).clazz;
-                field = classRecord.fields.get(this.identifierAccess.stringVal);
+                field = classRecord.nonStaticFields().get(this.identifierAccess.stringVal);
             }
             if(field == null){
                 printError("Cannot find field '"+ this.identifierAccess.stringVal +"' in '"+ classRecord.name() +"'.", this.lineNum);
             }
             field.inferType(dependencyStack);
-            if(context instanceof ClassInitContext && field.containerClass.equals(((ClassInitContext) context).classRecord) && !context.isStatic() && !field.isStatic()){
+            if(context.getClass().equals(ClassInitContext.class) && field.containerClass.equals(((ClassInitContext) context).classRecord) && !field.isStatic()){
                 printError("The instance member '" + field.name() + "' can't be accessed in an initializer.", this.lineNum);
             }
             result = field.varType;

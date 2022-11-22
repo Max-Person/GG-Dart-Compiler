@@ -13,7 +13,7 @@ import static ast.semantic.SemanticCrawler.printError;
 public class MethodRecord implements NamedRecord{
     public ClassRecord containerClass;
     
-    public Map<String, Integer> locals = new HashMap<>();
+    public Map<String, LocalVarRecord> locals = new HashMap<>(); //TODO реализовать добавление локалок с увеличением номера + добавление локалок для this и параметров при создании метода
     
     public SignatureNode signature;
     public StmtNode body;
@@ -52,7 +52,7 @@ public class MethodRecord implements NamedRecord{
     
     public void inferType(List<FieldRecord> dependencyStack){
         if(this.type == null){
-            this.type = FunctionType.from(containerClass.containerClassTable, signature, containerClass, new ArrayList<>());
+            this.type = FunctionType.from(containerClass.containerClassTable, signature, containerClass, dependencyStack);
             this.descriptorConst = containerClass.addConstant(ConstantRecord.newUtf8(this.type.descriptor()));
         }
     }

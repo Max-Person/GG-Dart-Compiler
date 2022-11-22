@@ -11,8 +11,8 @@ public class ClassInitContext extends GlobalContext{
     public ClassRecord classRecord;
     private boolean isStatic;
     
-    public ClassInitContext(Map<String, ClassRecord> classTable, ClassRecord classRecord, boolean isStatic) {
-        super(classTable);
+    public ClassInitContext(ClassRecord classRecord, boolean isStatic) {
+        super(classRecord.containerClassTable);
         this.classRecord = classRecord;
         this.isStatic = isStatic;
     }
