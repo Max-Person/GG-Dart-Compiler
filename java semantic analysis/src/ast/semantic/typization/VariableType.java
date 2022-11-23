@@ -47,7 +47,7 @@ public abstract class VariableType extends ValueType{
     }
     
     public boolean isAssignableFrom(VariableType o){
-        return (this.descriptor().equals(o.descriptor()) || (this.descriptor().equals("D") && o.descriptor().equals("I"))) &&
+        return (this.descriptor().equals(o.descriptor()) || (this.descriptor().equals("D") && o.descriptor().equals("I")) || o.descriptor().equals("Null")) &&
                 (this.isNullable || !o.isNullable);
     }
     

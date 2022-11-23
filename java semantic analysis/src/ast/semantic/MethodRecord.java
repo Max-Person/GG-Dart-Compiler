@@ -21,13 +21,16 @@ public class MethodRecord implements NamedRecord{
     public ConstantRecord nameConst;
     public ConstantRecord descriptorConst;
     
-    public MethodRecord(ClassRecord containerClass, SignatureNode signature, StmtNode body, FunctionType type,  ConstantRecord nameConst,  ConstantRecord descriptorConst){
+    public MethodRecord(ClassRecord containerClass, SignatureNode signature, StmtNode body, FunctionType type){
         this.containerClass = containerClass;
         this.signature = signature;
         this.body = body;
         this.type = type;
-        this.nameConst = nameConst;
-        this.descriptorConst = descriptorConst;
+        
+        if(type != null){
+            this.descriptorConst = containerClass.addConstant(ConstantRecord.newUtf8(this.type.descriptor()));
+            this.nameConst = containerClass.addConstant(ConstantRecord.newUtf8(this.name()));
+        }
     }
     
     public String name(){
@@ -54,6 +57,7 @@ public class MethodRecord implements NamedRecord{
         if(this.type == null){
             this.type = FunctionType.from(containerClass.containerClassTable, signature, containerClass, dependencyStack);
             this.descriptorConst = containerClass.addConstant(ConstantRecord.newUtf8(this.type.descriptor()));
+            this.nameConst = containerClass.addConstant(ConstantRecord.newUtf8(this.name()));
         }
     }
 

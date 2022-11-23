@@ -34,4 +34,9 @@ public class GlobalContext extends Context{
     public VariableType thisType() {
         return null;
     }
+    
+    @Override
+    public ClassRecord currentClass() {
+        return classTable.get(ClassRecord.globalName);
+    }
 }

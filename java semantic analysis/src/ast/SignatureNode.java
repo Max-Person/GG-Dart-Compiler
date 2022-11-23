@@ -45,4 +45,13 @@ public class SignatureNode extends Node{
             unlinkList(element, "parameters").forEach(e -> parameters.add(new FormalParameterNode(e))); //TODO доделать
         }
     }
+    
+    public SignatureNode(){
+        this.isStatic = false;
+        this.isConstruct = false;
+        this.returnType = null;
+        this.name = null;
+        this.isNamed = false;
+        this.constructName = null;
+    }
 }

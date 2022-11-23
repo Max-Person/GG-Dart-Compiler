@@ -16,7 +16,7 @@ public class FunctionType extends ValueType{
     public VariableType returnType;
     public List<VariableType> paramTypes;
     
-    FunctionType(VariableType returnType, List<VariableType> paramTypes) {
+    public FunctionType(VariableType returnType, List<VariableType> paramTypes) {
         this.returnType = returnType;
         this.paramTypes = paramTypes;
     }

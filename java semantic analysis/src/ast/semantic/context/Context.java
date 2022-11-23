@@ -24,9 +24,10 @@ public abstract class Context {
         NamedRecord found = lookup(name);
         return found instanceof MethodRecord ? (MethodRecord) found : null;
     }
-    public FieldRecord lookupObj(String name){ //FIXME учесть локалки
+    public FieldRecord lookupField(String name){ //FIXME учесть локалки
         NamedRecord found = lookup(name);
         return found instanceof FieldRecord ? (FieldRecord) found : null;
     }
     public abstract VariableType thisType();
+    public abstract ClassRecord currentClass();
 }

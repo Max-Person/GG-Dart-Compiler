@@ -22,4 +22,8 @@ public class MethodContext extends ClassInitContext{
         }
         return super.lookup(name);
     }
+    
+    public boolean isSytheticGetterOrSetter(){
+        return this.methodRecord.name().contains("!");
+    }
 }

@@ -75,10 +75,8 @@ public class ClassRecord implements NamedRecord{
             type = VariableType.from(containerClassTable, var.declarator.valueType);
             if(type == null) return;
         }
-        ConstantRecord nameConst = addConstant(ConstantRecord.newUtf8(var.name()));
-        ConstantRecord descriptorConst = type != null ? addConstant(ConstantRecord.newUtf8(type.descriptor())) : null;
         
-        FieldRecord fieldRecord = new FieldRecord(this, var, type, nameConst, descriptorConst);
+        FieldRecord fieldRecord = new FieldRecord(this, var, type);
         fields.put(fieldRecord.name(), fieldRecord);
     }
 
@@ -98,10 +96,7 @@ public class ClassRecord implements NamedRecord{
                 type = FunctionType.from(containerClassTable, signature);
                 if(type == null) return;
             }
-            ConstantRecord nameConst = addConstant(ConstantRecord.newUtf8("<init>")); // TODO если конструктор именованный то другое имя????????
-            ConstantRecord descriptorConst = type != null ? addConstant(ConstantRecord.newUtf8(type.descriptor())) : null;
-            
-            MethodRecord methodRecord = new MethodRecord(this, signature, body, type, nameConst, descriptorConst);
+            MethodRecord methodRecord = new MethodRecord(this, signature, body, type);
             constructors.put(signature.isNamed ? signature.constructName.stringVal : "", methodRecord);
         }
         else{
@@ -113,10 +108,8 @@ public class ClassRecord implements NamedRecord{
             }
             FunctionType type = FunctionType.from(containerClassTable, signature);
             if(type == null) return;
-            ConstantRecord nameConst = addConstant(ConstantRecord.newUtf8(signature.name.stringVal));
-            ConstantRecord descriptorConst = addConstant(ConstantRecord.newUtf8(type.descriptor()));
-
-            MethodRecord methodRecord = new MethodRecord(this, signature, body, type, nameConst, descriptorConst);
+            
+            MethodRecord methodRecord = new MethodRecord(this, signature, body, type);
             methods.put(methodRecord.name(), methodRecord);
         }
     }

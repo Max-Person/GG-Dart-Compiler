@@ -47,4 +47,9 @@ public class ClassInitContext extends GlobalContext{
     public VariableType thisType() {
         return isStatic? null : new ClassType(classRecord);
     }
+    
+    @Override
+    public ClassRecord currentClass() {
+        return classRecord;
+    }
 }

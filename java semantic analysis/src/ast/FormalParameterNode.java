@@ -19,6 +19,12 @@ public class FormalParameterNode extends Node{
         }
 
     }
+    
+    //WARN использовать только для синтетических dummy параметров
+    public FormalParameterNode(String name){
+        this.isField = true;
+        this.initializedField = new IdentifierNode(name);
+    }
 
     public ExprNode normalize(){
         if(!isField){
