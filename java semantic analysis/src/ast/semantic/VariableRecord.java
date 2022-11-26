@@ -9,7 +9,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-public abstract class VariableRecord implements NamedRecord{
+public abstract class VariableRecord implements NamedRecord, Cloneable{
     protected boolean isLate, isStatic, isConst, isFinal;
     public VariableType varType;
     public String name;

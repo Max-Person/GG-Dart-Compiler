@@ -11,7 +11,7 @@ import java.util.Map;
 
 import static ast.semantic.SemanticCrawler.printError;
 
-public class MethodRecord implements NamedRecord{
+public class MethodRecord implements NamedRecord, Cloneable{
     public ClassRecord containerClass;
     
     public Map<String, LocalVarRecord> locals = new HashMap<>(); //TODO реализовать добавление локалок с увеличением номера + добавление локалок для this и параметров при создании метода
@@ -122,6 +122,23 @@ public class MethodRecord implements NamedRecord{
         descriptor.append(")").append(returnType.descriptor());
         return descriptor.toString();
     }
+    
+    public boolean isValidOverrideOf(MethodRecord other){
+        if(this.isConstruct || other.isConstruct)
+            return false;
+    
+        if(this.isStatic || other.isStatic)
+            return false;
+            
+        boolean override = other.returnType.isAssignableFrom(this.returnType) && this.name.equals(other.name) && this.parameters.size() == other.parameters.size();
+        for(int i = 0; override && i < other.parameters.size(); i++){
+            override = override &&
+                    other.parameters.get(i).varType.isAssignableFrom(this.parameters.get(i).varType) &&
+                    this.parameters.get(i).varType.isAssignableFrom(other.parameters.get(i).varType); //FIXME так ли это работает? Возможно просто надо сделать equals
+        }
+        
+        return override;
+    }
 
     public void checkMethod(){
         if(isConstruct){
@@ -170,5 +187,16 @@ public class MethodRecord implements NamedRecord{
             }
             parameters.forEach(param-> param.normalize());
         }
+    }
+    
+    public void copyTo(ClassRecord classRecord) {
+        MethodRecord copy = null; //FIXME? Плохой клон может повлиять на что-то
+        try {
+            copy = (MethodRecord) super.clone();
+        } catch (CloneNotSupportedException e) {
+            throw new RuntimeException(e);
+        }
+        copy.containerClass = classRecord;
+        classRecord.methods.put(copy.name(), copy);
     }
 }

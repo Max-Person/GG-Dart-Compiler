@@ -290,9 +290,10 @@ public class ExprNode extends Node {
             if(field == null){
                 printError("Cannot find field '"+ this.identifierAccess.stringVal +"' in '"+ classRecord.name() +"'.", this.lineNum);
             }
-            if(context.getClass().equals(ClassInitContext.class) && field.containerClass.equals(((ClassInitContext) context).classRecord) && !field.isStatic()){
-                printError("The instance member '" + field.name() + "' can't be accessed in an initializer.", this.lineNum);
-            }
+            //FIXME См кликап
+//            if(context.getClass().equals(ClassInitContext.class) && field.containerClass.equals(((ClassInitContext) context).classRecord) && !field.isStatic()){
+//                printError("The instance member '" + field.name() + "' can't be accessed in an initializer.", this.lineNum);
+//            }
             field.inferType(dependencyStack);
             if(context instanceof MethodContext && ((MethodContext) context).isSytheticGetterOrSetter()){
                 this.annotatedRecord = field;
@@ -328,7 +329,7 @@ public class ExprNode extends Node {
                     printError("Cannot find method '"+ this.identifierAccess.stringVal +"' in '"+ op.toString() +"'.", this.lineNum);
                 }
                 classRecord = ((ClassType) op).clazz;
-                method = classRecord.methods.get(this.identifierAccess.stringVal);
+                method = classRecord.nonStaticMethods().get(this.identifierAccess.stringVal);
             }
             if(method == null){
                 printError("Cannot find method '"+ this.identifierAccess.stringVal +"' in '"+ classRecord.name() +"'.", this.lineNum);

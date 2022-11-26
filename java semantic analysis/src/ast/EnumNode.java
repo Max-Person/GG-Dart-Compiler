@@ -20,4 +20,9 @@ public class EnumNode extends Node implements ClasslikeDeclaration {
     public String name() {
         return name.stringVal;
     }
+    
+    @Override
+    public int lineNum() {
+        return lineNum;
+    }
 }

@@ -87,4 +87,19 @@ public class FieldRecord extends VariableRecord{
         }
         return setter;
     }
+    
+    public boolean isValidOverrideOf(FieldRecord other){
+        return this.name.equals(other.name) && other.varType.isAssignableFrom(this.varType);
+    }
+    
+    public void copyTo(ClassRecord classRecord) {
+        FieldRecord copy = null; //FIXME? Плохой клон может повлиять на что-то
+        try {
+            copy = (FieldRecord) super.clone();
+        } catch (CloneNotSupportedException e) {
+            throw new RuntimeException(e);
+        }
+        copy.containerClass = classRecord;
+        classRecord.fields.put(copy.name(), copy);
+    }
 }
