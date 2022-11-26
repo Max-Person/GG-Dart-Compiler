@@ -1,7 +1,6 @@
 package ast.semantic;
 
 import ast.*;
-import ast.semantic.typization.FunctionType;
 import ast.semantic.typization.VariableType;
 
 import java.util.ArrayList;
@@ -76,7 +75,7 @@ public class ClassRecord implements NamedRecord{
             if(type == null) return;
         }
         
-        FieldRecord fieldRecord = new FieldRecord(this, var, type);
+        FieldRecord fieldRecord = new FieldRecord(this, var);
         fields.put(fieldRecord.name(), fieldRecord);
     }
 
@@ -91,12 +90,8 @@ public class ClassRecord implements NamedRecord{
             if(!signature.isNamed && constructors.containsKey("")){
                 printError("The unnamed constructor is already defined.", signature.lineNum);
             }
-            FunctionType type = null;
-            if(signature.parameters.stream().noneMatch(p -> p.isField)){
-                type = FunctionType.from(containerClassTable, signature);
-                if(type == null) return;
-            }
-            MethodRecord methodRecord = new MethodRecord(this, signature, body, type);
+            
+            MethodRecord methodRecord = new MethodRecord(this, signature, body);
             constructors.put(signature.isNamed ? signature.constructName.stringVal : "", methodRecord);
         }
         else{
@@ -106,10 +101,8 @@ public class ClassRecord implements NamedRecord{
             if(fields.containsKey(signature.name.stringVal) || methods.containsKey(signature.name.stringVal)){ //TODO В дарте нельзя объявить поле и метод с одинаковым именем, но у нас мб можно??
                 printError("The name '" + signature.name.stringVal + "' is already defined.", signature.name.lineNum);
             }
-            FunctionType type = FunctionType.from(containerClassTable, signature);
-            if(type == null) return;
             
-            MethodRecord methodRecord = new MethodRecord(this, signature, body, type);
+            MethodRecord methodRecord = new MethodRecord(this, signature, body);
             methods.put(methodRecord.name(), methodRecord);
         }
     }
@@ -191,13 +184,13 @@ public class ClassRecord implements NamedRecord{
     public String describe(){
         StringBuilder description = new StringBuilder(this.name() + ":\n");
         for(FieldRecord fieldRecord : fields.values()){
-            description.append("\t").append(fieldRecord.descriptorConst.stringval).append(" ").append(fieldRecord.name()).append("\n");
+            description.append("\t").append(fieldRecord.descriptor()).append(" ").append(fieldRecord.name()).append("\n");
         }
         for(MethodRecord methodRecord : methods.values()){
-            description.append("\t").append(methodRecord.descriptorConst.stringval).append(" ").append(methodRecord.name()).append("\n");
+            description.append("\t").append(methodRecord.descriptor()).append(" ").append(methodRecord.name()).append("\n");
         }
         for(MethodRecord methodRecord : constructors.values()){
-            description.append("\t").append(methodRecord.descriptorConst.stringval).append(" ").append(methodRecord.name()).append("\n");
+            description.append("\t").append(methodRecord.descriptor()).append(" ").append(methodRecord.name()).append("\n");
         }
         return description.toString();
     }

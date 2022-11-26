@@ -8,7 +8,7 @@ import ast.semantic.ClassRecord;
 
 import static ast.semantic.SemanticCrawler.printError;
 
-public abstract class VariableType extends ValueType{
+public abstract class VariableType implements Cloneable {
     public boolean isNullable;
 
     public static VariableType from(Map<String, ClassRecord> classTable, TypeNode typeNode){
@@ -19,7 +19,7 @@ public abstract class VariableType extends ValueType{
             }
             case _named -> {
                 if(StandartType.isStandartName((typeNode.name.stringVal))){
-                    result = (VariableType) StandartType.standartTypes.get(typeNode.name.stringVal).clone();
+                    result = StandartType.standartTypes.get(typeNode.name.stringVal).clone();
                 }
                 else if(classTable.containsKey(typeNode.name.stringVal)){
                     result = new ClassType(classTable.get(typeNode.name.stringVal));
@@ -41,6 +41,8 @@ public abstract class VariableType extends ValueType{
         return result;
     }
     
+    public abstract String descriptor();
+    
     @Override
     public String toString() {
         return descriptor() + (isNullable? "?" : ""); //TODO расписать нормально для всех типов
@@ -49,6 +51,14 @@ public abstract class VariableType extends ValueType{
     public boolean isAssignableFrom(VariableType o){
         return (this.descriptor().equals(o.descriptor()) || (this.descriptor().equals("D") && o.descriptor().equals("I")) || o.descriptor().equals("Null")) &&
                 (this.isNullable || !o.isNullable);
+    }
+    
+    public VariableType clone(){
+        try {
+            return (VariableType) super.clone();
+        } catch (CloneNotSupportedException e) {
+            throw new RuntimeException(e);
+        }
     }
     
     @Override

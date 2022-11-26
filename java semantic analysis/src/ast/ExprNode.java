@@ -268,7 +268,7 @@ public class ExprNode extends Node {
                 MethodRecord method = (MethodRecord) foundRecord;
                 checkCallArgumentsTyping(dependencyStack, method, context);
                 this.annotatedRecord = method;
-                result = method.type.returnType;
+                result = method.returnType;
             }
         }
         else if(this.type == ExprType.fieldAccess){
@@ -335,7 +335,7 @@ public class ExprNode extends Node {
             }
             //TODO ? Здесь можно сделать проверку на instance member, но т.к. у нас функция не объект, оно нам не мешает
             checkCallArgumentsTyping(dependencyStack, method, context);
-            result = method.type.returnType;
+            result = method.returnType;
         }
         else if(this.type == ExprType.type_cast){
             operand.annotateTypes(dependencyStack, context);
@@ -481,7 +481,7 @@ public class ExprNode extends Node {
                 result = StandartType._bool();
             }
             else if(this.type == ExprType.bang){
-                result = (VariableType) operand.annotatedType.clone(); //TODO проверить
+                result = operand.annotatedType.clone(); //TODO проверить
                 result.isNullable = false;
             }
             else {
@@ -503,11 +503,11 @@ public class ExprNode extends Node {
         
         List<VariableType> argTypes = new ArrayList<>();
         this.callArguments.forEach(arg -> argTypes.add(arg.annotateTypes(dependencyStack, context)));
-        if(argTypes.size() != method.type.paramTypes.size()){
+        if(argTypes.size() != method.parameters.size()){
             printError("Parameter count mismatch", this.lineNum); //TODO улучшить сообщение
         }
-        for(int i = 0; i< method.type.paramTypes.size(); i++){
-            VariableType paramType = method.type.paramTypes.get(i);
+        for(int i = 0; i< method.parameters.size(); i++){
+            VariableType paramType = method.parameters.get(i).varType;
             VariableType argType = argTypes.get(i);
             if(!paramType.isAssignableFrom(argType)){
                 printError("The argument type '" + argType.toString() + "' can't be assigned to the parameter type '"+ paramType.toString()+"'.", this.lineNum);

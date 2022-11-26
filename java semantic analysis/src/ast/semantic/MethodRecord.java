@@ -1,7 +1,8 @@
 package ast.semantic;
 
 import ast.*;
-import ast.semantic.typization.FunctionType;
+import ast.semantic.typization.StandartType;
+import ast.semantic.typization.VariableType;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -15,64 +16,117 @@ public class MethodRecord implements NamedRecord{
     
     public Map<String, LocalVarRecord> locals = new HashMap<>(); //TODO реализовать добавление локалок с увеличением номера + добавление локалок для this и параметров при создании метода
     
-    public SignatureNode signature;
+    protected boolean isStatic, isConst;
+    protected boolean isConstruct;
+    public VariableType returnType;
+    public String name;
+    public String constructName;
+    public List<ParameterRecord> parameters = new ArrayList<>();
+    
+    public RedirectionNode redirection = null;
+    public List<InitializerNode> initializers = null;
+    
     public StmtNode body;
-    public FunctionType type;
+    
     public ConstantRecord nameConst;
     public ConstantRecord descriptorConst;
     
-    public MethodRecord(ClassRecord containerClass, SignatureNode signature, StmtNode body, FunctionType type){
+    //Для простых синтетических методов
+    public MethodRecord(ClassRecord containerClass, VariableType returnType, String name, List<ParameterRecord> parameters, StmtNode body){
         this.containerClass = containerClass;
-        this.signature = signature;
-        this.body = body;
-        this.type = type;
+    
+        this.isStatic = false;
+        this.isConst = false;
+    
+        this.returnType = returnType;
+        this.name = name;
+        this.parameters = parameters;
+        this.parameters.forEach(p -> p.containerMethod = this);
         
-        if(type != null){
-            this.descriptorConst = containerClass.addConstant(ConstantRecord.newUtf8(this.type.descriptor()));
-            this.nameConst = containerClass.addConstant(ConstantRecord.newUtf8(this.name()));
+        this.isConstruct = false;
+        this.constructName = null;
+        
+        this.body = body;
+    }
+    
+    public MethodRecord(ClassRecord containerClass, SignatureNode signature, StmtNode body){
+        this.containerClass = containerClass;
+        
+        this.isStatic = signature.isStatic;
+        this.isConst = signature.isConst;
+        this.isConstruct = signature.isConstruct;
+        this.name = signature.isConstruct ? "<init>" : signature.name.stringVal;
+        this.constructName = signature.isConstruct && signature.isNamed ? signature.constructName.stringVal : null;
+        
+        this.redirection = signature.redirection;
+        this.initializers = signature.initializers;
+        
+        this.body = body;
+        if(this.isConstruct) {
+            if (this.body == null) {
+                this.body = new StmtNode(StmtType.block);
+            } else if (this.body.type == StmtType.return_statement) {
+                printError("Constructors can't return values.", body.lineNum);
+            }
+        }
+    
+        if(this.isConstruct){
+            this.returnType = StandartType._void();
+        }
+        else {
+            this.returnType = VariableType.from(containerClass.containerClassTable, signature.returnType);
+            if(returnType == null) return;
+        }
+    
+        for (FormalParameterNode parameterNode : signature.parameters) {
+            ParameterRecord parameter = new ParameterRecord(this, parameterNode);
+            if(this.parameters.stream().anyMatch(p-> p.name().equals(parameter.name()))){
+                printError("The name '" + parameter.name() +"' is already defined.", parameterNode.lineNum);
+                return;
+            }
+            this.parameters.add(parameter);
         }
     }
     
     public String name(){
-        if(signature.isConstruct){
-            return signature.isNamed ? "<init>" : "<init>"; //TODO
-        }
-        else return signature.name.stringVal;
+        return name;
     }
     public boolean isConstruct(){
-        return signature.isConstruct;
+        return isConstruct;
     }
     public boolean isConst(){
-        if(!signature.isConstruct)
+        if(!isConstruct)
             throw new IllegalStateException();
-        return signature.isConst;
+        return isConst;
     }
     public boolean isStatic(){
-        if(signature.isConstruct)
+        if(isConstruct)
             throw new IllegalStateException();
-        return signature.isStatic;
+        return isStatic;
+    }
+    public boolean isAbstract(){
+        return this.body == null;
     }
     
     public void inferType(List<FieldRecord> dependencyStack){
-        if(this.type == null){
-            this.type = FunctionType.from(containerClass.containerClassTable, signature, containerClass, dependencyStack);
-            this.descriptorConst = containerClass.addConstant(ConstantRecord.newUtf8(this.type.descriptor()));
-            this.nameConst = containerClass.addConstant(ConstantRecord.newUtf8(this.name()));
+        for(ParameterRecord p : parameters){
+            p.inferType(dependencyStack);
         }
+    }
+    
+    public String descriptor(){
+        StringBuilder descriptor = new StringBuilder("(");
+        for(ParameterRecord p : parameters){
+            descriptor.append(p.varType.descriptor());
+        }
+        descriptor.append(")").append(returnType.descriptor());
+        return descriptor.toString();
     }
 
     public void checkMethod(){
-        if(this.signature.isConstruct){
-            if(this.body == null){
-                this.body = new StmtNode(StmtType.block);
-            }
-            else if(this.body.type == StmtType.return_statement){
-                printError("Constructors can't return values.", body.lineNum);
-            }
-            RedirectionNode redirection = signature.redirection;
+        if(isConstruct){
             if(redirection != null){
-
-                if(signature.parameters.stream().anyMatch(formalParameterNode -> formalParameterNode.isField)){
+                if(parameters.stream().anyMatch(p -> p.isField)){
                     printError("The redirecting constructor can't have a field initializer.", redirection.lineNum);
                 }
                 RedirectionNode curRedir = redirection;
@@ -81,46 +135,40 @@ public class MethodRecord implements NamedRecord{
                     if(constructor.equals(this)){
                         printError("Constructors can't redirect to themselves either directly or indirectly.", redirection.lineNum);
                     }
-                    curRedir = constructor.signature.redirection;
+                    curRedir = constructor.redirection;
                 }
                 StmtNode redir = new StmtNode(StmtType.expr_statement);
                 redir.expr = redirection.toExpr();
-                this.body.blockStmts.add(0, redir);
-
+                body.blockStmts.add(0, redir);
+                redirection = null; //Зачем хранить инфу о том чего больше не существует...
             }
-            if(this.signature.initializers != null){
+            if(initializers != null){
                 boolean isSuper = false;
-                for (InitializerNode initializer : signature.initializers) {
+                for (InitializerNode initializer : initializers) {
                     if(initializer.type == InitializerType.superConstructor || initializer.type == InitializerType.superNamedConstructor){
-                        if(!isSuper){
-                            isSuper = true;
-                        }else {
+                        if(isSuper){
                             printError("A constructor can have at most one 'super' initializer.", initializer.lineNum);
                         }
-                        if(!signature.initializers.get(signature.initializers.size() - 1).equals(initializer)) {
+                        isSuper = true;
+                        if(!initializers.get(initializers.size() - 1).equals(initializer)) {
                             printError("The superconstructor call must be last in an initializer list: 'Object'.", initializer.lineNum);
                         }
                     }
-                    if(initializer.type == InitializerType.thisAssign){
-                        if(signature.initializers.stream().filter(initializerNode -> initializerNode.type == InitializerType.thisAssign
-                                && initializerNode.thisFieldId.stringVal.equals(initializer.thisFieldId.stringVal)).count() > 1){
+                    else if(initializer.type == InitializerType.thisAssign){
+                        if(initializers.stream().anyMatch(i -> i.type == InitializerType.thisAssign && i.thisFieldId.stringVal.equals(initializer.thisFieldId.stringVal))){
                             printError("The field '" + initializer.thisFieldId.stringVal + "' can't be initialized twice in the same constructor.", initializer.thisFieldId.lineNum);
                         }
-                        if(signature.parameters.stream().anyMatch(formalParameterNode -> formalParameterNode.isField
-                                && formalParameterNode.initializedField.stringVal.equals(initializer.thisFieldId.stringVal))){
+                        if(parameters.stream().anyMatch(p -> p.isField && p.name().equals(initializer.thisFieldId.stringVal))){
                             printError("'" + initializer.thisFieldId.stringVal +"' was already initialized by this constructor.", initializer.thisFieldId.lineNum);
                         }
                     }
                     StmtNode init = new StmtNode(StmtType.expr_statement);
                     init.expr = initializer.toExpr();
-                    this.body.blockStmts.add(0, init);
+                    body.blockStmts.add(0, init);
                 }
+                initializers = null; //Зачем хранить инфу о том чего больше не существует...
             }
-            signature.parameters.stream().filter(formalParameterNode -> formalParameterNode.isField).forEach(param->{
-                StmtNode field = new StmtNode(StmtType.expr_statement);
-                field.expr = param.normalize();
-                this.body.blockStmts.add(0, field);
-            });
+            parameters.forEach(param-> param.normalize());
         }
     }
 }
