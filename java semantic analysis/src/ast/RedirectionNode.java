@@ -30,4 +30,10 @@ public class RedirectionNode extends Node{
         expr.lineNum = this.lineNum;
         return expr;
     }
+    
+    public StmtNode toStmt(){
+        StmtNode redir = new StmtNode(StmtType.expr_statement);
+        redir.expr = this.toExpr();
+        return redir;
+    }
 }

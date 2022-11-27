@@ -33,18 +33,23 @@ public class MethodRecord implements NamedRecord, Cloneable{
     
     //Для простых синтетических методов
     public MethodRecord(ClassRecord containerClass, VariableType returnType, String name, List<ParameterRecord> parameters, StmtNode body){
+        this(containerClass, false, false, returnType, name, parameters, body);
+    }
+    
+    //Для синтетических методов
+    public MethodRecord(ClassRecord containerClass, boolean isStatic, boolean isConstruct, VariableType returnType, String name, List<ParameterRecord> parameters, StmtNode body){
         this.containerClass = containerClass;
-    
-        this.isStatic = false;
+        
+        this.isStatic = isStatic && !isConstruct;
         this.isConst = false;
-    
-        this.returnType = returnType;
-        this.name = name;
+        
+        this.returnType = isConstruct ? StandartType._void() : returnType;
+        this.name = isConstruct ? "<init>" : name;
         this.parameters = parameters;
         this.parameters.forEach(p -> p.containerMethod = this);
         
-        this.isConstruct = false;
-        this.constructName = null;
+        this.isConstruct = isConstruct;
+        this.constructName = isConstruct ? name : null;
         
         this.body = body;
     }
@@ -56,7 +61,7 @@ public class MethodRecord implements NamedRecord, Cloneable{
         this.isConst = signature.isConst;
         this.isConstruct = signature.isConstruct;
         this.name = signature.isConstruct ? "<init>" : signature.name.stringVal;
-        this.constructName = signature.isConstruct && signature.isNamed ? signature.constructName.stringVal : null;
+        this.constructName = signature.isConstruct && signature.isNamed ? signature.constructName.stringVal : "";
         
         this.redirection = signature.redirection;
         this.initializers = signature.initializers;
@@ -142,6 +147,7 @@ public class MethodRecord implements NamedRecord, Cloneable{
 
     public void checkMethod(){
         if(isConstruct){
+            boolean constructorChain = false;
             if(redirection != null){
                 if(parameters.stream().anyMatch(p -> p.isField)){
                     printError("The redirecting constructor can't have a field initializer.", redirection.lineNum);
@@ -149,26 +155,28 @@ public class MethodRecord implements NamedRecord, Cloneable{
                 RedirectionNode curRedir = redirection;
                 while(curRedir != null && containerClass.constructors.containsKey(curRedir.isNamed ? curRedir.name.stringVal : "")){
                     MethodRecord constructor = containerClass.constructors.get(curRedir.isNamed ? curRedir.name.stringVal : "");
+                    if(constructor == null){
+                        printError("The constructor '" + containerClass.name()  + (curRedir.isNamed ? "." + curRedir.name : "") + "' couldn't be found in '" + containerClass.name() + "'.", redirection.lineNum);
+                    }
                     if(constructor.equals(this)){
                         printError("Constructors can't redirect to themselves either directly or indirectly.", redirection.lineNum);
                     }
                     curRedir = constructor.redirection;
                 }
-                StmtNode redir = new StmtNode(StmtType.expr_statement);
-                redir.expr = redirection.toExpr();
-                body.blockStmts.add(0, redir);
+                body.blockStmts.add(0, redirection.toStmt());
+                constructorChain = true;
                 redirection = null; //Зачем хранить инфу о том чего больше не существует...
             }
-            if(initializers != null){
-                boolean isSuper = false;
+            else if(initializers != null){
+                boolean superCalled = false;
                 for (InitializerNode initializer : initializers) {
                     if(initializer.type == InitializerType.superConstructor || initializer.type == InitializerType.superNamedConstructor){
-                        if(isSuper){
+                        if(superCalled){
                             printError("A constructor can have at most one 'super' initializer.", initializer.lineNum);
                         }
-                        isSuper = true;
+                        superCalled = true;
                         if(!initializers.get(initializers.size() - 1).equals(initializer)) {
-                            printError("The superconstructor call must be last in an initializer list: 'Object'.", initializer.lineNum);
+                            printError("The superconstructor call must be last in an initializer list: 'Object'.", initializer.lineNum); //FIXME не Object а суперкласс
                         }
                     }
                     else if(initializer.type == InitializerType.thisAssign){
@@ -179,13 +187,36 @@ public class MethodRecord implements NamedRecord, Cloneable{
                             printError("'" + initializer.thisFieldId.stringVal +"' was already initialized by this constructor.", initializer.thisFieldId.lineNum);
                         }
                     }
-                    StmtNode init = new StmtNode(StmtType.expr_statement);
-                    init.expr = initializer.toExpr();
-                    body.blockStmts.add(0, init);
+                    body.blockStmts.add(0, initializer.toStmt());
                 }
+                constructorChain = superCalled;
                 initializers = null; //Зачем хранить инфу о том чего больше не существует...
             }
-            parameters.forEach(param-> param.normalize());
+            if(!constructorChain){
+                //Неявный вызов супер-конструктора
+                if(containerClass._super != null){
+                    if(!containerClass._super.constructors.containsKey("")){
+                        printError("The class '"+ containerClass._super.name() +"' doesn't have an unnamed constructor.", -1); //TODO номер строки
+                    }
+                    else if(!containerClass._super.constructors.get("").parameters.isEmpty()){
+                        printError("The implicitly invoked unnamed constructor from '"+ containerClass._super.name() +"' has required parameters.", -1); //TODO номер строки
+                    }
+                }
+                ExprNode expr = new ExprNode();
+                expr.type = ExprType.constructSuper;
+                expr.constructName = new IdentifierNode("");
+                expr.callArguments = new ArrayList<>();
+                StmtNode init = new StmtNode(StmtType.expr_statement);
+                init.expr = expr;
+                body.blockStmts.add(0, init);
+            }
+            parameters.forEach(param-> param.normalize()); //FIXME ? возможно плохо что вызов суперконструктора получается после присваивания полей
+            
+            //добавление инициализаторов при полях в конструкторы
+            Utils.filterByValue(containerClass.fields, f -> !f.isStatic()).values().forEach(f -> {
+                if(f.initValue != null)
+                    body.blockStmts.add(f.initStmt());
+            });
         }
     }
     

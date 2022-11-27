@@ -48,4 +48,10 @@ public class InitializerNode extends Node{
         expr.lineNum = this.lineNum;
         return expr;
     }
+    
+    public StmtNode toStmt(){
+        StmtNode init = new StmtNode(StmtType.expr_statement);
+        init.expr = this.toExpr();
+        return init;
+    }
 }

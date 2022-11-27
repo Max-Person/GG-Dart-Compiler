@@ -45,6 +45,27 @@ public class FieldRecord extends VariableRecord{
         return this.varType;
     }
     
+    public StmtNode initStmt(){
+        if(this.initValue == null)
+            return null;
+        
+        ExprNode expr = new ExprNode(ExprType.assign);
+        expr.operand2 = initValue;
+        if(this.isStatic){
+            expr.operand = new ExprNode(ExprType.identifier);
+            expr.operand.identifierAccess = new IdentifierNode(this.name);
+        }
+        else {
+            expr.operand = new ExprNode(ExprType.fieldAccess);
+            expr.operand.operand = new ExprNode(ExprType.this_pr);
+            expr.operand.identifierAccess = new IdentifierNode(this.name);
+        }
+        
+        StmtNode init = new StmtNode(StmtType.expr_statement);
+        init.expr = expr;
+        return init;
+    }
+    
     private MethodRecord getter = null;
     public MethodRecord associatedGetter(){
         if(getter == null){

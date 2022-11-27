@@ -1,6 +1,7 @@
 package ast.semantic;
 
 import ast.*;
+import ast.semantic.typization.StandartType;
 import ast.semantic.typization.VariableType;
 
 import java.util.*;
@@ -135,6 +136,33 @@ public class ClassRecord implements NamedRecord{
                     if(classMember.type == ClassMemberDeclarationType.methodDefinition) body = classMember.body;
                     this.addMethod(classMember.signature, body);
                 }
+            }
+            if(this.constructors.isEmpty()){
+                //Создание конструктора по умолчанию
+                if(this._super != null && (!this._super.constructors.containsKey("") || !this._super.constructors.get("").parameters.isEmpty())){
+                    printError("The superclass '"+ this._super.name() +"' doesn't have an a default (unnamed + zero argument) constructor.", declaration.lineNum());
+                }
+                ExprNode expr = new ExprNode(ExprType.constructSuper);
+                expr.constructName = new IdentifierNode("");
+                expr.callArguments = new ArrayList<>();
+                StmtNode init = new StmtNode(StmtType.expr_statement);
+                init.expr = expr;
+                StmtNode body = new StmtNode(StmtType.block);
+                body.blockStmts.add(0, init);
+                
+                MethodRecord defConstruct = new MethodRecord(this, false, true, StandartType._void(), "", new ArrayList<>(), body);
+                this.constructors.put("", defConstruct);
+            }
+            if(!this.staticFields().isEmpty()){
+                //Создание классового конструктора <clinit>
+                StmtNode body = new StmtNode(StmtType.block);
+                this.staticFields().values().forEach(f -> {
+                    if(f.initValue != null)
+                        body.blockStmts.add(f.initStmt());
+                });
+                
+                MethodRecord classConstruct = new MethodRecord(this, true, false, StandartType._void(), "<clinit>", new ArrayList<>(), body);
+                this.methods.put("", classConstruct);
             }
         }
     }
