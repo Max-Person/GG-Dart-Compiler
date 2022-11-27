@@ -1,14 +1,12 @@
 package ast.semantic.context;
 
-import ast.semantic.ClassRecord;
 import ast.semantic.MethodRecord;
 import ast.semantic.NamedRecord;
-import ast.semantic.typization.VariableType;
-
-import java.util.Map;
 
 public class MethodContext extends ClassInitContext{
-    MethodRecord methodRecord;
+    public MethodRecord methodRecord;
+
+    public boolean isSkippable = false;
     
     public MethodContext(MethodRecord method) {
         super(method.containerClass, method.isStatic());
@@ -25,5 +23,11 @@ public class MethodContext extends ClassInitContext{
     
     public boolean isSytheticGetterOrSetter(){
         return this.methodRecord.name().contains("!");
+    }
+
+    public MethodContext asSkippableContext(){
+        MethodContext methodContext = new MethodContext(methodRecord);
+        methodContext.isSkippable = true;
+        return methodContext;
     }
 }

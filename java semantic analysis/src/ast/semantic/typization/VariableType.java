@@ -29,7 +29,7 @@ public abstract class VariableType implements Cloneable {
                     result = new ClassType(classRecord);
                 }
                 else {
-                    printError("Undefined class '" + typeNode.name.stringVal+"'", typeNode.lineNum);
+                    printError("Undefined class '" + typeNode.name.stringVal + "'", typeNode.lineNum);
                     return null;
                 }
             }

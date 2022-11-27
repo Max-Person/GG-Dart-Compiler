@@ -15,7 +15,8 @@ public class MethodRecord implements NamedRecord, Cloneable{
     public ClassRecord containerClass;
     
     public Map<String, LocalVarRecord> locals = new HashMap<>(); //TODO реализовать добавление локалок с увеличением номера + добавление локалок для this и параметров при создании метода
-    
+    public int localVarNumber = 0;
+
     protected boolean isStatic, isConst;
     protected boolean isConstruct;
     public VariableType returnType;
@@ -82,15 +83,26 @@ public class MethodRecord implements NamedRecord, Cloneable{
             this.returnType = VariableType.from(containerClass.containerClassTable, signature.returnType);
             if(returnType == null) return;
         }
-    
+        if(!this.isStatic){
+            localVarNumber++;
+        }
         for (FormalParameterNode parameterNode : signature.parameters) {
             ParameterRecord parameter = new ParameterRecord(this, parameterNode);
             if(this.parameters.stream().anyMatch(p-> p.name().equals(parameter.name()))){
                 printError("The name '" + parameter.name() +"' is already defined.", parameterNode.lineNum);
                 return;
             }
+            parameter.number = ++localVarNumber;
             this.parameters.add(parameter);
         }
+    }
+
+    public void addLocalVar(LocalVarRecord var){
+        var.number = ++localVarNumber;
+        if(locals.containsKey(var.name)){
+            printError("The name '" + var.name + "' is already defined.", -1); // TODO номер строки
+        }
+        locals.put(var.name, var);
     }
     
     public String name(){

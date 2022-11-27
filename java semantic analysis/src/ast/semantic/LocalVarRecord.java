@@ -7,6 +7,8 @@ import ast.semantic.typization.VariableType;
 
 import java.util.ArrayList;
 
+import static ast.semantic.SemanticCrawler.printError;
+
 public class LocalVarRecord extends VariableRecord{
     public MethodRecord containerMethod;
     public int number;
@@ -26,5 +28,15 @@ public class LocalVarRecord extends VariableRecord{
             this.varType = this.initValue.annotateTypes(new ArrayList<>(), new MethodContext(containerMethod));
         }
         return this.varType;
+    }
+
+    public void resolveType(){
+        if (this.varType == null){
+            inferType();
+        } else if (initValue != null){
+            if (!this.varType.isAssignableFrom(this.initValue.annotateTypes(new ArrayList<>(), new MethodContext(containerMethod)))){
+                printError("A value of type '" + initValue.type + "' can't be assigned to a variable of type '" + varType + "'.", initValue.lineNum);
+            }
+        }
     }
 }

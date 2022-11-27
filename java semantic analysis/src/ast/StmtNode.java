@@ -1,9 +1,17 @@
 package ast;
 
+import ast.semantic.LocalVarRecord;
+import ast.semantic.context.Context;
+import ast.semantic.context.MethodContext;
+import ast.semantic.typization.ListType;
+import ast.semantic.typization.StandartType;
+import ast.semantic.typization.VariableType;
 import org.w3c.dom.Element;
 
 import java.util.ArrayList;
 import java.util.List;
+
+import static ast.semantic.SemanticCrawler.printError;
 
 public class StmtNode extends Node{
     
@@ -103,28 +111,71 @@ public class StmtNode extends Node{
         this.type = type;
     }
 
-    public void validateStmt(){
-        if(type == StmtType.block){
-            for (StmtNode block: blockStmts) {
-                block.validateStmt();
+    public void validateStmt(MethodContext context) {
+        if (type == StmtType.block) {
+            for (StmtNode block : blockStmts) {
+                block.validateStmt(context);
             }
+            return;
         }
-        if (type == StmtType.expr_statement){
-            //expr.annotateTypes(, );
+        if (type == StmtType.expr_statement) {
+            expr.annotateTypes(new ArrayList<>(), context);
+            return;
         }
-        if(type == StmtType.if_statement){
-
-        }
-        if(type == StmtType.do_statement){
-
-        }
-        if(body == null)
-            return; // TODO итс окей?????
-        for (StmtNode block: body.blockStmts) {
-            if(block.blockStmts != null){
-                block.validateStmt();
+        if(type == StmtType.variable_declaration_statement){
+            for (VariableDeclarationNode variable: variableDeclaration) {
+                LocalVarRecord localVarRecord = new LocalVarRecord(context.methodRecord, variable);
+                localVarRecord.resolveType();
+                context.methodRecord.addLocalVar(localVarRecord);
             }
-            //body.
+            return;
+        }
+        if (type == StmtType.if_statement || type == StmtType.while_statement || type == StmtType.do_statement) {
+            this.condition.annotateTypes(new ArrayList<>(), context);
+            if (!StandartType._bool().isAssignableFrom(this.condition.annotatedType)) {
+                printError("Conditions must have a static type of 'bool'.", this.condition.lineNum);
+            }
+
+            this.body.validateStmt(type == StmtType.if_statement ? context : context.asSkippableContext());
+            if (type == StmtType.if_statement && this.elseBody != null)
+                this.elseBody.validateStmt(context);
+            return;
+        }
+        if (type == StmtType.return_statement) {
+            VariableType type = this.returnExpr != null ? this.returnExpr.annotateTypes(new ArrayList<>(), context) : StandartType._void();
+            if (!context.methodRecord.returnType.isAssignableFrom(type)) {
+                printError("A value of type '" + type + "' can't be returned from the method '" + context.methodRecord.name + "' because it has a return type of '" + context.methodRecord.returnType + "'.", this.lineNum);
+            }
+            return;
+        }
+        if (type == StmtType.break_statement || type == StmtType.continue_statement) {
+            if (!context.isSkippable) {
+                printError("A " + this.type + " can't be used outside of a loop or switch statement.", this.lineNum);
+            }
+            return;
+        }
+        if(type == StmtType.forEach_statement){
+            forContainerExpr.annotateTypes(new ArrayList<>(), context);
+            if(!(forContainerExpr.annotatedType instanceof ListType)){
+                printError("The type '" + forContainerExpr.annotatedType + "' used in the 'for' loop must be a list type.", forContainerExpr.lineNum);
+            }
+            if(forEachVariableId != null && !context.methodRecord.locals.containsKey(forEachVariableId.stringVal)){
+                printError("Undefined name '" + forEachVariableId.stringVal + "'.", forEachVariableId.lineNum);
+            }
+            if(forEachVariableDecl != null){
+                LocalVarRecord localVarRecord = new LocalVarRecord(context.methodRecord, forEachVariableDecl);
+                localVarRecord.resolveType();
+                context.methodRecord.addLocalVar(localVarRecord);
+            }
+            VariableType type = context.methodRecord.locals.get(forEachVariableId != null ? forEachVariableId.stringVal : forEachVariableDecl.identifier.stringVal).varType;
+
+            if(!type.isAssignableFrom(((ListType) forContainerExpr.annotatedType).valueType)){
+                printError("The type 'List<" + ((ListType) forContainerExpr.annotatedType).valueType +">' used in the 'for' loop must have a type argument that can be assigned to '" + type + "'.", forContainerExpr.lineNum);
+            }
+            body.validateStmt(context.asSkippableContext());
+        }
+        if(type == StmtType.forN_statement){
+
         }
     }
 }
