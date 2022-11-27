@@ -17,6 +17,13 @@ public class ClassType extends VariableType{
     }
     
     @Override
+    public void finalyze() {
+        if(this.clazz.associatedInterface!= null){
+            this.clazz = this.clazz.associatedInterface;
+        }
+    }
+    
+    @Override
     public String descriptor() {
         return "Lggdart/gen/" + clazz.name() + ";";
     }

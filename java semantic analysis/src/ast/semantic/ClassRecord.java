@@ -10,6 +10,8 @@ import static ast.semantic.SemanticCrawler.printError;
 public class ClassRecord implements NamedRecord{
     public Map<String, ClassRecord> containerClassTable = null;
     
+    public String name;
+    
     public Map<String, FieldRecord> fields = new HashMap<>();
     public Map<String, MethodRecord> methods = new HashMap<>();
     public Map<Integer, ConstantRecord> constants = new HashMap<>();
@@ -18,6 +20,9 @@ public class ClassRecord implements NamedRecord{
     public ClassRecord _super = null;
     public List<ClassRecord> _interfaces = new ArrayList<>();
     public List<ClassRecord> _mixins = new ArrayList<>();
+    
+    public boolean isJavaInterface = false;
+    public List<ClassRecord> javaInterfaces = new ArrayList<>();
 
     public boolean isDeclResolved = false;
     
@@ -26,23 +31,25 @@ public class ClassRecord implements NamedRecord{
     public ClassRecord(Map<String, ClassRecord> containerClassTable, ClasslikeDeclaration declaration){
         this.containerClassTable = containerClassTable;
         this.declaration = declaration;
+        this.name = declaration.name();
         addConstant(ConstantRecord.newUtf8("Code"));
         ConstantRecord className = ConstantRecord.newUtf8(declaration.name());
         addConstant(className);
         addConstant(ConstantRecord.newClass(className));
     }
-    
     public static final String globalName = "<GLOBAL>";  //FIXME точно ли это работает...
-    private ClassRecord(){
+    public ClassRecord(Map<String, ClassRecord> containerClassTable, String name, boolean isJavaInterface){
+        this.containerClassTable = containerClassTable;
         this.declaration = null;
+        this.name = name;
+        this.isJavaInterface = isJavaInterface;
         addConstant(ConstantRecord.newUtf8("Code"));
-        ConstantRecord className = ConstantRecord.newUtf8(globalName);
+        ConstantRecord className = ConstantRecord.newUtf8(name);
         addConstant(className);
         addConstant(ConstantRecord.newClass(className));
     }
-    public static ClassRecord globalClass(){
-        return new ClassRecord();
-    }
+    
+    //-- НАПОЛНЕНИЕ КЛАССА
     
     private int constantCount = 0;
     public ConstantRecord addConstant(ConstantRecord constant){
@@ -132,6 +139,8 @@ public class ClassRecord implements NamedRecord{
         }
     }
     
+    //-- ВЫЧИСЛЕНИЕ ТИПОВ
+    
     public void inferTypes(){
         if(this.isEnum()){
             return; //TODO ?
@@ -144,6 +153,8 @@ public class ClassRecord implements NamedRecord{
         }
     }
     
+    //-- ПРОВЕРКА ПРАВИЛЬНОСТИ НАСЛЕДОВАНИЙ
+    
     public boolean inheritanceChecked = false;
     public void checkInheritance(){
         if(inheritanceChecked)
@@ -155,7 +166,7 @@ public class ClassRecord implements NamedRecord{
             //Получить список всех наследуемых полей и убедиться, что все определенные в классе поля либо не переопределяют наследуемые, либо переопределяют их правильно
             for(FieldRecord inhField : this._super.nonStaticFields().values()){
                 if(this.fields.containsKey(inhField.name()) && !this.fields.get(inhField.name()).isValidOverrideOf(inhField)){
-                    printError("'" + this.name() + "." + inhField.name + "' isn’t a valid override of '" + _super.name() + "." + inhField.name + "'", -1); //TODO номер строки
+                    printError("'" + this.name() + "." + inhField.name + "' isn’t a valid override of '" + _super.name() + "." + inhField.name + "'", this.declaration.lineNum());
                 }
             }
     
@@ -163,7 +174,7 @@ public class ClassRecord implements NamedRecord{
             // что все определенные в классе функции либо не переопределяют наследуемые, либо переопределяют их правильно
             for(MethodRecord inhMethod : this._super.nonStaticMethods().values()){
                 if(this.methods.containsKey(inhMethod.name()) && !this.methods.get(inhMethod.name()).isValidOverrideOf(inhMethod)){
-                    printError("'" + this.name() + "." + inhMethod.name + "' isn’t a valid override of '" + _super.name() + "." + inhMethod.name + "'", -1); //TODO номер строки
+                    printError("'" + this.name() + "." + inhMethod.name + "' isn’t a valid override of '" + _super.name() + "." + inhMethod.name + "'", this.declaration.lineNum());
                 }
             }
         }
@@ -174,6 +185,7 @@ public class ClassRecord implements NamedRecord{
             Map<String, FieldRecord> mixinFields = new HashMap<>();
             for(ClassRecord mixin : this._mixins){
                 mixin.checkInheritance();
+                mixin.markInterfaceSplitting();
                 
                 if(mixinMethods.isEmpty()){
                     mixinMethods.putAll(mixin.nonStaticMethods());
@@ -221,19 +233,93 @@ public class ClassRecord implements NamedRecord{
         
         for(ClassRecord i : _interfaces){
             i.checkInheritance();
+            i.markInterfaceSplitting();
         }
     
         //Получить список всех наследуемых абстрактных функций и убедиться, что они правильно переопределены внутри класса
         //Все функции интерфейсов и миксинов считаются за абстрактные
         if(!this.isAbstract()){
             for(MethodRecord unresolved : this.unresolvedAbstractMethods()){
-                printError("Missing concrete implementation of '" + unresolved.name() + "'.", -1);
+                printError("Missing concrete implementation of '" + unresolved.name() + "'.", this.declaration.lineNum());
             }
         }
         
         inheritanceChecked = true;
     }
+    
+    //-- РАЗДЕЛЕНИЕ НА ИНТЕРФЕЙСЫ И РЕАЛИЗАЦИИ
+    
+    private boolean shouldSplitAsInterface;
+    private void markInterfaceSplitting(){
+        this.shouldSplitAsInterface = true;
+        if(_super != null){
+            _super.markInterfaceSplitting();
+        }
+        _interfaces.forEach(i -> i.markInterfaceSplitting());
+        _mixins.forEach(m -> m.markInterfaceSplitting());
+    }
+    public ClassRecord associatedInterface = null;
+    public void resolveInterfaces(){
+        if(this.shouldSplitAsInterface){
+            this.splitInterface();
+        }
+        else {
+            if(_super != null && _super.shouldSplitAsInterface){
+                _super.splitInterface();
+                this.javaInterfaces.add(_super.associatedInterface);
+            }
+            for(ClassRecord i : _interfaces){
+                i.splitInterface();
+                this.javaInterfaces.add(i.associatedInterface);
+            }
+            _interfaces.clear();
+            for(ClassRecord m : _mixins) {
+                m.splitInterface();
+                this.javaInterfaces.add(m.associatedInterface);
+            }
+            _mixins.clear();
+        }
+    }
+    public void splitInterface(){
+        if(this.associatedInterface != null || this.isJavaInterface)
+            return;
+        
+        associatedInterface = this.asInterface();
+        containerClassTable.put(associatedInterface.name(), associatedInterface);
+        associatedInterface.javaInterfaces.addAll(this.javaInterfaces);
+        this.javaInterfaces.clear();
+        if(_super != null){
+            _super.splitInterface();
+            associatedInterface.javaInterfaces.add(_super.associatedInterface);
+        }
+        for(ClassRecord i : _interfaces){
+            i.splitInterface();
+            associatedInterface.javaInterfaces.add(i.associatedInterface);
+        }
+        _interfaces.clear();
+        for(ClassRecord m : _mixins){
+            m.splitInterface();
+            associatedInterface.javaInterfaces.add(m.associatedInterface);
+        }
+        _mixins.clear();
+    }
+    public ClassRecord asInterface(){
+        if(this.isJavaInterface)
+            throw new IllegalStateException();
+        
+        ClassRecord i = new ClassRecord(this.containerClassTable, "I!" + this.name, true);
+        Utils.filterByValue(methods, method -> !method.isStatic()).values().forEach(method -> method.copyAsAbstractTo(i));
+        return i;
+    }
+    
+    public void finalizeTypes(){
+        fields.values().forEach(f -> f.finalizeType());
+        methods.values().forEach(m -> m.finalizeType());
+        constructors.values().forEach(m -> m.finalizeType());
+    }
 
+    //-- ПРОВЕРКА МЕТОДОВ
+    
     public void checkMethods(){
         if(this.isEnum()){
             return; //TODO ?
@@ -245,6 +331,8 @@ public class ClassRecord implements NamedRecord{
             constructor.checkMethod();
         }
     }
+    
+    //-- ВСПОМОГАТЕЛЬНЫЕ МЕТОДЫ
 
     public Map<String, FieldRecord> staticFields(){
         return Utils.filterByValue(fields, field -> field.isStatic());
@@ -323,12 +411,13 @@ public class ClassRecord implements NamedRecord{
         return res;
     }
     
+    //-- ИНФОРМАЦИОННЫЕ МЕТОДЫ
+    
     public String name(){
-        return declaration != null ? declaration.name() : globalName;
+        return this.name;
     }
     public boolean isGlobal() {
-        //FIXME не сработает для определения других синтетических классов
-        return declaration == null;
+        return this.name.equals(globalName);
     }
     public boolean isAbstract(){
         if(declaration == null)
@@ -341,7 +430,16 @@ public class ClassRecord implements NamedRecord{
         return declaration != null && declaration instanceof EnumNode;
     }
     public String describe(){
-        StringBuilder description = new StringBuilder(this.name() + ":\n");
+        StringBuilder description = new StringBuilder(this.name());
+        if(_super != null)
+            description.append(" ext ").append(_super.name());
+        if(associatedInterface != null || !javaInterfaces.isEmpty()){
+            description.append(" impl");
+            if(associatedInterface != null)
+                description.append(" ").append(associatedInterface.name());
+            javaInterfaces.forEach(i -> description.append(" ").append(i.name()));
+        }
+        description.append(":\n");
         for(FieldRecord fieldRecord : fields.values()){
             description.append("\t").append(fieldRecord.descriptor()).append(" ").append(fieldRecord.name()).append("\n");
         }

@@ -199,4 +199,23 @@ public class MethodRecord implements NamedRecord, Cloneable{
         copy.containerClass = classRecord;
         classRecord.methods.put(copy.name(), copy);
     }
+    
+    public void copyAsAbstractTo(ClassRecord classRecord) {
+        MethodRecord copy = null; //FIXME? Плохой клон может повлиять на что-то
+        try {
+            copy = (MethodRecord) super.clone();
+        } catch (CloneNotSupportedException e) {
+            throw new RuntimeException(e);
+        }
+        copy.body = null;
+        copy.containerClass = classRecord;
+        classRecord.methods.put(copy.name(), copy);
+    }
+    
+    public void finalizeType(){
+        this.returnType.finalyze();
+        this.parameters.forEach(p -> p.varType.finalyze());
+        this.descriptorConst = containerClass.addConstant(ConstantRecord.newUtf8(this.descriptor()));
+        this.nameConst = containerClass.addConstant(ConstantRecord.newUtf8(this.name()));
+    }
 }

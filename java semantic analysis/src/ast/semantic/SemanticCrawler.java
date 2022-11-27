@@ -7,13 +7,14 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class SemanticCrawler {
     
-    public Map<String, ClassRecord> classTable = new HashMap<>();
+    public Map<String, ClassRecord> classTable = new ConcurrentHashMap<>();
     
     public SemanticCrawler() {
-        classTable.put(ClassRecord.globalName, ClassRecord.globalClass());
+        classTable.put(ClassRecord.globalName, new ClassRecord(classTable, ClassRecord.globalName, false));
     }
     
     public static void printError(String msg, int line) {
@@ -72,6 +73,8 @@ public class SemanticCrawler {
         
         //6. Провести преобразования имплементаций/миксинов
         //(разделение классов на интерфейсы и классы-реализации
+        classTable.values().forEach(c -> c.resolveInterfaces());
+        classTable.values().forEach(c -> c.finalizeTypes());
         
         //7. обработать методы (преобразовать к нужному виду - у конструкторов например), сформировать таблицы локалок
     }
@@ -104,6 +107,7 @@ public class SemanticCrawler {
         }
     }
     
+    //TODO убрать это в ClassRecord
     public void resolveClass(List<ClassRecord> children, ClassRecord classRecord){
         if(classRecord.isDeclResolved) return;
         if(classRecord.isEnum()){
@@ -149,6 +153,7 @@ public class SemanticCrawler {
                 classRecord._mixins.add(potentialMixin);
                 
             }
+            children.remove(classRecord); //FIXME ?
         }
         classRecord.isDeclResolved = true;
     }

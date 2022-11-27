@@ -15,6 +15,11 @@ public class ListType extends VariableType{
     }
     
     @Override
+    public void finalyze() {
+        valueType.finalyze();
+    }
+    
+    @Override
     public String descriptor() {
         return "[" + valueType.descriptor();
     }

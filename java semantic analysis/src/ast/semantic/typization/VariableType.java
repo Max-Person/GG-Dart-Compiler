@@ -22,7 +22,11 @@ public abstract class VariableType implements Cloneable {
                     result = StandartType.standartTypes.get(typeNode.name.stringVal).clone();
                 }
                 else if(classTable.containsKey(typeNode.name.stringVal)){
-                    result = new ClassType(classTable.get(typeNode.name.stringVal));
+                    ClassRecord classRecord = classTable.get(typeNode.name.stringVal);
+                    if(classRecord.associatedInterface != null){
+                        classRecord = classRecord.associatedInterface;
+                    }
+                    result = new ClassType(classRecord);
                 }
                 else {
                     printError("Undefined class '" + typeNode.name.stringVal+"'", typeNode.lineNum);
@@ -48,10 +52,12 @@ public abstract class VariableType implements Cloneable {
         return descriptor() + (isNullable? "?" : ""); //TODO расписать нормально для всех типов
     }
     
-    public boolean isAssignableFrom(VariableType o){
+    public boolean isAssignableFrom(VariableType o){ //TODO учесть наследование
         return (this.descriptor().equals(o.descriptor()) || (this.descriptor().equals("D") && o.descriptor().equals("I")) || o.descriptor().equals("Null")) &&
                 (this.isNullable || !o.isNullable);
     }
+    
+    public void finalyze(){}
     
     public VariableType clone(){
         try {

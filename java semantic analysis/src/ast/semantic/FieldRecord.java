@@ -23,8 +23,6 @@ public class FieldRecord extends VariableRecord{
         if(varType != null){
             this.containerClass.methods.put(associatedGetter().name(), associatedGetter());
             this.containerClass.methods.put(associatedSetter().name(), associatedSetter());
-            //this.descriptorConst = containerClass.addConstant(ConstantRecord.newUtf8(this.varType.descriptor()));
-            //this.nameConst = containerClass.addConstant(ConstantRecord.newUtf8(this.name()));
         }
     }
     
@@ -43,8 +41,6 @@ public class FieldRecord extends VariableRecord{
             
             this.containerClass.methods.put(associatedGetter().name(), associatedGetter());
             this.containerClass.methods.put(associatedSetter().name(), associatedSetter());
-            //this.descriptorConst = containerClass.addConstant(ConstantRecord.newUtf8(this.varType.descriptor()));
-            //this.nameConst = containerClass.addConstant(ConstantRecord.newUtf8(this.name()));
         }
         return this.varType;
     }
@@ -90,6 +86,12 @@ public class FieldRecord extends VariableRecord{
     
     public boolean isValidOverrideOf(FieldRecord other){
         return this.name.equals(other.name) && other.varType.isAssignableFrom(this.varType);
+    }
+    
+    public void finalizeType(){
+        this.varType.finalyze();
+        this.descriptorConst = containerClass.addConstant(ConstantRecord.newUtf8(this.varType.descriptor()));
+        this.nameConst = containerClass.addConstant(ConstantRecord.newUtf8(this.name()));
     }
     
     public void copyTo(ClassRecord classRecord) {
