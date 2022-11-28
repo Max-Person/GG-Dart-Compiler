@@ -9,6 +9,7 @@ import ast.semantic.typization.VariableType;
 import org.w3c.dom.Element;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import static ast.semantic.SemanticCrawler.printError;
@@ -196,17 +197,63 @@ public class StmtNode extends Node{
         }
         if(type == StmtType.switch_statement){
             condition.annotateTypes(context);
-            for (SwitchCaseNode switchNode : switchCaseList) {
-                switchNode.condition.annotateTypes(context);
-                if(!condition.annotatedType.isAssignableFrom(switchNode.condition.annotatedType)){ //TODO должен быть сабтайпом
-                    printError("The switch case expression type '" + switchNode.condition.annotatedType + "' must be a subtype of the switch expression type '" + condition.annotatedType + "'.", switchNode.condition.lineNum);
+            for (SwitchCaseNode caseNode : switchCaseList) {
+                caseNode.condition.annotateTypes(context);
+                if(!condition.annotatedType.isAssignableFrom(caseNode.condition.annotatedType)){ //TODO должен быть сабтайпом
+                    printError("The switch case expression type '" + caseNode.condition.annotatedType + "' must be a subtype of the switch expression type '" + condition.annotatedType + "'.", caseNode.condition.lineNum);
                 }
-                MethodContext switchContext = context.skippableChildScope();
-                for (StmtNode action : switchNode.actions) {
-                    action.validateStmt(switchContext);
+                MethodContext caseContext = context.skippableChildScope();
+                for (StmtNode action : caseNode.actions) {
+                    action.validateStmt(caseContext);
+                }
+                if(caseNode.actions.stream().noneMatch(stmt -> stmt.endsWith(StmtType.break_statement, StmtType.return_statement, StmtType.continue_statement))){ //FIXME ? как поступать с континью без лейблов?
+                    printError("The 'case' shouldn't complete normally.", caseNode.lineNum);
                 }
             }
-
+            for (StmtNode action : defaultSwitchActions) {
+                action.validateStmt(context.skippableChildScope());
+            }
         }
+    }
+    
+    public boolean endsWith(StmtType... types){
+        if(Arrays.asList(types).contains(this.type))
+            return true;
+        
+        if (type == StmtType.expr_statement ||
+                type == StmtType.return_statement ||
+                type == StmtType.break_statement ||
+                type == StmtType.continue_statement ||
+                type == StmtType.while_statement ||
+                type == StmtType.forN_statement ||
+                type == StmtType.forEach_statement ||
+                type == StmtType.variable_declaration_statement) {
+            return false;
+        }
+        
+        if (type == StmtType.block) {
+            return blockStmts.stream().anyMatch(smt -> smt.endsWith(types));
+        }
+        if (type == StmtType.if_statement) {
+            if(elseBody != null)
+                return body.endsWith(types) && elseBody.endsWith(types);
+            else
+                return false;
+        }
+        if(type == StmtType.do_statement){
+            return body.endsWith(types);
+        }
+        if(type == StmtType.switch_statement){
+            if(!defaultSwitchActions.isEmpty()){
+                boolean ends = defaultSwitchActions.stream().anyMatch(stmt -> stmt.endsWith(types));
+                for (SwitchCaseNode switchNode : switchCaseList) {
+                    ends = ends && switchNode.actions.stream().anyMatch(stmt -> stmt.endsWith(types));
+                }
+                return ends;
+            }
+            else
+                return false;
+        }
+        return false;
     }
 }

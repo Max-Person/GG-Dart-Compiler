@@ -77,6 +77,7 @@ public class SemanticCrawler {
         classTable.values().forEach(c -> c.finalizeTypes());
         
         //7. обработать методы (преобразовать к нужному виду - у конструкторов например), сформировать таблицы локалок
+        classTable.values().forEach(c -> c.checkMethods());
     }
     
     public void addClass(ClasslikeDeclaration clazz) {
