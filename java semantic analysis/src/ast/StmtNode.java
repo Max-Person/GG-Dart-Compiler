@@ -180,8 +180,32 @@ public class StmtNode extends Node{
                 printError("The type 'List<" + ((ListType) forContainerExpr.annotatedType).valueType +">' used in the 'for' loop must have a type argument that can be assigned to '" + type + "'.", forContainerExpr.lineNum);
             }
             body.validateStmt(forContext);
+            return;
         }
         if(type == StmtType.forN_statement){
+            MethodContext forContext = context.skippableChildScope();
+
+            forInitializerStmt.validateStmt(forContext);
+            condition.annotateTypes(forContext);
+            if (!StandartType._bool().isAssignableFrom(this.condition.annotatedType)) {
+                printError("Conditions must have a static type of 'bool'.", this.condition.lineNum);
+            }
+            forPostExpr.forEach(exprNode -> exprNode.annotateTypes(forContext));
+            body.validateStmt(forContext);
+            return;
+        }
+        if(type == StmtType.switch_statement){
+            condition.annotateTypes(context);
+            for (SwitchCaseNode switchNode : switchCaseList) {
+                switchNode.condition.annotateTypes(context);
+                if(!condition.annotatedType.isAssignableFrom(switchNode.condition.annotatedType)){ //TODO должен быть сабтайпом
+                    printError("The switch case expression type '" + switchNode.condition.annotatedType + "' must be a subtype of the switch expression type '" + condition.annotatedType + "'.", switchNode.condition.lineNum);
+                }
+                MethodContext switchContext = context.skippableChildScope();
+                for (StmtNode action : switchNode.actions) {
+                    action.validateStmt(switchContext);
+                }
+            }
 
         }
     }
