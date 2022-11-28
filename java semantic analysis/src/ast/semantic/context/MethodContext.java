@@ -1,9 +1,15 @@
 package ast.semantic.context;
 
+import ast.semantic.LocalVarRecord;
 import ast.semantic.MethodRecord;
 import ast.semantic.NamedRecord;
 
-public class MethodContext extends ClassInitContext{
+import java.util.HashMap;
+import java.util.Map;
+
+import static ast.semantic.SemanticCrawler.printError;
+
+public class MethodContext extends ClassContext{
     public MethodRecord methodRecord;
 
     public boolean isSkippable = false;
@@ -15,8 +21,8 @@ public class MethodContext extends ClassInitContext{
 
     @Override
     public NamedRecord lookup(String name) {
-        if(methodRecord.locals.containsKey(name)){
-            return methodRecord.locals.get(name);
+        if(localsScope.containsKey(name)){
+            return localsScope.get(name);
         }
         return super.lookup(name);
     }
@@ -25,9 +31,26 @@ public class MethodContext extends ClassInitContext{
         return this.methodRecord.name().contains("!");
     }
 
-    public MethodContext asSkippableContext(){
-        MethodContext methodContext = new MethodContext(methodRecord);
+    public MethodContext skippableChildScope(){
+        MethodContext methodContext = this.childScope();
         methodContext.isSkippable = true;
         return methodContext;
+    }
+
+    public MethodContext childScope(){
+        MethodContext methodContext = new MethodContext(methodRecord);
+        methodContext.localsScope = new HashMap<>(this.localsScope);
+        methodContext.isSkippable = this.isSkippable;
+        return methodContext;
+    }
+
+    public Map<String, LocalVarRecord> localsScope = new HashMap<>();
+
+    public void addLocalToScope(LocalVarRecord var){
+        if(localsScope.containsKey(var.name)){
+            printError("The name '" + var.name + "' is already defined.", -1); // TODO номер строки
+        }
+        methodRecord.addLocalVar(var);
+        localsScope.put(var.name, var);
     }
 }

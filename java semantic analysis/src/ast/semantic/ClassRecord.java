@@ -1,6 +1,7 @@
 package ast.semantic;
 
 import ast.*;
+import ast.semantic.context.ClassInitContext;
 import ast.semantic.typization.StandartType;
 import ast.semantic.typization.VariableType;
 
@@ -174,10 +175,10 @@ public class ClassRecord implements NamedRecord{
             return; //TODO ?
         }
         for(FieldRecord fieldRecord : this.fields.values()){
-            fieldRecord.inferType(new ArrayList<>());
+            fieldRecord.inferType(new ClassInitContext(fieldRecord));
         }
         for(MethodRecord constructor : this.constructors.values()){
-            constructor.inferType(new ArrayList<>());
+            constructor.inferType(new ClassInitContext(this, false));
         }
     }
     

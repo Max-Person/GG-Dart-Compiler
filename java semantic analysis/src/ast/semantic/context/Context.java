@@ -1,33 +1,32 @@
 package ast.semantic.context;
 
-import ast.semantic.ClassRecord;
-import ast.semantic.FieldRecord;
-import ast.semantic.MethodRecord;
-import ast.semantic.NamedRecord;
+import ast.semantic.*;
 import ast.semantic.typization.VariableType;
 
 import java.util.Map;
 
-public abstract class Context {
-    public Map<String, ClassRecord> classTable;
-    public Context(Map<String, ClassRecord> classTable){
-        this.classTable = classTable;
-    }
-    public abstract boolean isStatic();
+public interface Context {
+
+    Map<String, ClassRecord> classTable();
+    boolean isStatic();
     
-    public abstract NamedRecord lookup(String name);
-    public ClassRecord lookupClass(String name){
+    NamedRecord lookup(String name);
+    default ClassRecord lookupClass(String name){
         NamedRecord found = lookup(name);
         return found instanceof ClassRecord ? (ClassRecord) found : null;
     }
-    public MethodRecord lookupMethod(String name){
+    default MethodRecord lookupMethod(String name){
         NamedRecord found = lookup(name);
         return found instanceof MethodRecord ? (MethodRecord) found : null;
     }
-    public FieldRecord lookupField(String name){ //FIXME учесть локалки
+    default FieldRecord lookupField(String name){
         NamedRecord found = lookup(name);
         return found instanceof FieldRecord ? (FieldRecord) found : null;
     }
-    public abstract VariableType thisType();
-    public abstract ClassRecord currentClass();
+    default VariableRecord lookupVariable(String name){
+        NamedRecord found = lookup(name);
+        return found instanceof VariableRecord ? (VariableRecord) found : null;
+    }
+    VariableType thisType();
+    ClassRecord currentClass();
 }

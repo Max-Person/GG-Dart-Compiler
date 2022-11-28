@@ -146,7 +146,7 @@ public class ExprNode extends Node {
     }
     
     //TODO преобразовать в resolveExpr - запихнуть всю логику статической типизации и преобразований выражений сюда.
-    public VariableType annotateTypes(List<FieldRecord> dependencyStack, Context context){
+    public VariableType annotateTypes(Context context){
         VariableType result = null;
         if(this.type == ExprType.this_pr){
             VariableType type = context.thisType();
@@ -176,7 +176,7 @@ public class ExprNode extends Node {
         else if(this.type == ExprType.list_pr){
             VariableType element = null;
             for(ExprNode el: this.listValues){
-                VariableType cur = el.annotateTypes(dependencyStack, context);
+                VariableType cur = el.annotateTypes(context);
                 if(element == null){
                     element = cur;
                 }
@@ -187,8 +187,8 @@ public class ExprNode extends Node {
             result = new ListType(element);
         }
         else if(this.type == ExprType.string_interpolation){
-            this.operand.annotateTypes(dependencyStack, context);
-            this.operand2.annotateTypes(dependencyStack, context); //TODO если не стринг то вызвать .toString()
+            this.operand.annotateTypes(context);
+            this.operand2.annotateTypes(context); //TODO если не стринг то вызвать .toString()
             result = StandartType._String();
         }
         else if(this.type == ExprType.constructNew || this.type == ExprType.constructConst ||
@@ -210,9 +210,10 @@ public class ExprNode extends Node {
             if(constructor == null){
                 printError("Cannot find constructor '"+ constructorName +"' in '"+ constructed.name() +"'.", this.lineNum);
             }
-            
-            constructor.inferType(dependencyStack);
-            checkCallArgumentsTyping(dependencyStack, constructor, context);
+            if(context instanceof ClassInitContext){
+                constructor.inferType((ClassInitContext) context);
+            }
+            checkCallArgumentsTyping(constructor, context);
             this.annotatedRecord = constructor;
             result = this.type == ExprType.constructNew || this.type == ExprType.constructConst ? new ClassType(constructed) : StandartType._void();
         }
@@ -230,10 +231,12 @@ public class ExprNode extends Node {
             }
             else if(foundRecord instanceof FieldRecord){
                 FieldRecord field = (FieldRecord) foundRecord;
-                if(context.getClass().equals(ClassInitContext.class) && field.containerClass.equals(((ClassInitContext) context).classRecord) && !field.isStatic()){
-                    printError("The instance member '" + field.name() + "' can't be accessed in an initializer.", this.lineNum);
+                if(context instanceof ClassInitContext){
+                    if(field.containerClass.equals(((ClassInitContext) context).classRecord) && !field.isStatic()){
+                        printError("The instance member '" + field.name() + "' can't be accessed in an initializer.", this.lineNum);
+                    }
+                    field.inferType((ClassInitContext) context);
                 }
-                field.inferType(dependencyStack);
                 if(context instanceof MethodContext && ((MethodContext) context).isSytheticGetterOrSetter()){
                     this.annotatedRecord = field;
                     result = field.varType;
@@ -243,7 +246,7 @@ public class ExprNode extends Node {
                     this.type = ExprType.call;
                     this.identifierAccess.stringVal = field.associatedGetter().name();
                     this.callArguments = new ArrayList<>();
-                    return this.annotateTypes(dependencyStack, context);
+                    return this.annotateTypes(context);
                 }
             }
             else {
@@ -262,11 +265,11 @@ public class ExprNode extends Node {
             else if(foundRecord instanceof ClassRecord){
                 //неименованный конструктор вызван без new или const
                 this.type = ExprType.constructNew;
-                return this.annotateTypes(dependencyStack, context);
+                return this.annotateTypes(context);
             }
             else {
                 MethodRecord method = (MethodRecord) foundRecord;
-                checkCallArgumentsTyping(dependencyStack, method, context);
+                checkCallArgumentsTyping(method, context);
                 this.annotatedRecord = method;
                 result = method.returnType;
             }
@@ -280,7 +283,7 @@ public class ExprNode extends Node {
                 field = classRecord.staticFields().get(this.identifierAccess.stringVal);
             }
             else {
-                VariableType op = operand.annotateTypes(dependencyStack, context);
+                VariableType op = operand.annotateTypes(context);
                 if(!(op instanceof ClassType)){
                     printError("Cannot find field '"+ this.identifierAccess.stringVal +"' in '"+ op.toString() +"'.", this.lineNum);
                 }
@@ -290,11 +293,13 @@ public class ExprNode extends Node {
             if(field == null){
                 printError("Cannot find field '"+ this.identifierAccess.stringVal +"' in '"+ classRecord.name() +"'.", this.lineNum);
             }
-            //FIXME См кликап
-//            if(context.getClass().equals(ClassInitContext.class) && field.containerClass.equals(((ClassInitContext) context).classRecord) && !field.isStatic()){
-//                printError("The instance member '" + field.name() + "' can't be accessed in an initializer.", this.lineNum);
-//            }
-            field.inferType(dependencyStack);
+            if(context instanceof ClassInitContext){
+                //FIXME instance member-ы недоступны  при инициализации только если они принадлежат this, а не просто тому же классу
+                if(field.containerClass.equals(((ClassInitContext) context).classRecord) && !field.isStatic()){
+                    printError("The instance member '" + field.name() + "' can't be accessed in an initializer.", this.lineNum);
+                }
+                field.inferType((ClassInitContext) context);
+            }
             if(context instanceof MethodContext && ((MethodContext) context).isSytheticGetterOrSetter()){
                 this.annotatedRecord = field;
                 result = field.varType;
@@ -304,7 +309,7 @@ public class ExprNode extends Node {
                 this.type = ExprType.methodCall;
                 this.identifierAccess.stringVal = field.associatedGetter().name();
                 this.callArguments = new ArrayList<>();
-                return this.annotateTypes(dependencyStack, context);
+                return this.annotateTypes(context);
             }
             
         }
@@ -320,11 +325,11 @@ public class ExprNode extends Node {
                     this.constructName = this.identifierAccess;
                     this.identifierAccess = this.operand.identifierAccess;
                     this.operand = null;
-                    return this.annotateTypes(dependencyStack, context);
+                    return this.annotateTypes(context);
                 }
             }
             else {
-                VariableType op = operand.annotateTypes(dependencyStack, context);
+                VariableType op = operand.annotateTypes(context);
                 if(!(op instanceof ClassType)){ //TODO у стандартных типов и листов тоже могут быть методы.
                     printError("Cannot find method '"+ this.identifierAccess.stringVal +"' in '"+ op.toString() +"'.", this.lineNum);
                 }
@@ -335,15 +340,15 @@ public class ExprNode extends Node {
                 printError("Cannot find method '"+ this.identifierAccess.stringVal +"' in '"+ classRecord.name() +"'.", this.lineNum);
             }
             //TODO ? Здесь можно сделать проверку на instance member, но т.к. у нас функция не объект, оно нам не мешает
-            checkCallArgumentsTyping(dependencyStack, method, context);
+            checkCallArgumentsTyping(method, context);
             result = method.returnType;
         }
         else if(this.type == ExprType.type_cast){
-            operand.annotateTypes(dependencyStack, context);
-            result = VariableType.from(context.classTable, this.typeForCheckOrCast);
+            operand.annotateTypes(context);
+            result = VariableType.from(context.classTable(), this.typeForCheckOrCast);
         }
         else if (this.type == ExprType.type_check || this.type == ExprType.neg_type_check) {
-            operand.annotateTypes(dependencyStack, context);
+            operand.annotateTypes(context);
             result = StandartType._bool();
         }
         else if(this.isAssign()){
@@ -357,16 +362,20 @@ public class ExprNode extends Node {
                     //FIXME ? Здесь очень большой повтор кода, но я не знаю как сделать лучше без особых запарок
                     if(operand.type == ExprType.identifier && context.lookupField(operand.identifierAccess.stringVal) != null){
                         FieldRecord field = context.lookupField(operand.identifierAccess.stringVal);
-                        if(context.getClass().equals(ClassInitContext.class) && field.containerClass.equals(((ClassInitContext) context).classRecord) && !field.isStatic()){
-                            printError("The instance member '" + field.name() + "' can't be accessed in an initializer.", this.lineNum);
+                        if(context instanceof ClassInitContext){
+                            //FIXME instance member-ы недоступны  при инициализации только если они принадлежат this, а не просто тому же классу
+                            //(Для indentifier это не проблема ?)
+                            if(field.containerClass.equals(((ClassInitContext) context).classRecord) && !field.isStatic()){
+                                printError("The instance member '" + field.name() + "' can't be accessed in an initializer.", this.lineNum);
+                            }
+                            field.inferType((ClassInitContext) context);
                         }
-                        field.inferType(dependencyStack);
                         this.type = ExprType.call;
                         this.identifierAccess.stringVal = field.associatedSetter().name();
                         this.callArguments = List.of(this.operand2);
                         this.operand = null;
                         this.operand2 = null;
-                        return this.annotateTypes(dependencyStack, context);
+                        return this.annotateTypes(context);
                     }
                     else if(operand.type == ExprType.fieldAccess){
                         FieldRecord field = null;
@@ -376,7 +385,7 @@ public class ExprNode extends Node {
                             field = classRecord.staticFields().get(operand.identifierAccess.stringVal);
                         }
                         else {
-                            VariableType op = operand.operand.annotateTypes(dependencyStack, context);
+                            VariableType op = operand.operand.annotateTypes(context);
                             if(!(op instanceof ClassType)){
                                 printError("Cannot find field '"+ operand.identifierAccess.stringVal +"' in '"+ op.toString() +"'.", operand.lineNum);
                             }
@@ -386,21 +395,24 @@ public class ExprNode extends Node {
                         if(field == null){
                             printError("Cannot find field '"+ operand.identifierAccess.stringVal +"' in '"+ classRecord.name() +"'.", operand.lineNum);
                         }
-                        if(context.getClass().equals(ClassInitContext.class) && field.containerClass.equals(((ClassInitContext) context).classRecord) && !field.isStatic()){
-                            printError("The instance member '" + field.name() + "' can't be accessed in an initializer.", operand.lineNum);
+                        if(context instanceof ClassInitContext){
+                            //FIXME instance member-ы недоступны  при инициализации только если они принадлежат this, а не просто тому же классу
+                            if(field.containerClass.equals(((ClassInitContext) context).classRecord) && !field.isStatic()){
+                                printError("The instance member '" + field.name() + "' can't be accessed in an initializer.", this.lineNum);
+                            }
+                            field.inferType((ClassInitContext) context);
                         }
-                        field.inferType(dependencyStack);
                         this.type = ExprType.methodCall;
                         this.identifierAccess.stringVal = field.associatedSetter().name();
                         this.callArguments = List.of(this.operand2);
                         this.operand = this.operand.operand;
                         this.operand2 = null;
-                        return this.annotateTypes(dependencyStack, context);
+                        return this.annotateTypes(context);
                     }
                 }
                 
-                operand.annotateTypes(dependencyStack, context);
-                operand2.annotateTypes(dependencyStack, context);
+                operand.annotateTypes(context);
+                operand2.annotateTypes(context);
                 if(!operand.annotatedType.isAssignableFrom(operand2.annotatedType)){
                     printError("The value of type '" + operand2.annotatedType.toString() + "' can't be assigned to the value of type '"+operand.annotatedType.toString()+"'.", this.lineNum);
                 }
@@ -411,12 +423,12 @@ public class ExprNode extends Node {
                 ExprNode expanded = new ExprNode(ExprType.complexAssignToOp.get(this.type), this.operand, this.operand2);
                 this.type = ExprType.assign;
                 this.operand2 = expanded;
-                return this.annotateTypes(dependencyStack, context);
+                return this.annotateTypes(context);
             }
         }
         else if(this.isBinaryOp()){
-            operand.annotateTypes(dependencyStack, context);
-            operand2.annotateTypes(dependencyStack, context);
+            operand.annotateTypes(context);
+            operand2.annotateTypes(context);
             if(this.type == ExprType.add || this.type == ExprType.sub || this.type == ExprType.mul || this.type == ExprType._div){
                 if(!StandartType._double().isAssignableFrom(operand.annotatedType)){
                     printError("Cannot perform arithmetic on type '"+ operand.annotatedType.toString() +"'.", operand.lineNum);
@@ -474,7 +486,7 @@ public class ExprNode extends Node {
         }
         else {
             //Унарные операторы
-            operand.annotateTypes(dependencyStack, context);
+            operand.annotateTypes(context);
             if(this.type == ExprType._not){
                 if(!StandartType._bool().isAssignableFrom(operand.annotatedType)){
                     printError("Cannot perform logic on type '"+ operand.annotatedType.toString() +"'.", operand.lineNum);
@@ -499,11 +511,11 @@ public class ExprNode extends Node {
         return result;
     }
     
-    private void checkCallArgumentsTyping(List<FieldRecord> dependencyStack, MethodRecord method, Context context){
+    private void checkCallArgumentsTyping(MethodRecord method, Context context){
         if(this.callArguments == null) throw new IllegalStateException();
         
         List<VariableType> argTypes = new ArrayList<>();
-        this.callArguments.forEach(arg -> argTypes.add(arg.annotateTypes(dependencyStack, context)));
+        this.callArguments.forEach(arg -> argTypes.add(arg.annotateTypes(context)));
         if(argTypes.size() != method.parameters.size()){
             printError("Parameter count mismatch", this.lineNum); //TODO улучшить сообщение
         }

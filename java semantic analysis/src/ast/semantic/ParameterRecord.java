@@ -1,11 +1,8 @@
 package ast.semantic;
 
 import ast.*;
-import ast.semantic.context.MethodContext;
+import ast.semantic.context.ClassInitContext;
 import ast.semantic.typization.VariableType;
-
-import java.util.ArrayList;
-import java.util.List;
 
 import static ast.semantic.SemanticCrawler.printError;
 
@@ -60,14 +57,14 @@ public class ParameterRecord extends LocalVarRecord{
         throw new IllegalStateException();
     }
     
-    public VariableType inferType(List<FieldRecord> dependencyStack){
+    public VariableType inferType(ClassInitContext context){
         if(this.varType == null){
             if(!this.isField){
                 throw new IllegalStateException();
             }
             
             FieldRecord field = containerMethod.containerClass.nonStaticFields().get(this.name);
-            this.varType = field.inferType(dependencyStack);
+            this.varType = field.inferType(context);
         }
         return this.varType;
     }

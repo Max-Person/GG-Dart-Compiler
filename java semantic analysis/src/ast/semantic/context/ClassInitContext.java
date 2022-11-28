@@ -1,55 +1,27 @@
 package ast.semantic.context;
 
 import ast.semantic.ClassRecord;
-import ast.semantic.NamedRecord;
-import ast.semantic.typization.ClassType;
-import ast.semantic.typization.VariableType;
+import ast.semantic.FieldRecord;
 
-import java.util.Map;
+import java.util.ArrayList;
+import java.util.List;
 
-public class ClassInitContext extends GlobalContext{
-    public ClassRecord classRecord;
-    private boolean isStatic;
-    
+public class ClassInitContext extends ClassContext{
+    public List<FieldRecord> dependencyStack = new ArrayList<>();
+
     public ClassInitContext(ClassRecord classRecord, boolean isStatic) {
-        super(classRecord.containerClassTable);
-        this.classRecord = classRecord;
-        this.isStatic = isStatic;
+        super(classRecord, isStatic);
     }
-    
-    @Override
-    public boolean isStatic() {
-        return isStatic;
+
+    //Мб может ввести в заблуждение что оно сразу не помещается в стак?
+    public ClassInitContext(FieldRecord field) {
+        super(field.containerClass, field.isStatic());
     }
-    
-    @Override
-    public NamedRecord lookup(String name) {
-        if(isStatic){
-            if(classRecord.staticFields().containsKey(name)){
-                return classRecord.staticFields().get(name);
-            }
-            else if(classRecord.staticMethods().containsKey(name)){
-                return classRecord.staticMethods().get(name);
-            }
-        }
-        else {
-            if(classRecord.fields.containsKey(name)){
-                return classRecord.fields.get(name);
-            }
-            else if(classRecord.methods.containsKey(name)){
-                return classRecord.methods.get(name);
-            }
-        }
-        return super.lookup(name);
-    }
-    
-    @Override
-    public VariableType thisType() {
-        return isStatic? null : new ClassType(classRecord);
-    }
-    
-    @Override
-    public ClassRecord currentClass() {
-        return classRecord;
+
+    public ClassInitContext dependantContext(FieldRecord field){
+        ClassInitContext copy = new ClassInitContext(field);
+        copy.dependencyStack = new ArrayList<>(this.dependencyStack);
+        copy.dependencyStack.add(field);
+        return copy;
     }
 }

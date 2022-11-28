@@ -2,7 +2,6 @@ package ast.semantic;
 
 import ast.*;
 import ast.semantic.context.ClassInitContext;
-import ast.semantic.context.GlobalContext;
 import ast.semantic.typization.VariableType;
 
 import java.util.ArrayList;
@@ -26,18 +25,12 @@ public class FieldRecord extends VariableRecord{
         }
     }
     
-    public VariableType inferType(List<FieldRecord> dependencyStack){
+    public VariableType inferType(ClassInitContext context){
         if(this.varType == null){
-            if(dependencyStack.contains(this)){
+            if(context.dependencyStack.contains(this)){
                 printError("The type of '"+this.name()+"' can't be inferred because it depends on itself through the dependency cycle.", initValue.lineNum); //TODO Вывести цикл зависимости
             }
-            dependencyStack.add(this);
-            this.varType = this.initValue.annotateTypes(dependencyStack,
-                    containerClass.isGlobal() ?
-                    new GlobalContext(containerClass.containerClassTable) :
-                    new ClassInitContext(containerClass, this.isStatic())
-            );
-            dependencyStack.remove(this); //TODO убедиться что депенденси стак работает как стак и ниче не портит...
+            this.varType = this.initValue.annotateTypes(context.dependantContext(this));
             
             this.containerClass.methods.put(associatedGetter().name(), associatedGetter());
             this.containerClass.methods.put(associatedSetter().name(), associatedSetter());

@@ -1,6 +1,7 @@
 package ast.semantic;
 
 import ast.*;
+import ast.semantic.context.ClassInitContext;
 import ast.semantic.typization.StandartType;
 import ast.semantic.typization.VariableType;
 
@@ -14,7 +15,7 @@ import static ast.semantic.SemanticCrawler.printError;
 public class MethodRecord implements NamedRecord, Cloneable{
     public ClassRecord containerClass;
     
-    public Map<String, LocalVarRecord> locals = new HashMap<>(); //TODO реализовать добавление локалок с увеличением номера + добавление локалок для this и параметров при создании метода
+    public Map<Integer, LocalVarRecord> locals = new HashMap<>();
     public int localVarNumber = 0;
 
     protected boolean isStatic, isConst;
@@ -47,7 +48,11 @@ public class MethodRecord implements NamedRecord, Cloneable{
         this.returnType = isConstruct ? StandartType._void() : returnType;
         this.name = isConstruct ? "<init>" : name;
         this.parameters = parameters;
-        this.parameters.forEach(p -> p.containerMethod = this);
+        this.parameters.forEach(p -> {
+            p.containerMethod = this;
+            p.number = ++localVarNumber;
+            this.parameters.add(p);
+        });
         
         this.isConstruct = isConstruct;
         this.constructName = isConstruct ? name : null;
@@ -99,10 +104,8 @@ public class MethodRecord implements NamedRecord, Cloneable{
 
     public void addLocalVar(LocalVarRecord var){
         var.number = ++localVarNumber;
-        if(locals.containsKey(var.name)){
-            printError("The name '" + var.name + "' is already defined.", -1); // TODO номер строки
-        }
-        locals.put(var.name, var);
+        //Проверки на существование см. в MethodContext
+        locals.put(var.number, var);
     }
     
     public String name(){
@@ -125,9 +128,9 @@ public class MethodRecord implements NamedRecord, Cloneable{
         return this.body == null;
     }
     
-    public void inferType(List<FieldRecord> dependencyStack){
+    public void inferType(ClassInitContext context){
         for(ParameterRecord p : parameters){
-            p.inferType(dependencyStack);
+            p.inferType(context);
         }
     }
     
