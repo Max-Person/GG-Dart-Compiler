@@ -2,6 +2,7 @@ package ast.semantic;
 
 import ast.*;
 import ast.semantic.context.ClassInitContext;
+import ast.semantic.context.MethodContext;
 import ast.semantic.typization.StandartType;
 import ast.semantic.typization.VariableType;
 
@@ -47,8 +48,11 @@ public class MethodRecord implements NamedRecord, Cloneable{
         
         this.returnType = isConstruct ? StandartType._void() : returnType;
         this.name = isConstruct ? "<init>" : name;
-        this.parameters = parameters;
-        this.parameters.forEach(p -> {
+        
+        if(!this.isStatic){
+            localVarNumber++;
+        }
+        parameters.forEach(p -> {
             p.containerMethod = this;
             p.number = ++localVarNumber;
             this.parameters.add(p);
@@ -58,6 +62,13 @@ public class MethodRecord implements NamedRecord, Cloneable{
         this.constructName = isConstruct ? name : null;
         
         this.body = body;
+        if(this.isConstruct) {
+            if (this.body == null) {
+                this.body = new StmtNode(StmtType.block);
+            } else if (this.body.type == StmtType.return_statement) {
+                printError("Constructors can't return values.", body.lineNum);
+            }
+        }
     }
     
     public MethodRecord(ClassRecord containerClass, SignatureNode signature, StmtNode body){
@@ -121,7 +132,7 @@ public class MethodRecord implements NamedRecord, Cloneable{
     }
     public boolean isStatic(){
         if(isConstruct)
-            throw new IllegalStateException();
+            return false;
         return isStatic;
     }
     public boolean isAbstract(){
@@ -219,7 +230,7 @@ public class MethodRecord implements NamedRecord, Cloneable{
                 }
                 ExprNode expr = new ExprNode();
                 expr.type = ExprType.constructSuper;
-                expr.constructName = new IdentifierNode("");
+                expr.constructName = null;
                 expr.callArguments = new ArrayList<>();
                 StmtNode init = new StmtNode(StmtType.expr_statement);
                 init.expr = expr;

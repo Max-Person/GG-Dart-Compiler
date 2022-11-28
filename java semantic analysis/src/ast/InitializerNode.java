@@ -31,6 +31,17 @@ public class InitializerNode extends Node{
             }
         }
     }
+    
+    public InitializerNode(IdentifierNode superConstructorName, List<ExprNode> args){
+        this.superConstructorName = superConstructorName;
+        
+        if(superConstructorName != null)
+            this.type = InitializerType.superNamedConstructor;
+        else
+            this.type = InitializerType.superConstructor;
+        
+        this.args = args;
+    }
 
     public ExprNode toExpr(){
         ExprNode expr = new ExprNode();

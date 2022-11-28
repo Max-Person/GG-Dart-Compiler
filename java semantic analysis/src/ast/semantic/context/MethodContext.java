@@ -24,6 +24,9 @@ public class MethodContext extends ClassContext{
         if(localsScope.containsKey(name)){
             return localsScope.get(name);
         }
+        if(methodRecord.parameters.stream().anyMatch(p -> p.name().equals(name))){
+            return methodRecord.parameters.stream().filter(p -> p.name().equals(name)).findFirst().orElse(null); //FIXME ? мб сделать как то получше?
+        }
         return super.lookup(name);
     }
     

@@ -198,10 +198,21 @@ public class ExprNode extends Node {
             if(this.type == ExprType.constructRedirect){
                 constructed = context.currentClass();
             } else if (this.type == ExprType.constructSuper) {
-                constructed = context.currentClass()._super; //TODO сделать чтобы у всех классов был супер
+                constructed = context.currentClass()._super;
+                //TODO сделать нормальное понимание всеми классами того, они наследуются от Object
+                if(constructed == null){
+                    if(this.constructName != null){
+                        printError("Cannot find constructor '"+ this.constructName.stringVal +"' in 'Object'.", this.lineNum);
+                    }
+                    if(!callArguments.isEmpty()){
+                        printError("Parameter count mismatch", this.lineNum); //TODO улучшить сообщение
+                    }
+                    return StandartType._void();
+                }
             }else {
                 constructed = context.lookupClass(this.identifierAccess.stringVal);
             }
+            //TODO проверить что не абстрактный и не енам
             if(constructed == null){
                 printError("Unknown class '"+ this.identifierAccess.stringVal +"'.", this.identifierAccess.lineNum);
             }
@@ -371,7 +382,7 @@ public class ExprNode extends Node {
                             field.inferType((ClassInitContext) context);
                         }
                         this.type = ExprType.call;
-                        this.identifierAccess.stringVal = field.associatedSetter().name();
+                        this.identifierAccess = new IdentifierNode(field.associatedSetter().name());
                         this.callArguments = List.of(this.operand2);
                         this.operand = null;
                         this.operand2 = null;
@@ -403,7 +414,7 @@ public class ExprNode extends Node {
                             field.inferType((ClassInitContext) context);
                         }
                         this.type = ExprType.methodCall;
-                        this.identifierAccess.stringVal = field.associatedSetter().name();
+                        this.identifierAccess = new IdentifierNode(field.associatedSetter().name());
                         this.callArguments = List.of(this.operand2);
                         this.operand = this.operand.operand;
                         this.operand2 = null;

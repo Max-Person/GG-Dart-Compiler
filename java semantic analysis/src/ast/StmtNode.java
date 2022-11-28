@@ -173,7 +173,7 @@ public class StmtNode extends Node{
             else {
                 LocalVarRecord localVarRecord = new LocalVarRecord(forContext.methodRecord, forEachVariableDecl);
                 localVarRecord.resolveType();
-                forContext.addLocalToScope(localVarRecord);
+                forContext.addLocalToScope(localVarRecord);  //FIXME ? если здесь объявлена переменная то она перезаписывает другую, если такая уже объявлена
                 type = localVarRecord.varType;
             }
 
@@ -186,7 +186,7 @@ public class StmtNode extends Node{
         if(type == StmtType.forN_statement){
             MethodContext forContext = context.skippableChildScope();
 
-            forInitializerStmt.validateStmt(forContext);
+            forInitializerStmt.validateStmt(forContext); //FIXME ? если здесь объявлена переменная то она перезаписывает другую, если такая уже объявлена
             condition.annotateTypes(forContext);
             if (!StandartType._bool().isAssignableFrom(this.condition.annotatedType)) {
                 printError("Conditions must have a static type of 'bool'.", this.condition.lineNum);

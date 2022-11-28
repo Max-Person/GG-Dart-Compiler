@@ -143,15 +143,10 @@ public class ClassRecord implements NamedRecord{
                 if(this._super != null && (!this._super.constructors.containsKey("") || !this._super.constructors.get("").parameters.isEmpty())){
                     printError("The superclass '"+ this._super.name() +"' doesn't have an a default (unnamed + zero argument) constructor.", declaration.lineNum());
                 }
-                ExprNode expr = new ExprNode(ExprType.constructSuper);
-                expr.constructName = new IdentifierNode("");
-                expr.callArguments = new ArrayList<>();
-                StmtNode init = new StmtNode(StmtType.expr_statement);
-                init.expr = expr;
-                StmtNode body = new StmtNode(StmtType.block);
-                body.blockStmts.add(0, init);
                 
-                MethodRecord defConstruct = new MethodRecord(this, false, true, StandartType._void(), "", new ArrayList<>(), body);
+                MethodRecord defConstruct = new MethodRecord(this, false, true, StandartType._void(), "", new ArrayList<>(), null);
+                InitializerNode defaultSuperConstructor = new InitializerNode(null, new ArrayList<>());
+                defConstruct.initializers = List.of(defaultSuperConstructor);
                 this.constructors.put("", defConstruct);
             }
             if(!this.staticFields().isEmpty()){

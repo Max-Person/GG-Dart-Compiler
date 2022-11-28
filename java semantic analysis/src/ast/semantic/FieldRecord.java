@@ -70,7 +70,7 @@ public class FieldRecord extends VariableRecord{
             getterBody.returnExpr = new ExprNode(ExprType.identifier);
             getterBody.returnExpr.identifierAccess = new IdentifierNode(name);
     
-            this.getter = new MethodRecord(this.containerClass, this.varType.clone(), "get!"+this.name(), new ArrayList<>(), getterBody);
+            this.getter = new MethodRecord(this.containerClass, this.isStatic, false, this.varType.clone(), "get!"+this.name(), new ArrayList<>(), getterBody);
         }
         return getter;
     }
@@ -81,19 +81,19 @@ public class FieldRecord extends VariableRecord{
             if(this.varType == null){
                 throw new IllegalStateException();
             }
-    
-            ParameterRecord setterParameter = new ParameterRecord(null, null, this.varType.clone(), this.name, false);
+            
+            String paramName = "new";
+            ParameterRecord setterParameter = new ParameterRecord(null, null, this.varType.clone(), paramName, false);
     
             StmtNode setterBody = new StmtNode(StmtType.return_statement);
             ExprNode expr = new ExprNode(ExprType.assign);
-            expr.operand = new ExprNode(ExprType.fieldAccess);
-            expr.operand.operand = new ExprNode(ExprType.this_pr);
+            expr.operand = new ExprNode(ExprType.identifier);
             expr.operand.identifierAccess = new IdentifierNode(this.name);
             expr.operand2 = new ExprNode(ExprType.identifier);
-            expr.operand2.identifierAccess = new IdentifierNode(this.name);
+            expr.operand2.identifierAccess = new IdentifierNode(paramName);
             setterBody.returnExpr = expr;
     
-            this.setter = new MethodRecord(this.containerClass, this.varType.clone(), "set!"+this.name(), List.of(setterParameter), setterBody);
+            this.setter = new MethodRecord(this.containerClass, this.isStatic, false, this.varType.clone(), "set!"+this.name(), List.of(setterParameter), setterBody);
         }
         return setter;
     }

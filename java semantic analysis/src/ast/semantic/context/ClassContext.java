@@ -37,10 +37,10 @@ public abstract class ClassContext implements Context{
             }
         }
         else {
-            if(classRecord.fields.containsKey(name)){
+            if(classRecord.nonStaticFields().containsKey(name)){
                 return classRecord.fields.get(name);
             }
-            else if(classRecord.methods.containsKey(name)){
+            else if(classRecord.nonStaticMethods().containsKey(name)){
                 return classRecord.methods.get(name);
             }
         }
