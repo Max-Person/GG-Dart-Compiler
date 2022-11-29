@@ -4,7 +4,6 @@ import ast.*;
 import ast.semantic.typization.StandartType;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -109,53 +108,49 @@ public class SemanticCrawler {
     }
     
     //TODO убрать это в ClassRecord
-    public void resolveClass(List<ClassRecord> children, ClassRecord classRecord){
-        if(classRecord.isDeclResolved) return;
-        if(classRecord.isEnum()){
-            //TODO ?
+    public void resolveClass(List<ClassRecord> children, ClassRecord classRecord) {
+        if (classRecord.isDeclResolved) return;
+        if (classRecord.isEnum()) return;//TODO ?
+        ClassDeclarationNode clazz = (ClassDeclarationNode) classRecord.declaration;
+        if (children.contains(classRecord)) {
+            printError("'" + clazz.name() + "' can't be a supertype of itself.", clazz._super.lineNum); //TODO выписать список рекурсии
         }
-        else {
-            ClassDeclarationNode clazz = (ClassDeclarationNode) classRecord.declaration;
-            if(children.contains(classRecord)){
-                printError("'" + clazz.name() + "' can't be a supertype of itself.", clazz._super.lineNum); //TODO выписать список рекурсии
-            }
-            children.add(classRecord);
-            if(clazz._super != null){ // Если класс от кого-то наследутеся
-                ClassRecord potentialSuper = checkInheritable(clazz._super, "extend");
-                
-                resolveClass(children, potentialSuper); //FIXME не уверен в этом..
-                classRecord._super = potentialSuper;
-            }
-            for(TypeNode iinterface: clazz.interfaces){
-                if(clazz.interfaces.subList(0, clazz.interfaces.indexOf(iinterface)).stream().anyMatch(i -> i.name.stringVal.equals(iinterface.name.stringVal))){
-                    printError("'" + iinterface.name.stringVal + "' can only be implemented once.", iinterface.lineNum);
-                }
-                if(classRecord._super != null && iinterface.name.stringVal.equals(classRecord._super.name())){
-                    printError("'" + iinterface.name.stringVal + "' can't be used in both the 'extends' and 'implements' clauses.", iinterface.lineNum);
-                }
-                ClassRecord potentialInterface = checkInheritable(iinterface, "implement");
-                resolveClass(children, potentialInterface); //FIXME не уверен в этом..
-                classRecord._interfaces.add(potentialInterface);
-            }
-            for(TypeNode mixin: clazz.mixins){
-                if(classRecord._super != null && mixin.name.stringVal.equals(classRecord._super.name())){
-                    printError("'" + mixin.name.stringVal + "' can't be used in both the 'extends' and 'with' clauses.", mixin.lineNum);
-                }
-                ClassRecord potentialMixin = checkInheritable(mixin, "mixin");
-                resolveClass(children, potentialMixin); //FIXME не уверен в этом..
-                if(potentialMixin._super != null){
-                    printError("The class '"+ potentialMixin.name()+"' can't be used as a mixin because it extends a class other than 'Object'.", mixin.lineNum);
-                }
-                for(ClassMemberDeclarationNode decl : ((ClassDeclarationNode)potentialMixin.declaration).classMembers){
-                    if((decl.type == ClassMemberDeclarationType.methodDefinition || decl.type == ClassMemberDeclarationType.methodSignature) && decl.signature.isConstruct){
-                        printError("The class '"+ potentialMixin.name()+"' can't be used as a mixin because it declares a constructor.", mixin.lineNum);
-                    }
-                }
-                classRecord._mixins.add(potentialMixin);
-                
-            }
-            children.remove(classRecord); //FIXME ?
+        children.add(classRecord);
+        if (clazz._super != null) { // Если класс от кого-то наследутеся
+            ClassRecord potentialSuper = checkInheritable(clazz._super, "extend");
+
+            resolveClass(children, potentialSuper); //FIXME не уверен в этом..
+            classRecord._super = potentialSuper;
         }
+        for (TypeNode iinterface : clazz.interfaces) {
+            if (clazz.interfaces.subList(0, clazz.interfaces.indexOf(iinterface)).stream().anyMatch(i -> i.name.stringVal.equals(iinterface.name.stringVal))) {
+                printError("'" + iinterface.name.stringVal + "' can only be implemented once.", iinterface.lineNum);
+            }
+            if (classRecord._super != null && iinterface.name.stringVal.equals(classRecord._super.name())) {
+                printError("'" + iinterface.name.stringVal + "' can't be used in both the 'extends' and 'implements' clauses.", iinterface.lineNum);
+            }
+            ClassRecord potentialInterface = checkInheritable(iinterface, "implement");
+            resolveClass(children, potentialInterface); //FIXME не уверен в этом..
+            classRecord._interfaces.add(potentialInterface);
+        }
+        for (TypeNode mixin : clazz.mixins) {
+            if (classRecord._super != null && mixin.name.stringVal.equals(classRecord._super.name())) {
+                printError("'" + mixin.name.stringVal + "' can't be used in both the 'extends' and 'with' clauses.", mixin.lineNum);
+            }
+            ClassRecord potentialMixin = checkInheritable(mixin, "mixin");
+            resolveClass(children, potentialMixin); //FIXME не уверен в этом..
+            if (potentialMixin._super != null) {
+                printError("The class '" + potentialMixin.name() + "' can't be used as a mixin because it extends a class other than 'Object'.", mixin.lineNum);
+            }
+            for (ClassMemberDeclarationNode decl : ((ClassDeclarationNode) potentialMixin.declaration).classMembers) {
+                if ((decl.type == ClassMemberDeclarationType.methodDefinition || decl.type == ClassMemberDeclarationType.methodSignature) && decl.signature.isConstruct) {
+                    printError("The class '" + potentialMixin.name() + "' can't be used as a mixin because it declares a constructor.", mixin.lineNum);
+                }
+            }
+            classRecord._mixins.add(potentialMixin);
+
+        }
+        children.remove(classRecord); //FIXME ?
         classRecord.isDeclResolved = true;
     }
     

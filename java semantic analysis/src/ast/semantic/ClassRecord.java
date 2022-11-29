@@ -2,6 +2,7 @@ package ast.semantic;
 
 import ast.*;
 import ast.semantic.context.ClassInitContext;
+import ast.semantic.typization.ClassType;
 import ast.semantic.typization.StandartType;
 import ast.semantic.typization.VariableType;
 
@@ -122,7 +123,25 @@ public class ClassRecord implements NamedRecord{
         if(this.isGlobal()) return;
         
         if(this.isEnum()){
-            //TODO ?
+            // добавить поле
+            FieldRecord field = new FieldRecord(this, false, false, false, true, StandartType._String(), "value");
+            this.fields.put("value", field);
+            // добавить конструктор
+            ParameterRecord param = new ParameterRecord(null, null, null, "value", true);
+            MethodRecord constructor = new MethodRecord(this, false, true, StandartType._void(), "", Collections.singletonList(param), null);
+            this.constructors.put("", constructor);
+            // для каждого из значений енама надо добавить статическое поле
+            for (IdentifierNode value : ((EnumNode) declaration).values) {
+                field = new FieldRecord(this, false, true, false, true, new ClassType(this), value.stringVal);
+                field.initValue = new ExprNode(ExprType.constructNew);
+                field.initValue.identifierAccess = new IdentifierNode(this.name);
+                field.initValue.constructName = null;
+                ExprNode arg = new ExprNode(ExprType.string_pr);
+                arg.stringValue = value.stringVal;
+                field.initValue.callArguments = Collections.singletonList(arg);
+                this.fields.put(value.stringVal, field);
+            }
+
         }
         else {
             ClassDeclarationNode clazz = (ClassDeclarationNode) declaration;
@@ -345,9 +364,6 @@ public class ClassRecord implements NamedRecord{
     //-- ПРОВЕРКА МЕТОДОВ
     
     public void checkMethods(){
-        if(this.isEnum()){
-            return; //TODO ?
-        }
         for (MethodRecord method : methods.values()) {
             method.checkMethod();
         }
