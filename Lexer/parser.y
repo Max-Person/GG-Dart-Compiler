@@ -115,7 +115,7 @@ void yyerror(char const *s) {
 }
 
 %nterm<_identifier_node>identifier builtInIdentifier identifierList
-%nterm<_expr>string primary selectorExpr postfixExpr exprNotAssign expr exprList arguments
+%nterm<_expr>string primary postfixExpr exprNotAssign expr exprList arguments
 %nterm<_type_node>typeNotVoid typeNotVoidList type mixins interfacesOpt
 %nterm<_declarator_node>declarator
 %nterm<_idInit_node>staticFinalDeclaration staticFinalDeclarationList initializedIdentifier initializedIdentifierList
@@ -210,19 +210,16 @@ void yyerror(char const *s) {
         | '(' expr ')'                      {$$ = $2;}
     ;
 
-    selectorExpr: primary                                                       {$$ = $1;}
+    //Можно вставить и в exprNotAssign, но по какой-то причине это вызывает конфликты c POSTFIX_INC/DEC, хотя приоритеты определены.
+    postfixExpr: primary                                                       {$$ = $1;}
         | identifier arguments                                                  {$$ = create_call_expr_node($1, $2);}
         | NEW IDENTIFIER arguments                                              {$$ = create_constructNew_expr_node($2, $3);}
         | NEW IDENTIFIER '.' identifier arguments                               {$$ = create_constructNew_expr_node($2, $4, $5);}
         | CONST IDENTIFIER arguments                                            {$$ = create_constructConst_expr_node($2, $3);}
         | CONST IDENTIFIER '.' identifier arguments                             {$$ = create_constructConst_expr_node($2, $4, $5);}
-        | selectorExpr '.' identifier arguments                                 {$$ = create_methodCall_expr_node($1, $3, $4);}
-        | selectorExpr '[' expr ']'                                             {$$ = create_operator_expr_node(brackets, $1, $3);}
-        | selectorExpr '.' identifier                                           {$$ = create_fieldAccess_expr_node($1, $3);}
-    ;
-
-    //Можно вставить и в exprNotAssign, но по какой-то причине это вызывает конфликты c POSTFIX_INC/DEC, хотя приоритеты определены.
-    postfixExpr: selectorExpr                          {$$ = $1;}
+        | postfixExpr '.' identifier arguments                                 {$$ = create_methodCall_expr_node($1, $3, $4);}
+        | postfixExpr '[' expr ']'                                             {$$ = create_operator_expr_node(brackets, $1, $3);}
+        | postfixExpr '.' identifier                                           {$$ = create_fieldAccess_expr_node($1, $3);}
         | postfixExpr INC %prec POSTFIX_INC     {$$ = create_operator_expr_node(postfix_inc, $1, NULL);}
         | postfixExpr DEC %prec POSTFIX_DEC     {$$ = create_operator_expr_node(postfix_dec, $1, NULL);}
         | postfixExpr '!'                       {$$ = create_operator_expr_node(bang, $1, NULL);}
