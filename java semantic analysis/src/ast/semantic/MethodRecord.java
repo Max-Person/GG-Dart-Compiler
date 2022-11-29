@@ -3,7 +3,6 @@ package ast.semantic;
 import ast.*;
 import ast.semantic.context.ClassInitContext;
 import ast.semantic.context.MethodContext;
-import ast.semantic.typization.StandartType;
 import ast.semantic.typization.VariableType;
 
 import java.util.ArrayList;
@@ -46,7 +45,7 @@ public class MethodRecord implements NamedRecord, Cloneable{
         this.isStatic = isStatic && !isConstruct;
         this.isConst = false;
         
-        this.returnType = isConstruct ? StandartType._void() : returnType;
+        this.returnType = isConstruct ? VariableType._void() : returnType;
         this.name = isConstruct ? "<init>" : name;
         
         if(!this.isStatic){
@@ -93,7 +92,7 @@ public class MethodRecord implements NamedRecord, Cloneable{
         }
     
         if(this.isConstruct){
-            this.returnType = StandartType._void();
+            this.returnType = VariableType._void();
         }
         else {
             this.returnType = VariableType.from(containerClass.containerClassTable, signature.returnType);
@@ -246,7 +245,7 @@ public class MethodRecord implements NamedRecord, Cloneable{
         }
         
         this.body.validateStmt(new MethodContext(this));
-        if(!this.body.endsWith(StmtType.return_statement) && !this.returnType.equals(StandartType._void())){
+        if(!this.body.endsWith(StmtType.return_statement) && !this.returnType.equals(VariableType._void())){
             if(!this.returnType.isNullable){
                 printError("The body might complete normally, causing 'null' to be returned, but the return type, '" + this.returnType + "', is a non-nullable type.", -1); //TODO номер строки
             }

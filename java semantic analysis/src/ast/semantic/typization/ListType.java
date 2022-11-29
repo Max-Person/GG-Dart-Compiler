@@ -1,5 +1,9 @@
 package ast.semantic.typization;
 
+import ast.semantic.ClassRecord;
+import ast.semantic.RTLClassRecord;
+import ast.semantic.RTLListClassRecord;
+
 import java.util.Objects;
 
 public class ListType extends VariableType{
@@ -21,7 +25,17 @@ public class ListType extends VariableType{
     
     @Override
     public String descriptor() {
-        return "[" + valueType.descriptor();
+        return associatedClass().descriptor();
+    }
+    
+    @Override
+    public ClassRecord associatedClass() {
+        return new RTLListClassRecord(null, valueType); //FIXME ? null
+    }
+    
+    @Override
+    public String toString() {
+        return "List<" + valueType + ">" + (isNullable? "?" : "");
     }
     
     @Override

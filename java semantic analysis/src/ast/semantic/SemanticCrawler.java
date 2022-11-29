@@ -1,7 +1,7 @@
 package ast.semantic;
 
 import ast.*;
-import ast.semantic.typization.StandartType;
+import ast.semantic.typization.VariableType;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -13,6 +13,7 @@ public class SemanticCrawler {
     public Map<String, ClassRecord> classTable = new ConcurrentHashMap<>();
     
     public SemanticCrawler() {
+        //RTLClassRecord.init(classTable);
         classTable.put(ClassRecord.globalName, new ClassRecord(classTable, ClassRecord.globalName, false));
     }
     
@@ -99,7 +100,7 @@ public class SemanticCrawler {
     }
     
     public void checkInGlobalNamespace(String name, int lineNum){
-        if (StandartType.isStandartName(name) ||
+        if (VariableType.isStandartName(name) ||
                 classTable.containsKey(name) ||
                 classTable.get(ClassRecord.globalName).methods.containsKey(name) ||
                 classTable.get(ClassRecord.globalName).fields.containsKey(name)) {
@@ -161,7 +162,7 @@ public class SemanticCrawler {
         if (node.isNullable) {
             printError("a class can't " + action + " a nullable type", node.lineNum);
         }
-        if(StandartType.isStandartName(node.name.stringVal)){
+        if(VariableType.isStandartName(node.name.stringVal)){
             printError("classes can't' " + action + " '"+node.name+"'.", node.lineNum);
         }
         ClassRecord potentialInheritance = classTable.get(node.name.stringVal);

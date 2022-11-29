@@ -25,7 +25,17 @@ public class ClassType extends VariableType{
     
     @Override
     public String descriptor() {
-        return "Lggdart/gen/" + clazz.name() + ";";
+        return clazz.descriptor();
+    }
+    
+    @Override
+    public ClassRecord associatedClass() {
+        return clazz;
+    }
+    
+    @Override
+    public String toString() {
+        return clazz.name() + (isNullable? "?" : "");
     }
     
     @Override

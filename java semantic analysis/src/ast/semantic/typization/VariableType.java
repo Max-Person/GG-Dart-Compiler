@@ -5,6 +5,7 @@ import java.util.Objects;
 
 import ast.TypeNode;
 import ast.semantic.ClassRecord;
+import ast.semantic.RTLClassRecord;
 
 import static ast.semantic.SemanticCrawler.printError;
 
@@ -15,11 +16,11 @@ public abstract class VariableType implements Cloneable {
         VariableType result = null;
         switch (typeNode.type){
             case _void -> {
-                return StandartType._void();
+                return _void();
             }
             case _named -> {
-                if(StandartType.isStandartName((typeNode.name.stringVal))){
-                    result = StandartType.standartTypes.get(typeNode.name.stringVal).clone();
+                if(isStandartName((typeNode.name.stringVal))){
+                    result = standartType(typeNode.name.stringVal);
                 }
                 else if(classTable.containsKey(typeNode.name.stringVal)){
                     ClassRecord classRecord = classTable.get(typeNode.name.stringVal);
@@ -45,15 +46,40 @@ public abstract class VariableType implements Cloneable {
         return result;
     }
     
-    public abstract String descriptor();
-    
-    @Override
-    public String toString() {
-        return descriptor() + (isNullable? "?" : ""); //TODO расписать нормально для всех типов
+    public static boolean isStandartName(String name){
+        return standartType(name) != null;
     }
     
-    public boolean isAssignableFrom(VariableType o){ //TODO учесть наследование
-        return (this.descriptor().equals(o.descriptor()) || (this.descriptor().equals("D") && o.descriptor().equals("I")) || o.descriptor().equals("Null")) &&
+    public static VariableType standartType(String name){
+        if(name.equals("Null")) return new PlainType("Null", "Null");
+        if(name.equals("void")) return new PlainType("void","V");
+        if(name.equals("int")) return new PlainType("int","I");
+        if(name.equals("double")) return new PlainType("double", "D");
+        if(name.equals("num")) return new PlainType("num", "num");
+        if(name.equals("bool")) return new PlainType("bool", "Z");   //FIXME ???
+        if(name.equals("String")) return new ClassType(RTLClassRecord.string);
+        if(name.equals("Object")) return new ClassType(RTLClassRecord.object);
+        return null;
+    }
+    
+    public static VariableType _null(){return standartType("Null");}
+    public static VariableType _void(){return standartType("void");}
+    public static VariableType _int(){return standartType("int");}
+    public static VariableType _double(){return standartType("double");}
+    public static VariableType _bool(){return standartType("bool");}
+    public static VariableType _String(){return standartType("String");}
+    public static VariableType _Object(){return standartType("Object");}
+    
+    public abstract String descriptor();
+    
+    public abstract ClassRecord associatedClass();
+    
+    public boolean isSubtypeOf(VariableType other){
+        return this.associatedClass() != null && this.associatedClass().isSubTypeOf(other.associatedClass());
+    }
+    
+    public boolean isAssignableFrom(VariableType o){
+        return (o.isSubtypeOf(this) || this.descriptor().equals(o.descriptor()) || (this.descriptor().equals("D") && o.descriptor().equals("I")) || o.descriptor().equals("Null")) &&
                 (this.isNullable || !o.isNullable);
     }
     

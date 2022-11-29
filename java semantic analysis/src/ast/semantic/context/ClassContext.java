@@ -2,6 +2,7 @@ package ast.semantic.context;
 
 import ast.semantic.ClassRecord;
 import ast.semantic.NamedRecord;
+import ast.semantic.RTLClassRecord;
 import ast.semantic.typization.ClassType;
 import ast.semantic.typization.VariableType;
 
@@ -51,10 +52,16 @@ public abstract class ClassContext implements Context{
             return classRecord.containerClassTable.get(name);
         }
         else if(global.methods.containsKey(name)){
-            global.methods.get(name);
+            return global.methods.get(name);
         }
         else if(global.fields.containsKey(name)){
-            global.fields.get(name);
+            return global.fields.get(name);
+        }
+        else if(RTLClassRecord.io.methods.containsKey(name)){
+            return RTLClassRecord.io.methods.get(name);
+        }
+        else if(RTLClassRecord.io.fields.containsKey(name)){
+            return RTLClassRecord.io.fields.get(name);
         }
 
         return null;

@@ -3,7 +3,6 @@ package ast.semantic;
 import ast.*;
 import ast.semantic.context.ClassInitContext;
 import ast.semantic.typization.ClassType;
-import ast.semantic.typization.StandartType;
 import ast.semantic.typization.VariableType;
 
 import java.util.*;
@@ -20,7 +19,7 @@ public class ClassRecord implements NamedRecord{
     public Map<Integer, ConstantRecord> constants = new HashMap<>();
     public Map<String, MethodRecord> constructors = new HashMap<>();
     
-    public ClassRecord _super = null;
+    public ClassRecord _super = RTLClassRecord.object;
     public List<ClassRecord> _interfaces = new ArrayList<>();
     public List<ClassRecord> _mixins = new ArrayList<>();
     
@@ -86,7 +85,7 @@ public class ClassRecord implements NamedRecord{
         fields.put(fieldRecord.name(), fieldRecord);
     }
 
-    public void addMethod(SignatureNode signature, StmtNode body){
+    public void addMethod(SignatureNode signature, StmtNode body){ //TODO статические методы и именованные конструкторы
         if(signature.isConstruct){
             if(!signature.name.stringVal.equals(this.name())){
                 printError("The name of a constructor must match the name of the enclosing class.", signature.lineNum);
@@ -124,11 +123,11 @@ public class ClassRecord implements NamedRecord{
         
         if(this.isEnum()){
             // добавить поле
-            FieldRecord field = new FieldRecord(this, false, false, false, true, StandartType._String(), "value");
+            FieldRecord field = new FieldRecord(this, false, false, false, true, VariableType._String(), "value");
             this.fields.put("value", field);
             // добавить конструктор
             ParameterRecord param = new ParameterRecord(null, null, null, "value", true);
-            MethodRecord constructor = new MethodRecord(this, false, true, StandartType._void(), "", Collections.singletonList(param), null);
+            MethodRecord constructor = new MethodRecord(this, false, true, VariableType._void(), "", Collections.singletonList(param), null);
             this.constructors.put("", constructor);
             // для каждого из значений енама надо добавить статическое поле
             for (IdentifierNode value : ((EnumNode) declaration).values) {
@@ -159,35 +158,32 @@ public class ClassRecord implements NamedRecord{
             }
             if(this.constructors.isEmpty()){
                 //Создание конструктора по умолчанию
-                if(this._super != null && (!this._super.constructors.containsKey("") || !this._super.constructors.get("").parameters.isEmpty())){
+                if(!this._super.constructors.containsKey("") || !this._super.constructors.get("").parameters.isEmpty()){
                     printError("The superclass '"+ this._super.name() +"' doesn't have an a default (unnamed + zero argument) constructor.", declaration.lineNum());
                 }
                 
-                MethodRecord defConstruct = new MethodRecord(this, false, true, StandartType._void(), "", new ArrayList<>(), null);
+                MethodRecord defConstruct = new MethodRecord(this, false, true, VariableType._void(), "", new ArrayList<>(), null);
                 InitializerNode defaultSuperConstructor = new InitializerNode(null, new ArrayList<>());
                 defConstruct.initializers = List.of(defaultSuperConstructor);
                 this.constructors.put("", defConstruct);
             }
-            if(!this.staticFields().isEmpty()){
-                //Создание классового конструктора <clinit>
-                StmtNode body = new StmtNode(StmtType.block);
-                this.staticFields().values().forEach(f -> {
-                    if(f.initValue != null)
-                        body.blockStmts.add(f.initStmt());
-                });
-                
-                MethodRecord classConstruct = new MethodRecord(this, true, false, StandartType._void(), "<clinit>", new ArrayList<>(), body);
-                this.methods.put("", classConstruct);
-            }
+        }
+        if(!this.staticFields().isEmpty()){
+            //Создание классового конструктора <clinit>
+            StmtNode body = new StmtNode(StmtType.block);
+            this.staticFields().values().forEach(f -> {
+                if(f.initValue != null)
+                    body.blockStmts.add(f.initStmt());
+            });
+        
+            MethodRecord classConstruct = new MethodRecord(this, true, false, VariableType._void(), "<clinit>", new ArrayList<>(), body);
+            this.methods.put("", classConstruct);
         }
     }
     
     //-- ВЫЧИСЛЕНИЕ ТИПОВ
     
     public void inferTypes(){
-        if(this.isEnum()){
-            return; //TODO ?
-        }
         for(FieldRecord fieldRecord : this.fields.values()){
             fieldRecord.inferType(new ClassInitContext(fieldRecord));
         }
@@ -295,7 +291,7 @@ public class ClassRecord implements NamedRecord{
     private boolean shouldSplitAsInterface;
     private void markInterfaceSplitting(){
         this.shouldSplitAsInterface = true;
-        if(_super != null){
+        if(_super != RTLClassRecord.object){
             _super.markInterfaceSplitting();
         }
         _interfaces.forEach(i -> i.markInterfaceSplitting());
@@ -307,7 +303,7 @@ public class ClassRecord implements NamedRecord{
             this.splitInterface();
         }
         else {
-            if(_super != null && _super.shouldSplitAsInterface){
+            if(_super != null && _super != RTLClassRecord.object && _super.shouldSplitAsInterface){
                 _super.splitInterface();
                 this.javaInterfaces.add(_super.associatedInterface);
             }
@@ -331,7 +327,7 @@ public class ClassRecord implements NamedRecord{
         containerClassTable.put(associatedInterface.name(), associatedInterface);
         associatedInterface.javaInterfaces.addAll(this.javaInterfaces);
         this.javaInterfaces.clear();
-        if(_super != null){
+        if(_super != RTLClassRecord.object){
             _super.splitInterface();
             associatedInterface.javaInterfaces.add(_super.associatedInterface);
         }
@@ -456,14 +452,25 @@ public class ClassRecord implements NamedRecord{
     public String name(){
         return this.name;
     }
+    public String descriptor() {
+        return "Lggdart/gen/" + name() + ";";
+    }
+    public boolean isSubTypeOf(ClassRecord other){
+        if(other == null) return false;
+        
+        if(this == other) return true;
+        
+        return (_super != null && _super.isSubTypeOf(other)) || _interfaces.stream().anyMatch(i -> i.isSubTypeOf(other)) || _mixins.stream().anyMatch(m -> m.isSubTypeOf(other)) ||
+                (associatedInterface != null && associatedInterface.isSubTypeOf(other)) || javaInterfaces.stream().anyMatch(i -> i.isSubTypeOf(other));
+    }
     public boolean isGlobal() {
         return this.name.equals(globalName);
     }
     public boolean isAbstract(){
-        if(declaration == null)
+        if(declaration == null) //FIXME ?
             return true;
-        if(!(declaration instanceof ClassDeclarationNode))
-            throw new IllegalStateException();
+        if(isEnum())
+            return false;
         return ((ClassDeclarationNode) declaration).isAbstract;
     }
     public boolean isEnum(){

@@ -6,7 +6,6 @@ import ast.semantic.context.Context;
 import ast.semantic.context.MethodContext;
 import ast.semantic.typization.ClassType;
 import ast.semantic.typization.ListType;
-import ast.semantic.typization.StandartType;
 import ast.semantic.typization.VariableType;
 import org.w3c.dom.Element;
 
@@ -159,19 +158,19 @@ public class ExprNode extends Node {
             printError("Can't use 'super' as an expression", this.lineNum);
         }
         else if(this.type == ExprType.null_pr){
-            result = StandartType._null();
+            result = VariableType._null();
         }
         else if(this.type == ExprType.int_pr){
-            result = StandartType._int();
+            result = VariableType._int();
         }
         else if(this.type == ExprType.double_pr){
-            result = StandartType._double();
+            result = VariableType._double();
         }
         else if(this.type == ExprType.bool_pr){
-            result = StandartType._bool();
+            result = VariableType._bool();
         }
         else if(this.type == ExprType.string_pr){
-            result = StandartType._String();
+            result = VariableType._String();
         }
         else if(this.type == ExprType.list_pr){
             VariableType element = null;
@@ -188,8 +187,14 @@ public class ExprNode extends Node {
         }
         else if(this.type == ExprType.string_interpolation){
             this.operand.annotateTypes(context);
-            this.operand2.annotateTypes(context); //TODO если не стринг то вызвать .toString()
-            result = StandartType._String();
+            VariableType interpol = this.operand2.annotateTypes(context);
+            if(!interpol.equals(VariableType._String())){
+                ExprNode toString = new ExprNode(ExprType.methodCall);
+                toString.operand = this.operand2;
+                toString.identifierAccess = new IdentifierNode("toString");
+                this.operand2 = toString;
+            }
+            result = VariableType._String();
         }
         else if(this.type == ExprType.constructNew || this.type == ExprType.constructConst ||
                 this.type == ExprType.constructRedirect || this.type == ExprType.constructSuper){
@@ -199,22 +204,12 @@ public class ExprNode extends Node {
                 constructed = context.currentClass();
             } else if (this.type == ExprType.constructSuper) {
                 constructed = context.currentClass()._super;
-                //TODO сделать нормальное понимание всеми классами того, они наследуются от Object
-                if(constructed == null){
-                    if(this.constructName != null){
-                        printError("Cannot find constructor '"+ this.constructName.stringVal +"' in 'Object'.", this.lineNum);
-                    }
-                    if(!callArguments.isEmpty()){
-                        printError("Parameter count mismatch", this.lineNum); //TODO улучшить сообщение
-                    }
-                    return StandartType._void();
-                }
             }else {
                 constructed = context.lookupClass(this.identifierAccess.stringVal);
-            }
-            //TODO проверить что не абстрактный и не енам
-            if(constructed == null){
-                printError("Unknown class '"+ this.identifierAccess.stringVal +"'.", this.identifierAccess.lineNum);
+                //TODO проверить что не абстрактный и не енам
+                if(constructed == null){
+                    printError("Unknown class '"+ this.identifierAccess.stringVal +"'.", this.identifierAccess.lineNum);
+                }
             }
             String constructorName = this.constructName != null ? this.constructName.stringVal : "";
             MethodRecord constructor = constructed.constructors.get(constructorName);
@@ -226,7 +221,7 @@ public class ExprNode extends Node {
             }
             checkCallArgumentsTyping(constructor, context);
             this.annotatedRecord = constructor;
-            result = this.type == ExprType.constructNew || this.type == ExprType.constructConst ? new ClassType(constructed) : StandartType._void();
+            result = this.type == ExprType.constructNew || this.type == ExprType.constructConst ? new ClassType(constructed) : VariableType._void();
         }
         else if(this.type == ExprType.identifier){
             //TODO вставить проверку на нуллабельность?
@@ -295,10 +290,10 @@ public class ExprNode extends Node {
             }
             else {
                 VariableType op = operand.annotateTypes(context);
-                if(!(op instanceof ClassType)){
+                classRecord = op.associatedClass();
+                if(op == null){
                     printError("Cannot find field '"+ this.identifierAccess.stringVal +"' in '"+ op.toString() +"'.", this.lineNum);
                 }
-                classRecord = ((ClassType) op).clazz;
                 field = classRecord.nonStaticFields().get(this.identifierAccess.stringVal);
             }
             if(field == null){
@@ -306,7 +301,7 @@ public class ExprNode extends Node {
             }
             if(context instanceof ClassInitContext){
                 //FIXME instance member-ы недоступны  при инициализации только если они принадлежат this, а не просто тому же классу
-                if(field.containerClass.equals(((ClassInitContext) context).classRecord) && !field.isStatic()){
+                if(operand.type == ExprType.this_pr && !field.isStatic()){
                     printError("The instance member '" + field.name() + "' can't be accessed in an initializer.", this.lineNum);
                 }
                 field.inferType((ClassInitContext) context);
@@ -341,10 +336,10 @@ public class ExprNode extends Node {
             }
             else {
                 VariableType op = operand.annotateTypes(context);
-                if(!(op instanceof ClassType)){ //TODO у стандартных типов и листов тоже могут быть методы.
+                classRecord = op.associatedClass();
+                if(op == null){
                     printError("Cannot find method '"+ this.identifierAccess.stringVal +"' in '"+ op.toString() +"'.", this.lineNum);
                 }
-                classRecord = ((ClassType) op).clazz;
                 method = classRecord.nonStaticMethods().get(this.identifierAccess.stringVal);
             }
             if(method == null){
@@ -360,7 +355,7 @@ public class ExprNode extends Node {
         }
         else if (this.type == ExprType.type_check || this.type == ExprType.neg_type_check) {
             operand.annotateTypes(context);
-            result = StandartType._bool();
+            result = VariableType._bool();
         }
         else if(this.isAssign()){
             if(this.type == ExprType.assign){
@@ -397,10 +392,10 @@ public class ExprNode extends Node {
                         }
                         else {
                             VariableType op = operand.operand.annotateTypes(context);
-                            if(!(op instanceof ClassType)){
-                                printError("Cannot find field '"+ operand.identifierAccess.stringVal +"' in '"+ op.toString() +"'.", operand.lineNum);
+                            classRecord = op.associatedClass();
+                            if(op == null){
+                                printError("Cannot find field '"+ this.identifierAccess.stringVal +"' in '"+ op.toString() +"'.", this.lineNum);
                             }
-                            classRecord = ((ClassType) op).clazz;
                             field = classRecord.nonStaticFields().get(operand.identifierAccess.stringVal);
                         }
                         if(field == null){
@@ -408,7 +403,7 @@ public class ExprNode extends Node {
                         }
                         if(context instanceof ClassInitContext){
                             //FIXME instance member-ы недоступны  при инициализации только если они принадлежат this, а не просто тому же классу
-                            if(field.containerClass.equals(((ClassInitContext) context).classRecord) && !field.isStatic()){
+                            if(operand.operand.type == ExprType.this_pr && !field.isStatic()){
                                 printError("The instance member '" + field.name() + "' can't be accessed in an initializer.", this.lineNum);
                             }
                             field.inferType((ClassInitContext) context);
@@ -441,27 +436,27 @@ public class ExprNode extends Node {
             operand.annotateTypes(context);
             operand2.annotateTypes(context);
             if(this.type == ExprType.add || this.type == ExprType.sub || this.type == ExprType.mul || this.type == ExprType._div){
-                if(!StandartType._double().isAssignableFrom(operand.annotatedType)){
+                if(!VariableType._double().isAssignableFrom(operand.annotatedType)){
                     printError("Cannot perform arithmetic on type '"+ operand.annotatedType.toString() +"'.", operand.lineNum);
                 }
-                if(!StandartType._double().isAssignableFrom(operand2.annotatedType)){
+                if(!VariableType._double().isAssignableFrom(operand2.annotatedType)){
                     printError("Cannot perform arithmetic on type '"+ operand2.annotatedType.toString() +"'.", operand2.lineNum);
                 }
                 
                 if(this.type == ExprType._div){
-                    result = StandartType._double();
+                    result = VariableType._double();
                 }
                 else{
-                    result = operand.annotatedType.equals(StandartType._int()) && operand2.annotatedType.equals(StandartType._int()) ?
-                            StandartType._int() :
-                            StandartType._double();
+                    result = operand.annotatedType.equals(VariableType._int()) && operand2.annotatedType.equals(VariableType._int()) ?
+                            VariableType._int() :
+                            VariableType._double();
                 }
             }
             else if(this.type == ExprType.brackets) {
                 if(!(operand.annotatedType instanceof ListType)){
                     printError("Cannot perform brackets op on type '"+ operand.annotatedType.toString() +"' .", operand.lineNum);
                 }
-                if(!StandartType._int().isAssignableFrom(operand2.annotatedType)){
+                if(!VariableType._int().isAssignableFrom(operand2.annotatedType)){
                     printError("The value type '" + operand2.annotatedType.toString() + "' can't be assigned to the expected type 'int'.", operand2.lineNum);
                 }
                 result = ((ListType)operand.annotatedType).valueType;
@@ -473,25 +468,25 @@ public class ExprNode extends Node {
                 result = operand.annotatedType;
             }
             else if(this.type == ExprType.eq || this.type == ExprType.neq){
-                result = StandartType._bool();
+                result = VariableType._bool();
             }
             else if(this.type == ExprType.greater || this.type == ExprType.greater_eq || this.type == ExprType.less || this.type == ExprType.less_eq){
-                if(!StandartType._double().isAssignableFrom(operand.annotatedType)){
+                if(!VariableType._double().isAssignableFrom(operand.annotatedType)){
                     printError("Cannot perform comparisons on type '"+ operand.annotatedType.toString() +"' .", operand.lineNum);
                 }
-                if(!StandartType._double().isAssignableFrom(operand2.annotatedType)){
+                if(!VariableType._double().isAssignableFrom(operand2.annotatedType)){
                     printError("Cannot perform comparisons on type '"+ operand2.annotatedType.toString() +"' .", operand2.lineNum);
                 }
-                result = StandartType._bool();
+                result = VariableType._bool();
             }
             else if(this.type == ExprType._or || this.type == ExprType._and){
-                if(!StandartType._bool().isAssignableFrom(operand.annotatedType)){
+                if(!VariableType._bool().isAssignableFrom(operand.annotatedType)){
                     printError("Cannot perform logic on type '"+ operand.annotatedType.toString() +"'.", operand.lineNum);
                 }
-                if(!StandartType._bool().isAssignableFrom(operand2.annotatedType)){
+                if(!VariableType._bool().isAssignableFrom(operand2.annotatedType)){
                     printError("Cannot perform logic on type '"+ operand2.annotatedType.toString() +"'.", operand2.lineNum);
                 }
-                result = StandartType._bool();
+                result = VariableType._bool();
             }
             
         }
@@ -499,10 +494,10 @@ public class ExprNode extends Node {
             //Унарные операторы
             operand.annotateTypes(context);
             if(this.type == ExprType._not){
-                if(!StandartType._bool().isAssignableFrom(operand.annotatedType)){
+                if(!VariableType._bool().isAssignableFrom(operand.annotatedType)){
                     printError("Cannot perform logic on type '"+ operand.annotatedType.toString() +"'.", operand.lineNum);
                 }
-                result = StandartType._bool();
+                result = VariableType._bool();
             }
             else if(this.type == ExprType.bang){
                 result = operand.annotatedType.clone(); //TODO проверить
@@ -510,7 +505,7 @@ public class ExprNode extends Node {
             }
             else {
                 //Арифметические унарные
-                if(!StandartType._double().isAssignableFrom(operand.annotatedType)){
+                if(!VariableType._double().isAssignableFrom(operand.annotatedType)){
                     printError("Cannot perform arithmetic on type '"+ operand.annotatedType.toString() +"'.", operand.lineNum);
                 }
                 result = operand.annotatedType;

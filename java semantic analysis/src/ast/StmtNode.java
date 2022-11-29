@@ -4,7 +4,6 @@ import ast.semantic.LocalVarRecord;
 import ast.semantic.VariableRecord;
 import ast.semantic.context.MethodContext;
 import ast.semantic.typization.ListType;
-import ast.semantic.typization.StandartType;
 import ast.semantic.typization.VariableType;
 import org.w3c.dom.Element;
 
@@ -134,7 +133,7 @@ public class StmtNode extends Node{
         }
         if (type == StmtType.if_statement || type == StmtType.while_statement || type == StmtType.do_statement) {
             this.condition.annotateTypes(context);
-            if (!StandartType._bool().isAssignableFrom(this.condition.annotatedType)) {
+            if (!VariableType._bool().isAssignableFrom(this.condition.annotatedType)) {
                 printError("Conditions must have a static type of 'bool'.", this.condition.lineNum);
             }
 
@@ -144,7 +143,7 @@ public class StmtNode extends Node{
             return;
         }
         if (type == StmtType.return_statement) {
-            VariableType type = this.returnExpr != null ? this.returnExpr.annotateTypes(context) : StandartType._void();
+            VariableType type = this.returnExpr != null ? this.returnExpr.annotateTypes(context) : VariableType._void();
             if (!context.methodRecord.returnType.isAssignableFrom(type)) {
                 printError("A value of type '" + type + "' can't be returned from the method '" + context.methodRecord.name + "' because it has a return type of '" + context.methodRecord.returnType + "'.", this.lineNum);
             }
@@ -188,7 +187,7 @@ public class StmtNode extends Node{
 
             forInitializerStmt.validateStmt(forContext); //FIXME ? если здесь объявлена переменная то она перезаписывает другую, если такая уже объявлена
             condition.annotateTypes(forContext);
-            if (!StandartType._bool().isAssignableFrom(this.condition.annotatedType)) {
+            if (!VariableType._bool().isAssignableFrom(this.condition.annotatedType)) {
                 printError("Conditions must have a static type of 'bool'.", this.condition.lineNum);
             }
             forPostExpr.forEach(exprNode -> exprNode.annotateTypes(forContext));

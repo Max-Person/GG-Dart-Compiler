@@ -28,6 +28,10 @@ public class FieldRecord extends VariableRecord{
     public FieldRecord(ClassRecord containerClass, boolean isLate, boolean isStatic, boolean isConst, boolean isFinal, VariableType varType, String name) {
         super(isLate, isStatic, isConst, isFinal, varType, name);
         this.containerClass = containerClass;
+        if(varType != null){
+            this.containerClass.methods.put(associatedGetter().name(), associatedGetter());
+            this.containerClass.methods.put(associatedSetter().name(), associatedSetter());
+        }
     }
 
     public VariableType inferType(ClassInitContext context){
