@@ -131,6 +131,12 @@ public class ClassRecord implements NamedRecord{
             this.constructors.put("", constructor);
             // для каждого из значений енама надо добавить статическое поле
             for (IdentifierNode value : ((EnumNode) declaration).values) {
+                if(this.name.equals(value.stringVal)){
+                    printError("The name of the enum constant can't be the same as the enum's name.", value.lineNum);
+                }
+                if(this.fields.containsKey(value.stringVal)){
+                    printError("The name '" + value.stringVal + "' is already defined.", value.lineNum);
+                }
                 field = new FieldRecord(this, false, true, false, true, new ClassType(this), value.stringVal);
                 field.initValue = new ExprNode(ExprType.constructNew);
                 field.initValue.identifierAccess = new IdentifierNode(this.name);
