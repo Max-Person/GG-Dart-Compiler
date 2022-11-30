@@ -437,6 +437,7 @@ void yyerror(char const *s) {
     //-------------- ЕНАМ --------------
 
     enumType: ENUM identifier '{' identifierList '}'         {$$ = create_enum_node($2, $4);}
+        | ENUM identifier '{' identifierList ',' '}'         {$$ = create_enum_node($2, $4);}
     ;
 
     //------- КЛАССЫ --------------
