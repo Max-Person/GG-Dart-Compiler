@@ -408,14 +408,29 @@ public class ClassRecord implements NamedRecord{
         }
         return res;
     }
+    private Map<String, MethodRecord>concreteMethods(){
+        //TODO проверить
+        Map<String, MethodRecord> res = Utils.filterByValue(methods, method -> !method.isAbstract());
+        if(this._super != null){
+            for(MethodRecord m : this._super.concreteMethods().values()){
+                if(!this.methods.containsKey(m.name())){
+                    res.put(m.name(), m);
+                }
+                else if(!this.methods.get(m.name()).isValidOverrideOf(m)){
+                    printError("'" + this.name() + "." + m.name() + "' isn’t a valid override of '" + _super.name() + "." + m.name() + "'", _super.declaration.lineNum());
+                }
+            }
+        }
+        return res;
+    }
     private List<MethodRecord> unresolvedAbstractMethods(){
         List<MethodRecord> res = new ArrayList<>(Utils.filterByValue(methods, method -> method.isAbstract()).values());
         if(this._super != null){
             for(MethodRecord m : this._super.unresolvedAbstractMethods()){
-                if(!this.methods.containsKey(m.name())){
+                if(!this.concreteMethods().containsKey(m.name())){
                     res.add(m);
                 }
-                else if(!this.methods.get(m.name()).isValidOverrideOf(m)){
+                else if(!this.concreteMethods().get(m.name()).isValidOverrideOf(m)){
                     printError("'" + this.name() + "." + m.name() + "' isn’t a valid override of '" + _super.name() + "." + m.name() + "'", _super.declaration.lineNum());
                 }
             }
@@ -423,10 +438,10 @@ public class ClassRecord implements NamedRecord{
         if(!this._interfaces.isEmpty()){
             for(ClassRecord i : this._interfaces){
                 for(MethodRecord m : i.nonStaticMethods().values()){
-                    if(!this.methods.containsKey(m.name())){
+                    if(!this.concreteMethods().containsKey(m.name())){
                         res.add(m);
                     }
-                    else if(!this.methods.get(m.name()).isValidOverrideOf(m)){
+                    else if(!this.concreteMethods().get(m.name()).isValidOverrideOf(m)){
                         printError("'" + this.name() + "." + m.name() + "' isn’t a valid override of '" + i.name() + "." + m.name() + "'", i.declaration.lineNum());
                     }
                 }
@@ -435,10 +450,10 @@ public class ClassRecord implements NamedRecord{
         if(!this._mixins.isEmpty()){
             for(ClassRecord i : this._mixins){
                 for(MethodRecord m : i.nonStaticMethods().values()){
-                    if(!this.methods.containsKey(m.name())){
+                    if(!this.concreteMethods().containsKey(m.name())){
                         res.add(m);
                     }
-                    else if(!this.methods.get(m.name()).isValidOverrideOf(m)){
+                    else if(!this.concreteMethods().get(m.name()).isValidOverrideOf(m)){
                         printError("'" + this.name() + "." + m.name() + "' isn’t a valid override of '" + i.name() + "." + m.name() + "'", i.declaration.lineNum());
                     }
                 }

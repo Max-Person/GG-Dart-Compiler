@@ -244,14 +244,16 @@ public class MethodRecord implements NamedRecord, Cloneable{
             });
         }
         
-        this.body.validateStmt(new MethodContext(this));
-        if(!this.body.endsWith(StmtType.return_statement) && !this.returnType.equals(VariableType._void())){
-            if(!this.returnType.isNullable){
-                printError("The body might complete normally, causing 'null' to be returned, but the return type, '" + this.returnType + "', is a non-nullable type.", -1); //TODO номер строки
+        if(!this.isAbstract()){
+            this.body.validateStmt(new MethodContext(this));
+            if(!this.body.endsWith(StmtType.return_statement) && !this.returnType.equals(VariableType._void())){
+                if(!this.returnType.isNullable){
+                    printError("The body might complete normally, causing 'null' to be returned, but the return type, '" + this.returnType + "', is a non-nullable type.", -1); //TODO номер строки
+                }
+                StmtNode returnal = new StmtNode(StmtType.return_statement);
+                returnal.returnExpr = new ExprNode(ExprType.null_pr);
+                this.body.blockStmts.add(returnal);
             }
-            StmtNode returnal = new StmtNode(StmtType.return_statement);
-            returnal.returnExpr = new ExprNode(ExprType.null_pr);
-            this.body.blockStmts.add(returnal);
         }
     }
     

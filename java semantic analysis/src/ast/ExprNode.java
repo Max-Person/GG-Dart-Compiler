@@ -335,6 +335,7 @@ public class ExprNode extends Node {
                 }
             }
             else {
+                //TODO поймать супер
                 VariableType op = operand.annotateTypes(context);
                 classRecord = op.associatedClass();
                 if(op == null){
