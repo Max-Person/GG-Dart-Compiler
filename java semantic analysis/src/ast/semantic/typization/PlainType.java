@@ -28,6 +28,18 @@ public class PlainType extends VariableType{
     public String toString() {
         return name + (isNullable? "?" : "");
     }
+
+    public static PlainType _int(){
+        return new PlainType("int (plain)", "D");
+    }
+
+    public static PlainType _double(){
+        return new PlainType("double (plain)", "I");
+    }
+
+    public static PlainType _bool(){
+        return new PlainType("bool (plain)", "Z");
+    }
     
     @Override
     public boolean equals(Object o) {

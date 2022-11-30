@@ -286,4 +286,6 @@ public class MethodRecord implements NamedRecord, Cloneable{
         this.descriptorConst = containerClass.addConstant(ConstantRecord.newUtf8(this.descriptor()));
         this.nameConst = containerClass.addConstant(ConstantRecord.newUtf8(this.name()));
     }
+
+    public boolean visible = true;
 }

@@ -53,10 +53,10 @@ public abstract class VariableType implements Cloneable {
     public static VariableType standartType(String name){
         if(name.equals("Null")) return new PlainType("Null", "Null");
         if(name.equals("void")) return new PlainType("void","V");
-        if(name.equals("int")) return new PlainType("int","I");
-        if(name.equals("double")) return new PlainType("double", "D");
         if(name.equals("num")) return new PlainType("num", "num");
-        if(name.equals("bool")) return new PlainType("bool", "Z");   //FIXME ???
+        if(name.equals("int")) return new ClassType(RTLClassRecord._integer);
+        if(name.equals("double")) return new ClassType(RTLClassRecord._double);
+        if(name.equals("bool")) return new ClassType(RTLClassRecord._bool);
         if(name.equals("String")) return new ClassType(RTLClassRecord.string);
         if(name.equals("Object")) return new ClassType(RTLClassRecord.object);
         return null;

@@ -39,10 +39,10 @@ public abstract class ClassContext implements Context{
         }
         else {
             if(classRecord.nonStaticFields().containsKey(name)){
-                return classRecord.fields.get(name);
+                return classRecord.nonStaticFields().get(name);
             }
             else if(classRecord.nonStaticMethods().containsKey(name)){
-                return classRecord.methods.get(name);
+                return classRecord.nonStaticMethods().get(name);
             }
         }
 
@@ -51,17 +51,17 @@ public abstract class ClassContext implements Context{
         if (classRecord.containerClassTable.containsKey(name)){
             return classRecord.containerClassTable.get(name);
         }
-        else if(global.methods.containsKey(name)){
-            return global.methods.get(name);
+        else if(global.staticFields().containsKey(name)){
+            return global.staticFields().get(name);
         }
-        else if(global.fields.containsKey(name)){
-            return global.fields.get(name);
+        else if(global.staticMethods().containsKey(name)){
+            return global.staticMethods().get(name);
         }
-        else if(RTLClassRecord.io.methods.containsKey(name)){
-            return RTLClassRecord.io.methods.get(name);
+        else if(RTLClassRecord.io.staticMethods().containsKey(name)){
+            return RTLClassRecord.io.staticMethods().get(name);
         }
-        else if(RTLClassRecord.io.fields.containsKey(name)){
-            return RTLClassRecord.io.fields.get(name);
+        else if(RTLClassRecord.io.staticFields().containsKey(name)){
+            return RTLClassRecord.io.staticFields().get(name);
         }
 
         return null;

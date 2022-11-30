@@ -396,11 +396,11 @@ public class ClassRecord implements NamedRecord{
         return res;
     }
     public Map<String, MethodRecord> staticMethods(){
-        return Utils.filterByValue(methods, method -> method.isStatic());
+        return Utils.filterByValue(methods, method -> method.isStatic() && method.visible);
     }
     public Map<String, MethodRecord> nonStaticMethods(){
         //TODO проверить
-        Map<String, MethodRecord> res = Utils.filterByValue(methods, method -> !method.isStatic());
+        Map<String, MethodRecord> res = Utils.filterByValue(methods, method -> !method.isStatic() && method.visible);
         if(_super != null){
             _super.nonStaticMethods().forEach((name, method) -> res.putIfAbsent(name, method));
         }

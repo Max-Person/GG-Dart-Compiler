@@ -2,6 +2,7 @@ package ast.semantic;
 
 import ast.StmtNode;
 import ast.StmtType;
+import ast.semantic.typization.ListType;
 import ast.semantic.typization.VariableType;
 
 import java.util.Arrays;
@@ -19,7 +20,7 @@ public class RTLListClassRecord extends RTLClassRecord{
         
         param = new ParameterRecord(null, null, valueType.clone(), "obj", false);
         this.methods.put("add", new MethodRecord(this, VariableType._void(), "add", List.of(param), new StmtNode(StmtType.block)));
-    
+
         param = new ParameterRecord(null, null, valueType.clone(), "obj", false);
         this.methods.put("remove", new MethodRecord(this, VariableType._bool(), "remove", List.of(param), new StmtNode(StmtType.block)));
     
@@ -32,5 +33,10 @@ public class RTLListClassRecord extends RTLClassRecord{
         param = new ParameterRecord(null, null, VariableType._int(), "index", false);
         param2 = new ParameterRecord(null, null, valueType.clone(), "obj", false);
         this.methods.put("insert", new MethodRecord(this, VariableType._void(), "insert", Arrays.asList(param, param2), new StmtNode(StmtType.block)));
+
+        param = new ParameterRecord(null, null, valueType.clone(), "obj", false);
+        MethodRecord with =  new MethodRecord(this, new ListType(valueType), "with", List.of(param), new StmtNode(StmtType.block));
+        with.visible = false;
+        this.methods.put("with",with);
     }
 }

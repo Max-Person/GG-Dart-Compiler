@@ -6,6 +6,7 @@ import ast.semantic.context.Context;
 import ast.semantic.context.MethodContext;
 import ast.semantic.typization.ClassType;
 import ast.semantic.typization.ListType;
+import ast.semantic.typization.PlainType;
 import ast.semantic.typization.VariableType;
 import org.w3c.dom.Element;
 
@@ -161,12 +162,36 @@ public class ExprNode extends Node {
             result = VariableType._null();
         }
         else if(this.type == ExprType.int_pr){
+            ExprNode val = new ExprNode(ExprType.int_pr);
+            val.intValue = this.intValue;
+            val.annotatedType = PlainType._int();
+            this.type = ExprType.methodCall;
+            this.operand = new ExprNode(ExprType.identifier);
+            this.operand.identifierAccess = new IdentifierNode(RTLClassRecord._integer.javaName);
+            this.identifierAccess = new IdentifierNode("valueOf");
+            this.callArguments = List.of(val);
             result = VariableType._int();
         }
         else if(this.type == ExprType.double_pr){
+            ExprNode val = new ExprNode(ExprType.double_pr);
+            val.doubleValue = this.doubleValue;
+            val.annotatedType = PlainType._double();
+            this.type = ExprType.methodCall;
+            this.operand = new ExprNode(ExprType.identifier);
+            this.operand.identifierAccess = new IdentifierNode(RTLClassRecord._double.javaName);
+            this.identifierAccess = new IdentifierNode("valueOf");
+            this.callArguments = List.of(val);
             result = VariableType._double();
         }
         else if(this.type == ExprType.bool_pr){
+            ExprNode val = new ExprNode(ExprType.bool_pr);
+            val.boolValue = this.boolValue;
+            val.annotatedType = PlainType._bool();
+            this.type = ExprType.methodCall;
+            this.operand = new ExprNode(ExprType.identifier);
+            this.operand.identifierAccess = new IdentifierNode(RTLClassRecord._double.javaName);
+            this.identifierAccess = new IdentifierNode("valueOf");
+            this.callArguments = List.of(val);
             result = VariableType._bool();
         }
         else if(this.type == ExprType.string_pr){
@@ -183,6 +208,25 @@ public class ExprNode extends Node {
                     printError("elements of a List must be of the same type.", el.lineNum);
                 }
             }
+
+            ExprNode construct = new ExprNode(ExprType.constructNew);
+            construct.identifierAccess = new IdentifierNode("List");
+            construct.annotatedType = new ListType(element);
+            ExprNode op = construct;
+            for(ExprNode el: this.listValues){
+                ExprNode with = new ExprNode(ExprType.methodCall);
+                with.operand = op;
+                with.identifierAccess = new IdentifierNode("with");
+                with.callArguments = List.of(el);
+                with.annotatedType = new ListType(element);
+                op = with;
+            }
+
+            this.listValues = new ArrayList<>();
+            this.operand = op.operand;
+            this.identifierAccess = op.identifierAccess;
+            this.callArguments = op.callArguments;
+
             result = new ListType(element);
         }
         else if(this.type == ExprType.string_interpolation){
