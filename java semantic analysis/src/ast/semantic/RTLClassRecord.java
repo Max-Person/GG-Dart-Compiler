@@ -42,6 +42,36 @@ public class RTLClassRecord extends ClassRecord{
         MethodRecord defConstruct = new MethodRecord(object, false, true, VariableType._void(), "", new ArrayList<>(), new StmtNode(StmtType.block));
         object.constructors.put("", defConstruct);
     
+        _integer = new RTLClassRecord(null, "int", true);
+        _integer.javaName = "Integer";
+        ParameterRecord valParam = new ParameterRecord(null, null, PlainType._int(), "val", false);
+        MethodRecord valueOf = new MethodRecord(_integer, true, false, VariableType._int(), "valueOf", List.of(valParam), new StmtNode(StmtType.block));
+        valueOf.visible = false;
+        _integer.methods.put("valueOf", valueOf);
+        MethodRecord value = new MethodRecord(_integer, false, false, PlainType._int(), "intValue", new ArrayList<>(), new StmtNode(StmtType.block));
+        value.visible = false;
+        _integer.methods.put("intValue", value);
+    
+        _double = new RTLClassRecord(null, "double", true);
+        _double.javaName = "Double";
+        valParam = new ParameterRecord(null, null, PlainType._double(), "val", false);
+        valueOf = new MethodRecord(_double, true, false, VariableType._double(), "valueOf", List.of(valParam), new StmtNode(StmtType.block));
+        valueOf.visible = false;
+        _double.methods.put("valueOf", valueOf);
+        value = new MethodRecord(_double, false, false, PlainType._double(), "doubleValue", new ArrayList<>(), new StmtNode(StmtType.block));
+        value.visible = false;
+        _double.methods.put("doubleValue", value);
+    
+        _bool = new RTLClassRecord(null, "bool", true);
+        _bool.javaName = "Boolean";
+        valParam = new ParameterRecord(null, null, PlainType._bool(), "val", false);
+        valueOf = new MethodRecord(_bool, true, false, VariableType._bool(), "valueOf", List.of(valParam), new StmtNode(StmtType.block));
+        valueOf.visible = false;
+        _bool.methods.put("valueOf", valueOf);
+        value = new MethodRecord(_bool, false, false, PlainType._bool(), "booleanValue", new ArrayList<>(), new StmtNode(StmtType.block));
+        value.visible = false;
+        _bool.methods.put("booleanValue", value);
+    
         string = new RTLClassRecord(null, "String", true);
         string._super = object;
         ParameterRecord equalsParam = new ParameterRecord(null, null, VariableType._String(), "o", false);
@@ -64,27 +94,6 @@ public class RTLClassRecord extends ClassRecord{
         io.methods.put("readBool", new MethodRecord(io, true, false, VariableType._bool(), "readBool", List.of(readParam), new StmtNode(StmtType.block)));
         readParam = new ParameterRecord(null, null, VariableType._String(), "obj", false);
         io.methods.put("readString", new MethodRecord(io, true, false, VariableType._String(), "readString", List.of(readParam), new StmtNode(StmtType.block)));
-
-        _integer = new RTLClassRecord(null, "int", true);
-        _integer.javaName = "Integer";
-        ParameterRecord valParam = new ParameterRecord(null, null, PlainType._int(), "val", false);
-        MethodRecord valueOf = new MethodRecord(_integer, true, false, VariableType._int(), "valueOf", List.of(valParam), new StmtNode(StmtType.block));
-        valueOf.visible = false;
-        _integer.methods.put("valueOf", valueOf);
-
-        _double = new RTLClassRecord(null, "double", true);
-        _double.javaName = "Double";
-        valParam = new ParameterRecord(null, null, PlainType._double(), "val", false);
-        valueOf = new MethodRecord(_double, true, false, VariableType._double(), "valueOf", List.of(valParam), new StmtNode(StmtType.block));
-        valueOf.visible = false;
-        _double.methods.put("valueOf", valueOf);
-
-        _bool = new RTLClassRecord(null, "bool", true);
-        _bool.javaName = "Boolean";
-        valParam = new ParameterRecord(null, null, PlainType._bool(), "val", false);
-        valueOf = new MethodRecord(_bool, true, false, VariableType._bool(), "valueOf", List.of(valParam), new StmtNode(StmtType.block));
-        valueOf.visible = false;
-        _bool.methods.put("valueOf", valueOf);
-    
+        
     }
 }

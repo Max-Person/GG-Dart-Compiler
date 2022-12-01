@@ -21,19 +21,23 @@ public class LocalVarRecord extends VariableRecord{
         this.containerMethod = containerMethod;
     }
     
-    public VariableType inferType(){
+    public VariableType inferType(MethodContext context){
         if(this.varType == null){
-            this.varType = this.initValue.annotateTypes(new MethodContext(containerMethod));
+            this.initValue.annotateTypes(context);
+            this.initValue.assertNotVoid();
+            this.initValue.makeAssignableTo(VariableType._Object());
+            this.varType = initValue.annotatedType;
         }
         return this.varType;
     }
 
-    public void resolveType(){
+    public void resolveType(MethodContext context){
         if (this.varType == null){
-            inferType();
+            inferType(context);
         } else if (initValue != null){
-            if (!this.varType.isAssignableFrom(this.initValue.annotateTypes(new MethodContext(containerMethod)))){
-                printError("A value of type '" + initValue.type + "' can't be assigned to a variable of type '" + varType + "'.", initValue.lineNum);
+            this.initValue.annotateTypes(context);
+            if (!this.initValue.makeAssignableTo(this.varType)){
+                printError("A value of type '" + initValue.annotatedType + "' can't be assigned to a variable of type '" + varType + "'.", initValue.lineNum);
             }
         }
     }

@@ -39,7 +39,10 @@ public class FieldRecord extends VariableRecord{
             if(context.dependencyStack.contains(this)){
                 printError("The type of '"+this.name()+"' can't be inferred because it depends on itself through the dependency cycle.", initValue.lineNum); //TODO Вывести цикл зависимости
             }
-            this.varType = this.initValue.annotateTypes(context.dependantContext(this));
+            this.initValue.annotateTypes(context.dependantContext(this));
+            this.initValue.assertNotVoid();
+            this.initValue.makeAssignableTo(VariableType._Object());
+            this.varType = initValue.annotatedType;
             
             this.containerClass.methods.put(associatedGetter().name(), associatedGetter());
             this.containerClass.methods.put(associatedSetter().name(), associatedSetter());

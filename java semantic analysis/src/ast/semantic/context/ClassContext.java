@@ -48,8 +48,8 @@ public abstract class ClassContext implements Context{
 
         ClassRecord global = classRecord.containerClassTable.get(ClassRecord.globalName);
 
-        if (classRecord.containerClassTable.containsKey(name)){
-            return classRecord.containerClassTable.get(name);
+        if (ClassRecord.lookup(classTable(), name) != null){
+            return ClassRecord.lookup(classTable(), name);
         }
         else if(global.staticFields().containsKey(name)){
             return global.staticFields().get(name);

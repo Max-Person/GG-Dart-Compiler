@@ -140,7 +140,7 @@ public class SemanticCrawler {
             }
             ClassRecord potentialMixin = checkInheritable(mixin, "mixin");
             resolveClass(children, potentialMixin); //FIXME не уверен в этом..
-            if (potentialMixin._super != null) {
+            if (potentialMixin._super != RTLClassRecord.object) {
                 printError("The class '" + potentialMixin.name() + "' can't be used as a mixin because it extends a class other than 'Object'.", mixin.lineNum);
             }
             for (ClassMemberDeclarationNode decl : ((ClassDeclarationNode) potentialMixin.declaration).classMembers) {

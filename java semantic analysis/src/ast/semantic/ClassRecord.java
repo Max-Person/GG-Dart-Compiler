@@ -396,11 +396,11 @@ public class ClassRecord implements NamedRecord{
         return res;
     }
     public Map<String, MethodRecord> staticMethods(){
-        return Utils.filterByValue(methods, method -> method.isStatic() && method.visible);
+        return Utils.filterByValue(methods, method -> method.isStatic());
     }
     public Map<String, MethodRecord> nonStaticMethods(){
         //TODO проверить
-        Map<String, MethodRecord> res = Utils.filterByValue(methods, method -> !method.isStatic() && method.visible);
+        Map<String, MethodRecord> res = Utils.filterByValue(methods, method -> !method.isStatic());
         if(_super != null){
             _super.nonStaticMethods().forEach((name, method) -> res.putIfAbsent(name, method));
         }
@@ -468,6 +468,28 @@ public class ClassRecord implements NamedRecord{
         return res;
     }
     
+    public static ClassRecord lookup(Map<String, ClassRecord> classTable, String name){
+        if(classTable.containsKey(name))
+            return classTable.get(name);
+    
+        if(name.equals("int")) return RTLClassRecord._integer;
+        if(name.equals("double")) return RTLClassRecord._double;
+        if(name.equals("bool")) return RTLClassRecord._bool;
+        if(name.equals("String")) return RTLClassRecord.string;
+        if(name.equals("Object")) return RTLClassRecord.object;
+        if(name.equals("List")) return new RTLListClassRecord(null, VariableType._Object());
+        
+        return null;
+    }
+    
+    public static ClassRecord lastCommonSuper(ClassRecord a, ClassRecord b){
+        if(a.isSubTypeOf(b)) return b;
+        if(b.isSubTypeOf(a)) return a;
+        
+        //TODO разобраться с алгоритмом поиска
+        return RTLClassRecord.object;
+    }
+    
     //-- ИНФОРМАЦИОННЫЕ МЕТОДЫ
     
     public String name(){
@@ -488,11 +510,9 @@ public class ClassRecord implements NamedRecord{
         return this.name.equals(globalName);
     }
     public boolean isAbstract(){
-        if(declaration == null) //FIXME ?
-            return true;
         if(isEnum())
             return false;
-        return ((ClassDeclarationNode) declaration).isAbstract;
+        return declaration != null && ((ClassDeclarationNode) declaration).isAbstract;
     }
     public boolean isEnum(){
         return declaration != null && declaration instanceof EnumNode;

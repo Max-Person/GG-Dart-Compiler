@@ -5,13 +5,20 @@ import ast.StmtType;
 import ast.semantic.typization.ListType;
 import ast.semantic.typization.VariableType;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
 public class RTLListClassRecord extends RTLClassRecord{
+    VariableType valueType;
+    
     public RTLListClassRecord(Map<String, ClassRecord> containerClassTable, VariableType valueType) {
         super(containerClassTable, "List", false);
+        this.valueType = valueType;
+        
+        MethodRecord defConstruct = new MethodRecord(this, false, true, VariableType._void(), "", new ArrayList<>(), new StmtNode(StmtType.block));
+        this.constructors.put("", defConstruct);
         
         ParameterRecord param = new ParameterRecord(null, null, VariableType._int(), "index", false);
         this.methods.put("elementAt", new MethodRecord(this, valueType.clone(), "elementAt", List.of(param), new StmtNode(StmtType.block)));
@@ -38,5 +45,10 @@ public class RTLListClassRecord extends RTLClassRecord{
         MethodRecord with =  new MethodRecord(this, new ListType(valueType), "with", List.of(param), new StmtNode(StmtType.block));
         with.visible = false;
         this.methods.put("with",with);
+    }
+    
+    @Override
+    public boolean isSubTypeOf(ClassRecord other) {
+        return super.isSubTypeOf(other) || (other instanceof RTLListClassRecord && this.valueType.isSubtypeOf(((RTLListClassRecord) other).valueType));
     }
 }

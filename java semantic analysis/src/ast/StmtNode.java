@@ -4,6 +4,7 @@ import ast.semantic.LocalVarRecord;
 import ast.semantic.VariableRecord;
 import ast.semantic.context.MethodContext;
 import ast.semantic.typization.ListType;
+import ast.semantic.typization.PlainType;
 import ast.semantic.typization.VariableType;
 import org.w3c.dom.Element;
 
@@ -126,14 +127,14 @@ public class StmtNode extends Node{
         if(type == StmtType.variable_declaration_statement){
             for (VariableDeclarationNode variable: variableDeclaration) {
                 LocalVarRecord localVarRecord = new LocalVarRecord(context.methodRecord, variable);
-                localVarRecord.resolveType();
+                localVarRecord.resolveType(context);
                 context.addLocalToScope(localVarRecord);
             }
             return;
         }
         if (type == StmtType.if_statement || type == StmtType.while_statement || type == StmtType.do_statement) {
             this.condition.annotateTypes(context);
-            if (!VariableType._bool().isAssignableFrom(this.condition.annotatedType)) {
+            if (!this.condition.makeAssignableTo(PlainType._bool())) {
                 printError("Conditions must have a static type of 'bool'.", this.condition.lineNum);
             }
 
@@ -143,8 +144,13 @@ public class StmtNode extends Node{
             return;
         }
         if (type == StmtType.return_statement) {
-            VariableType type = this.returnExpr != null ? this.returnExpr.annotateTypes(context) : VariableType._void();
-            if (!context.methodRecord.returnType.isAssignableFrom(type)) {
+            if( this.returnExpr != null){
+                this.returnExpr.annotateTypes(context);
+                if (!returnExpr.makeAssignableTo(context.methodRecord.returnType)) {
+                    printError("A value of type '" + returnExpr.annotatedType + "' can't be returned from the method '" + context.methodRecord.name + "' because it has a return type of '" + context.methodRecord.returnType + "'.", this.lineNum);
+                }
+            }
+            else if (!context.methodRecord.returnType.equals(VariableType._void())) {
                 printError("A value of type '" + type + "' can't be returned from the method '" + context.methodRecord.name + "' because it has a return type of '" + context.methodRecord.returnType + "'.", this.lineNum);
             }
             return;
@@ -171,7 +177,7 @@ public class StmtNode extends Node{
             }
             else {
                 LocalVarRecord localVarRecord = new LocalVarRecord(forContext.methodRecord, forEachVariableDecl);
-                localVarRecord.resolveType();
+                localVarRecord.resolveType(context);
                 forContext.addLocalToScope(localVarRecord);  //FIXME ? если здесь объявлена переменная то она перезаписывает другую, если такая уже объявлена
                 type = localVarRecord.varType;
             }
@@ -187,7 +193,7 @@ public class StmtNode extends Node{
 
             forInitializerStmt.validateStmt(forContext); //FIXME ? если здесь объявлена переменная то она перезаписывает другую, если такая уже объявлена
             condition.annotateTypes(forContext);
-            if (!VariableType._bool().isAssignableFrom(this.condition.annotatedType)) {
+            if (!this.condition.makeAssignableTo(PlainType._bool())) {
                 printError("Conditions must have a static type of 'bool'.", this.condition.lineNum);
             }
             forPostExpr.forEach(exprNode -> exprNode.annotateTypes(forContext));
@@ -196,9 +202,11 @@ public class StmtNode extends Node{
         }
         if(type == StmtType.switch_statement){
             condition.annotateTypes(context);
+            condition.makeAssignableTo(VariableType._Object());
             for (SwitchCaseNode caseNode : switchCaseList) {
                 caseNode.condition.annotateTypes(context);
-                if(!condition.annotatedType.isAssignableFrom(caseNode.condition.annotatedType)){ //TODO должен быть сабтайпом
+                caseNode.condition.makeAssignableTo(VariableType._Object());
+                if(!condition.annotatedType.isSubtypeOf(caseNode.condition.annotatedType)){
                     printError("The switch case expression type '" + caseNode.condition.annotatedType + "' must be a subtype of the switch expression type '" + condition.annotatedType + "'.", caseNode.condition.lineNum);
                 }
                 MethodContext caseContext = context.skippableChildScope();

@@ -50,6 +50,8 @@ public enum ExprType {
     postfix_inc,
     postfix_dec,
     bang,
+    
+    i2d,
 
     assign,
     and_assign,

@@ -19,20 +19,12 @@ public abstract class VariableType implements Cloneable {
                 return _void();
             }
             case _named -> {
-                if(isStandartName((typeNode.name.stringVal))){
-                    result = standartType(typeNode.name.stringVal);
-                }
-                else if(classTable.containsKey(typeNode.name.stringVal)){
-                    ClassRecord classRecord = classTable.get(typeNode.name.stringVal);
-                    if(classRecord.associatedInterface != null){
-                        classRecord = classRecord.associatedInterface;
-                    }
-                    result = new ClassType(classRecord);
-                }
-                else {
+                ClassRecord clazz = ClassRecord.lookup(classTable, typeNode.name.stringVal);
+                if(clazz == null) {
                     printError("Undefined class '" + typeNode.name.stringVal + "'", typeNode.lineNum);
                     return null;
                 }
+                result = new ClassType(clazz);
             }
             case _list -> {
                 VariableType el = VariableType.from(classTable, typeNode.listValueType);
@@ -53,7 +45,6 @@ public abstract class VariableType implements Cloneable {
     public static VariableType standartType(String name){
         if(name.equals("Null")) return new PlainType("Null", "Null");
         if(name.equals("void")) return new PlainType("void","V");
-        if(name.equals("num")) return new PlainType("num", "num");
         if(name.equals("int")) return new ClassType(RTLClassRecord._integer);
         if(name.equals("double")) return new ClassType(RTLClassRecord._double);
         if(name.equals("bool")) return new ClassType(RTLClassRecord._bool);
@@ -79,7 +70,7 @@ public abstract class VariableType implements Cloneable {
     }
     
     public boolean isAssignableFrom(VariableType o){
-        return (o.isSubtypeOf(this) || this.descriptor().equals(o.descriptor()) || (this.descriptor().equals("D") && o.descriptor().equals("I")) || o.descriptor().equals("Null")) &&
+        return (o.isSubtypeOf(this) || this.descriptor().equals(o.descriptor()) || o.descriptor().equals("Null")) &&
                 (this.isNullable || !o.isNullable);
     }
     
