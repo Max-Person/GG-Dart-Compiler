@@ -141,6 +141,7 @@ public class ClassRecord implements NamedRecord{
                 field.initValue = new ExprNode(ExprType.constructNew);
                 field.initValue.identifierAccess = new IdentifierNode(this.name);
                 field.initValue.constructName = null;
+                field.initValue.isSynthetic = true;
                 ExprNode arg = new ExprNode(ExprType.string_pr);
                 arg.stringValue = value.stringVal;
                 field.initValue.callArguments = Collections.singletonList(arg);
@@ -164,10 +165,6 @@ public class ClassRecord implements NamedRecord{
             }
             if(this.constructors.isEmpty()){
                 //Создание конструктора по умолчанию
-                if(!this._super.constructors.containsKey("") || !this._super.constructors.get("").parameters.isEmpty()){
-                    printError("The superclass '"+ this._super.name() +"' doesn't have an a default (unnamed + zero argument) constructor.", declaration.lineNum());
-                }
-                
                 MethodRecord defConstruct = new MethodRecord(this, false, true, VariableType._void(), "", new ArrayList<>(), null);
                 InitializerNode defaultSuperConstructor = new InitializerNode(null, new ArrayList<>());
                 defConstruct.initializers = List.of(defaultSuperConstructor);
@@ -264,7 +261,7 @@ public class ClassRecord implements NamedRecord{
             }
         
             for(MethodRecord m : mixinMethods.values()){
-                if(!m.isAbstract() && !this.methods.containsKey(m.name())){
+                if(!m.isAbstract() && !this.concreteMethods().containsKey(m.name())){
                     m.copyTo(this);
                 }
             }
@@ -354,6 +351,7 @@ public class ClassRecord implements NamedRecord{
         
         ClassRecord i = new ClassRecord(this.containerClassTable, "I!" + this.name, true);
         Utils.filterByValue(methods, method -> !method.isStatic()).values().forEach(method -> method.copyAsAbstractTo(i));
+        Utils.filterByValue(fields, field -> !field.isStatic()).values().forEach(field -> field.copyTo(i)); //FIXME ? Нужно для валиадции, потом либо удалить либо не использовать
         return i;
     }
     
@@ -528,8 +526,10 @@ public class ClassRecord implements NamedRecord{
             javaInterfaces.forEach(i -> description.append(" ").append(i.name()));
         }
         description.append(":\n");
-        for(FieldRecord fieldRecord : fields.values()){
-            description.append("\t").append(fieldRecord.descriptor()).append(" ").append(fieldRecord.name()).append("\n");
+        if(!this.isJavaInterface){
+            for(FieldRecord fieldRecord : fields.values()){
+                description.append("\t").append(fieldRecord.descriptor()).append(" ").append(fieldRecord.name()).append("\n");
+            }
         }
         for(MethodRecord methodRecord : methods.values()){
             description.append("\t").append(methodRecord.descriptor()).append(" ").append(methodRecord.name()).append("\n");

@@ -45,7 +45,7 @@ public class ExprNode extends Node {
             intValue = Long.parseLong(element.getAttribute("int_value"));
         }
         if(type == ExprType.double_pr){
-            doubleValue = Long.parseLong(element.getAttribute("double_value"));
+            doubleValue = Double.parseDouble(element.getAttribute("double_value"));
         }
         if(type == ExprType.string_pr){
             stringValue = element.getAttribute("string_value");
@@ -264,7 +264,7 @@ public class ExprNode extends Node {
     }
     
     private boolean getterTransformsAllowed = true;
-    private boolean isSynthetic = false;
+    public boolean isSynthetic = false;
     
     public VariableType annotateTypes(Context context){
         VariableType result = null;
@@ -352,7 +352,7 @@ public class ExprNode extends Node {
                 if(constructed == null){
                     printError("Unknown class '"+ this.identifierAccess.stringVal +"'.", this.identifierAccess.lineNum);
                 }
-                if(constructed.isAbstract() || constructed.isEnum()){
+                if(constructed.isAbstract() || (constructed.isEnum() && !this.isSynthetic)){
                     printError("Can't instantiate '"+ this.identifierAccess.stringVal +"'.", this.identifierAccess.lineNum);
                 }
             }

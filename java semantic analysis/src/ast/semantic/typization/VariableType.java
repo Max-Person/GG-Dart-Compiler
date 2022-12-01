@@ -24,7 +24,7 @@ public abstract class VariableType implements Cloneable {
                     printError("Undefined class '" + typeNode.name.stringVal + "'", typeNode.lineNum);
                     return null;
                 }
-                result = new ClassType(clazz);
+                result = new ClassType(clazz.associatedInterface != null ? clazz.associatedInterface : clazz);
             }
             case _list -> {
                 VariableType el = VariableType.from(classTable, typeNode.listValueType);

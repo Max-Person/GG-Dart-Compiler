@@ -41,6 +41,7 @@ public class StmtNode extends Node{
     public List<SwitchCaseNode> switchCaseList = new ArrayList<>();
     public List<StmtNode> defaultSwitchActions = new ArrayList<>();
 
+    //TODO починить .getElementsByTagName("condition"), изменить на получение прямых потомков
     public StmtNode(Element element) {
         super(element);
         type = StmtType.valueOf(element.getAttribute("type"));
