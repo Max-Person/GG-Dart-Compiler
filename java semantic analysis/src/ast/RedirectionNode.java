@@ -18,7 +18,7 @@ public class RedirectionNode extends Node{
             name = new IdentifierNode(unlink(element, "name"));
         }
 
-        if(element.getElementsByTagName("args").getLength() > 0){
+        if(Node.getImmediateChildByName(element, "args") != null){
             unlinkList(element, "args").forEach(e->args.add(new ExprNode(e)));
         }
     }

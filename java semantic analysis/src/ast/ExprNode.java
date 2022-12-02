@@ -53,7 +53,7 @@ public class ExprNode extends Node {
         if(type == ExprType.bool_pr){
             boolValue = Boolean.parseBoolean(element.getAttribute("bool_value"));
         }
-        if(type == ExprType.list_pr && element.getElementsByTagName("values").getLength() > 0){
+        if(type == ExprType.list_pr && Node.getImmediateChildByName(element, "values") != null){
             unlinkList(element, "values").forEach(e -> listValues.add(new ExprNode(e)));
         }
 
@@ -76,24 +76,24 @@ public class ExprNode extends Node {
         if(type == ExprType.methodCall){
             operand = new ExprNode(unlink(element, "operand"));
             identifierAccess = new IdentifierNode(unlink(element, "identifierAccess"));
-            if(element.getElementsByTagName("callArguments").getLength() > 0){
+            if(Node.getImmediateChildByName(element, "callArguments") != null){
                 unlinkList(element, "callArguments").forEach(e -> callArguments.add(new ExprNode(e)));
             }
         }
 
         if(type == ExprType.constructNew || type == ExprType.constructConst){
             identifierAccess = new IdentifierNode(unlink(element, "identifierAccess"));
-            if(element.getElementsByTagName("callArguments").getLength() > 0){
+            if(Node.getImmediateChildByName(element, "callArguments") != null){
                 unlinkList(element, "callArguments").forEach(e -> callArguments.add(new ExprNode(e)));
             }
-            if(element.getElementsByTagName("constructName").getLength() > 0){
+            if(Node.getImmediateChildByName(element, "constructName") != null){
                 constructName = new IdentifierNode(unlink(element, "constructName"));
             }
         }
 
         if(type == ExprType.call){
             identifierAccess = new IdentifierNode(unlink(element, "identifierAccess"));
-            if(element.getElementsByTagName("callArguments").getLength() > 0){
+            if(Node.getImmediateChildByName(element, "callArguments") != null){
                 unlinkList(element, "callArguments").forEach(e -> callArguments.add(new ExprNode(e)));
             }
         }

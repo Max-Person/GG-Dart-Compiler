@@ -29,10 +29,10 @@ public class SignatureNode extends Node{
             if(this.isNamed){
                 constructName = new IdentifierNode(unlink(element, "constructName"));
             }
-            if(element.getElementsByTagName("initializers").getLength() > 0){
+            if(Node.getImmediateChildByName(element, "initializers") != null){
                 unlinkList(element, "initializers").forEach(e -> initializers.add(new InitializerNode(e))); //TODO сделать
             }
-            if(element.getElementsByTagName("redirection").getLength() > 0){
+            if(Node.getImmediateChildByName(element, "redirection") != null){
                 redirection = new RedirectionNode(unlink(element, "redirection"));
             }
         } else {
@@ -41,7 +41,7 @@ public class SignatureNode extends Node{
         }
         name = new IdentifierNode(unlink(element, "name"));
 
-        if(element.getElementsByTagName("parameters").getLength() > 0){
+        if(Node.getImmediateChildByName(element, "parameters") != null){
             unlinkList(element, "parameters").forEach(e -> parameters.add(new FormalParameterNode(e))); //TODO доделать
         }
     }

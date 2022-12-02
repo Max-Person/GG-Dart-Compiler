@@ -13,7 +13,7 @@ public class SwitchCaseNode extends Node{
     public SwitchCaseNode(Element element) {
         super(element);
         condition = new ExprNode(unlink(element, "condition"));
-        if(element.getElementsByTagName("actions").getLength() > 0){
+        if(Node.getImmediateChildByName(element, "actions") != null){
             unlinkList(element, "actions").forEach(e->actions.add(new StmtNode(e)));
         }
     }

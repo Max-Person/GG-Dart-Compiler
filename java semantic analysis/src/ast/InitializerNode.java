@@ -26,7 +26,7 @@ public class InitializerNode extends Node{
                 superConstructorName = new IdentifierNode(unlink(element, "superConstructorName"));
             }
 
-            if(element.getElementsByTagName("args").getLength() > 0){
+            if(Node.getImmediateChildByName(element, "args") != null){
                 unlinkList(element, "args").forEach(e->args.add(new ExprNode(e)));
             }
         }

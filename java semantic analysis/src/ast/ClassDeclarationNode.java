@@ -21,19 +21,19 @@ public class ClassDeclarationNode extends Node implements ClasslikeDeclaration{
         isAbstract = Boolean.parseBoolean(element.getAttribute("isAbstract"));
         isAlias = Boolean.parseBoolean(element.getAttribute("isAlias"));
 
-        if(element.getElementsByTagName("super").getLength() > 0){
+        if(Node.getImmediateChildByName(element, "super") != null){
             _super = new TypeNode(unlink(element, "super"));
         }
 
-        if(element.getElementsByTagName("mixins").getLength() > 0){
+        if(Node.getImmediateChildByName(element, "mixins") != null){
             unlinkList(element, "mixins").forEach(e -> mixins.add(new TypeNode(e)));
         }
 
-        if(element.getElementsByTagName("interfaces").getLength() > 0){
+        if(Node.getImmediateChildByName(element, "interfaces") != null){
             unlinkList(element, "interfaces").forEach(e -> interfaces.add(new TypeNode(e)));
         }
 
-        if(!isAlias && element.getElementsByTagName("classMembers").getLength() > 0){
+        if(!isAlias && Node.getImmediateChildByName(element, "classMembers") != null){
             unlinkList(element, "classMembers").forEach(e -> classMembers.add(new ClassMemberDeclarationNode(e)));
         }
 
