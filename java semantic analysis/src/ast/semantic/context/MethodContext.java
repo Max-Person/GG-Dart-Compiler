@@ -56,4 +56,9 @@ public class MethodContext extends ClassContext{
         methodRecord.addLocalVar(var);
         localsScope.put(var.name, var);
     }
+
+    public void replaceLocalInScope(LocalVarRecord var){
+        methodRecord.addLocalVar(var);
+        localsScope.put(var.name, var);
+    }
 }

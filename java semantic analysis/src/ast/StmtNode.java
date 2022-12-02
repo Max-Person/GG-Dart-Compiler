@@ -177,8 +177,8 @@ public class StmtNode extends Node{
             }
             else {
                 LocalVarRecord localVarRecord = new LocalVarRecord(forContext.methodRecord, forEachVariableDecl);
-                localVarRecord.resolveType(context);
-                forContext.addLocalToScope(localVarRecord);  //FIXME ? если здесь объявлена переменная то она перезаписывает другую, если такая уже объявлена
+                localVarRecord.resolveType(forContext);
+                forContext.replaceLocalInScope(localVarRecord);  //FIXED если здесь объявлена переменная то она перезаписывает другую, если такая уже объявлена
                 type = localVarRecord.varType;
             }
 
@@ -191,7 +191,21 @@ public class StmtNode extends Node{
         if(type == StmtType.forN_statement){
             MethodContext forContext = context.skippableChildScope();
 
-            forInitializerStmt.validateStmt(forContext); //FIXME ? если здесь объявлена переменная то она перезаписывает другую, если такая уже объявлена
+            //FIXED если здесь объявлена переменная то она перезаписывает другую, если такая уже объявлена
+            if(forInitializerStmt.type == StmtType.variable_declaration_statement){
+                for (VariableDeclarationNode variable: forInitializerStmt.variableDeclaration) {
+                    LocalVarRecord localVarRecord = new LocalVarRecord(forContext.methodRecord, variable);
+                    localVarRecord.resolveType(forContext);
+                    forContext.replaceLocalInScope(localVarRecord);
+                }
+            }
+            else {
+                forInitializerStmt.validateStmt(forContext);
+            }
+            if(condition == null){
+                condition = new ExprNode(ExprType.bool_pr);
+                condition.boolValue = true;
+            }
             condition.annotateTypes(forContext);
             if (!this.condition.makeAssignableTo(PlainType._bool())) {
                 printError("Conditions must have a static type of 'bool'.", this.condition.lineNum);
