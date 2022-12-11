@@ -1,6 +1,7 @@
 package ast.semantic;
 
 import ast.*;
+import ast.semantic.constants.UTF8Constant;
 import ast.semantic.context.ClassInitContext;
 import ast.semantic.context.MethodContext;
 import ast.semantic.typization.VariableType;
@@ -283,8 +284,8 @@ public class MethodRecord implements NamedRecord, Cloneable{
     public void finalizeType(){
         this.returnType.finalyze();
         this.parameters.forEach(p -> p.varType.finalyze());
-        this.descriptorConst = containerClass.addConstant(ConstantRecord.newUtf8(this.descriptor()));
-        this.nameConst = containerClass.addConstant(ConstantRecord.newUtf8(this.name()));
+        this.descriptorConst = containerClass.addConstant(new UTF8Constant(this.descriptor()));
+        this.nameConst = containerClass.addConstant(new UTF8Constant(this.name()));
     }
 
     public boolean visible = true;

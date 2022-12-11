@@ -4,7 +4,6 @@ import ast.*;
 import ast.semantic.typization.VariableType;
 
 import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -52,7 +51,7 @@ public class SemanticCrawler {
         
         //2. Проверить правильность объявлений классов (наследование + повторы).
         for(ClassRecord record : classTable.values()){
-            if(!record.isGlobal()) resolveClass(new ArrayList<>(), record);
+            record.resolveDeclaration(new ArrayList<>());
         }
         
         //3. Собрать информацию о названиях полей и методов классов (+ информация об их типах, если она доступна сразу) - формирование соответствующих таблиц
@@ -74,7 +73,10 @@ public class SemanticCrawler {
         //6. Провести преобразования имплементаций/миксинов
         //(разделение классов на интерфейсы и классы-реализации
         classTable.values().forEach(c -> c.resolveInterfaces());
-        classTable.values().forEach(c -> c.finalizeTypes());
+        classTable.values().forEach(c -> {
+            c.finalizeTypes();
+            c.addInheritanceConstants();
+        });
         
         //7. обработать методы (преобразовать к нужному виду - у конструкторов например), сформировать таблицы локалок
         classTable.values().forEach(c -> c.checkMethods());
@@ -106,70 +108,6 @@ public class SemanticCrawler {
                 classTable.get(ClassRecord.globalName).fields.containsKey(name)) {
             printError("'" + name + "' is already declared in this scope.", lineNum);
         }
-    }
-    
-    //TODO убрать это в ClassRecord
-    public void resolveClass(List<ClassRecord> children, ClassRecord classRecord) {
-        if (classRecord.isDeclResolved) return;
-        if (classRecord.isEnum()) return;//TODO ?
-        ClassDeclarationNode clazz = (ClassDeclarationNode) classRecord.declaration;
-        if (children.contains(classRecord)) {
-            printError("'" + clazz.name() + "' can't be a supertype of itself.", clazz._super.lineNum); //TODO выписать список рекурсии
-        }
-        children.add(classRecord);
-        if (clazz._super != null) { // Если класс от кого-то наследутеся
-            ClassRecord potentialSuper = checkInheritable(clazz._super, "extend");
-
-            resolveClass(children, potentialSuper); //FIXME не уверен в этом..
-            classRecord._super = potentialSuper;
-        }
-        for (TypeNode iinterface : clazz.interfaces) {
-            if (clazz.interfaces.subList(0, clazz.interfaces.indexOf(iinterface)).stream().anyMatch(i -> i.name.stringVal.equals(iinterface.name.stringVal))) {
-                printError("'" + iinterface.name.stringVal + "' can only be implemented once.", iinterface.lineNum);
-            }
-            if (classRecord._super != null && iinterface.name.stringVal.equals(classRecord._super.name())) {
-                printError("'" + iinterface.name.stringVal + "' can't be used in both the 'extends' and 'implements' clauses.", iinterface.lineNum);
-            }
-            ClassRecord potentialInterface = checkInheritable(iinterface, "implement");
-            resolveClass(children, potentialInterface); //FIXME не уверен в этом..
-            classRecord._interfaces.add(potentialInterface);
-        }
-        for (TypeNode mixin : clazz.mixins) {
-            if (classRecord._super != null && mixin.name.stringVal.equals(classRecord._super.name())) {
-                printError("'" + mixin.name.stringVal + "' can't be used in both the 'extends' and 'with' clauses.", mixin.lineNum);
-            }
-            ClassRecord potentialMixin = checkInheritable(mixin, "mixin");
-            resolveClass(children, potentialMixin); //FIXME не уверен в этом..
-            if (potentialMixin._super != RTLClassRecord.object) {
-                printError("The class '" + potentialMixin.name() + "' can't be used as a mixin because it extends a class other than 'Object'.", mixin.lineNum);
-            }
-            for (ClassMemberDeclarationNode decl : ((ClassDeclarationNode) potentialMixin.declaration).classMembers) {
-                if ((decl.type == ClassMemberDeclarationType.methodDefinition || decl.type == ClassMemberDeclarationType.methodSignature) && decl.signature.isConstruct) {
-                    printError("The class '" + potentialMixin.name() + "' can't be used as a mixin because it declares a constructor.", mixin.lineNum);
-                }
-            }
-            classRecord._mixins.add(potentialMixin);
-
-        }
-        children.remove(classRecord); //FIXME ?
-        classRecord.isDeclResolved = true;
-    }
-    
-    private ClassRecord checkInheritable(TypeNode node, String action) {
-        if (node.type == TypeType._list) {
-            printError("a class can't " + action + " a List type", node.lineNum);
-        }
-        if (node.isNullable) {
-            printError("a class can't " + action + " a nullable type", node.lineNum);
-        }
-        if(VariableType.isStandartName(node.name.stringVal)){
-            printError("classes can't' " + action + " '"+node.name+"'.", node.lineNum);
-        }
-        ClassRecord potentialInheritance = classTable.get(node.name.stringVal);
-        if (potentialInheritance == null || potentialInheritance.isEnum()) {
-            printError("classes can only " + action + " other classes.", node.lineNum);
-        }
-        return potentialInheritance;
     }
     
     

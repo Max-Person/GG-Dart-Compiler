@@ -1,6 +1,7 @@
 package ast.semantic;
 
 import ast.*;
+import ast.semantic.constants.UTF8Constant;
 import ast.semantic.context.ClassInitContext;
 import ast.semantic.typization.VariableType;
 
@@ -116,8 +117,8 @@ public class FieldRecord extends VariableRecord{
     
     public void finalizeType(){
         this.varType.finalyze();
-        this.descriptorConst = containerClass.addConstant(ConstantRecord.newUtf8(this.varType.descriptor()));
-        this.nameConst = containerClass.addConstant(ConstantRecord.newUtf8(this.name()));
+        this.descriptorConst = containerClass.addConstant(new UTF8Constant(this.varType.descriptor()));
+        this.nameConst = containerClass.addConstant(new UTF8Constant(this.name()));
     }
     
     public void copyTo(ClassRecord classRecord) {

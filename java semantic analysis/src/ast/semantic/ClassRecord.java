@@ -1,10 +1,16 @@
 package ast.semantic;
 
 import ast.*;
+import ast.semantic.constants.ClassConstant;
+import ast.semantic.constants.UTF8Constant;
 import ast.semantic.context.ClassInitContext;
 import ast.semantic.typization.ClassType;
 import ast.semantic.typization.VariableType;
 
+import java.io.ByteArrayOutputStream;
+import java.io.DataOutputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.util.*;
 
 import static ast.semantic.SemanticCrawler.printError;
@@ -34,10 +40,9 @@ public class ClassRecord implements NamedRecord{
         this.containerClassTable = containerClassTable;
         this.declaration = declaration;
         this.name = declaration.name();
-        addConstant(ConstantRecord.newUtf8("Code"));
-        ConstantRecord className = ConstantRecord.newUtf8(declaration.name());
-        addConstant(className);
-        addConstant(ConstantRecord.newClass(className));
+        addConstant(new UTF8Constant("Code"));
+        UTF8Constant className = (UTF8Constant) addConstant(new UTF8Constant(name));
+        addConstant(new ClassConstant(className));
     }
     public static final String globalName = "<GLOBAL>";  //FIXME точно ли это работает...
     public ClassRecord(Map<String, ClassRecord> containerClassTable, String name, boolean isJavaInterface){
@@ -45,17 +50,83 @@ public class ClassRecord implements NamedRecord{
         this.declaration = null;
         this.name = name;
         this.isJavaInterface = isJavaInterface;
-        addConstant(ConstantRecord.newUtf8("Code"));
-        ConstantRecord className = ConstantRecord.newUtf8(name);
-        addConstant(className);
-        addConstant(ConstantRecord.newClass(className));
+        addConstant(new UTF8Constant("Code"));
+        UTF8Constant className = (UTF8Constant) addConstant(new UTF8Constant(name));
+        addConstant(new ClassConstant(className));
+    }
+    
+    //-- РАЗРЕШЕНИЕ ОБЪЯВЛЕНИЯ КЛАССА
+    
+    public void resolveDeclaration(List<ClassRecord> children) {
+        if (this.isDeclResolved) return;
+        if (this.declaration == null) return;
+        if (this.isEnum()) return;//TODO ?
+        
+        ClassDeclarationNode clazz = (ClassDeclarationNode) this.declaration;
+        if (children.contains(this)) {
+            printError("'" + clazz.name() + "' can't be a supertype of itself.", clazz._super.lineNum); //TODO выписать список рекурсии
+        }
+        children.add(this);
+        if (clazz._super != null) { // Если класс от кого-то наследутеся
+            ClassRecord potentialSuper = checkInheritable(clazz._super, "extend");
+            
+            potentialSuper.resolveDeclaration(children); //FIXME не уверен в этом..
+            this._super = potentialSuper;
+        }
+        for (TypeNode iinterface : clazz.interfaces) {
+            if (clazz.interfaces.subList(0, clazz.interfaces.indexOf(iinterface)).stream().anyMatch(i -> i.name.stringVal.equals(iinterface.name.stringVal))) {
+                printError("'" + iinterface.name.stringVal + "' can only be implemented once.", iinterface.lineNum);
+            }
+            if (iinterface.name.stringVal.equals(this._super.name())) {
+                printError("'" + iinterface.name.stringVal + "' can't be used in both the 'extends' and 'implements' clauses.", iinterface.lineNum);
+            }
+            ClassRecord potentialInterface = checkInheritable(iinterface, "implement");
+            potentialInterface.resolveDeclaration(children); //FIXME не уверен в этом..
+            this._interfaces.add(potentialInterface);
+        }
+        for (TypeNode mixin : clazz.mixins) {
+            if (mixin.name.stringVal.equals(this._super.name())) {
+                printError("'" + mixin.name.stringVal + "' can't be used in both the 'extends' and 'with' clauses.", mixin.lineNum);
+            }
+            ClassRecord potentialMixin = checkInheritable(mixin, "mixin");
+            potentialMixin.resolveDeclaration(children); //FIXME не уверен в этом..
+            if (potentialMixin._super != RTLClassRecord.object) {
+                printError("The class '" + potentialMixin.name() + "' can't be used as a mixin because it extends a class other than 'Object'.", mixin.lineNum);
+            }
+            for (ClassMemberDeclarationNode decl : ((ClassDeclarationNode) potentialMixin.declaration).classMembers) {
+                if ((decl.type == ClassMemberDeclarationType.methodDefinition || decl.type == ClassMemberDeclarationType.methodSignature) && decl.signature.isConstruct) {
+                    printError("The class '" + potentialMixin.name() + "' can't be used as a mixin because it declares a constructor.", mixin.lineNum);
+                }
+            }
+            this._mixins.add(potentialMixin);
+            
+        }
+        children.remove(this); //FIXME ?
+        this.isDeclResolved = true;
+    }
+    
+    private ClassRecord checkInheritable(TypeNode node, String action) {
+        if (node.type == TypeType._list) {
+            printError("a class can't " + action + " a List type", node.lineNum);
+        }
+        if (node.isNullable) {
+            printError("a class can't " + action + " a nullable type", node.lineNum);
+        }
+        if(VariableType.isStandartName(node.name.stringVal)){
+            printError("classes can't' " + action + " '"+node.name+"'.", node.lineNum);
+        }
+        ClassRecord potentialInheritance = lookup(containerClassTable, node.name.stringVal);
+        if (potentialInheritance == null || potentialInheritance.isEnum()) {
+            printError("classes can only " + action + " other classes.", node.lineNum);
+        }
+        return potentialInheritance;
     }
     
     //-- НАПОЛНЕНИЕ КЛАССА
     
     private int constantCount = 0;
     public ConstantRecord addConstant(ConstantRecord constant){
-        ConstantRecord existing = constants.values().stream().filter(c -> c.number == constant.number).findFirst().orElse(null);
+        ConstantRecord existing = constants.values().stream().filter(c -> c.equals(constant)).findFirst().orElse(null);
         if(existing == null){
             constantCount++;
             constant.number = constantCount;
@@ -352,8 +423,24 @@ public class ClassRecord implements NamedRecord{
         ClassRecord i = new ClassRecord(this.containerClassTable, "I!" + this.name, true);
         Utils.filterByValue(methods, method -> !method.isStatic()).values().forEach(method -> method.copyAsAbstractTo(i));
         Utils.filterByValue(fields, field -> !field.isStatic()).values().forEach(field -> field.copyTo(i)); //FIXME ? Нужно для валиадции, потом либо удалить либо не использовать
+        //TODO ? добавить супер константу?
         return i;
     }
+    public void addInheritanceConstants(){
+        UTF8Constant superName = (UTF8Constant) addConstant(new UTF8Constant(this._super.name));
+        addConstant(new ClassConstant(superName));
+        for(ClassRecord ji : this.allJavaInterfaces()){
+            UTF8Constant interfaceName = (UTF8Constant) addConstant(new UTF8Constant(ji.name));
+            addConstant(new ClassConstant(interfaceName));
+        }
+    }
+    public List<ClassRecord> allJavaInterfaces(){
+        List<ClassRecord> res = new ArrayList<>(javaInterfaces);
+        if(associatedInterface != null) res.add(associatedInterface);
+        return res;
+    }
+    
+    //-- ФИНАЛИЗАЦИЯ ТИПОВ
     
     public void finalizeTypes(){
         fields.values().forEach(f -> f.finalizeType());
@@ -369,6 +456,53 @@ public class ClassRecord implements NamedRecord{
         }
         for (MethodRecord constructor : constructors.values()) {
             constructor.checkMethod();
+        }
+    }
+    
+    //-- ГЕНЕРАЦИЯ КОДА!!!!
+    
+    public void writeAsBytecode() throws IOException {
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        DataOutputStream dout = new DataOutputStream(out);
+        dout.writeInt(0xCAFEBABE); //"magic"
+        dout.writeShort(0);     // минорная версия
+        dout.writeShort(60);    // мажорная версия
+        
+        dout.writeShort(constants.size() + 1); //constant_pool_count
+        for (ConstantRecord c : constants.values()) {   //constant_pool
+            byte[] cb = c.toBytes();
+            dout.write(cb);
+        }
+        
+        //access_flags
+        dout.writeShort((this.isEnum() ? 0x4000 : 0) |
+                (this.isSynthetic()     ? 0x1000 : 0) |
+                (this.isAbstract()      ? 0x0400 : 0) |
+                (this.isJavaInterface   ? 0x0200 : 0) |
+                (!this.isJavaInterface   ? 0x0020 : 0) |    //ACC_SUPER
+                0x0001 );   //ACC_PUBLIC
+        
+        dout.writeShort(3); //this_class FIXME ? Уточнить номер
+        dout.writeShort(constants.values().stream().filter(c ->
+                        c instanceof ClassConstant && ((ClassConstant) c).nameConst.value.equals(this._super.name)
+                ).findFirst().orElseThrow().number); //super_class
+        
+        dout.writeShort(allJavaInterfaces().size()); //interfaces_count
+        for(ClassRecord ji : allJavaInterfaces()){  //interfaces
+            dout.writeShort(constants.values().stream().filter(c ->
+                    c instanceof ClassConstant && ((ClassConstant) c).nameConst.value.equals(ji.name)
+            ).findFirst().orElseThrow().number);
+        }
+        
+        dout.writeShort(0); //fields_count
+        dout.writeShort(0); //methods_count
+        dout.writeShort(0); //attributes_count
+    
+        //Сохранить в файл
+        byte[] store = out.toByteArray();
+        try (FileOutputStream fos = new FileOutputStream(this.name.replaceAll("[^A-Za-z0-9]", "") + ".class")) {
+            fos.write(store);
+            //fos.close(); There is no more need for this line since you had created the instance of "fos" inside the try. And this will automatically close the OutputStream
         }
     }
     
@@ -510,7 +644,10 @@ public class ClassRecord implements NamedRecord{
     public boolean isAbstract(){
         if(isEnum())
             return false;
-        return declaration != null && ((ClassDeclarationNode) declaration).isAbstract;
+        return declaration != null && ((ClassDeclarationNode) declaration).isAbstract || isJavaInterface;
+    }
+    public boolean isSynthetic(){
+        return this.declaration == null;
     }
     public boolean isEnum(){
         return declaration != null && declaration instanceof EnumNode;
