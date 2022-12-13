@@ -494,8 +494,11 @@ public class ClassRecord implements NamedRecord{
             ).findFirst().orElseThrow().number);
         }
         
-        dout.writeShort(0); //fields_count
-        dout.writeShort(0); //methods_count
+        dout.writeShort(fields.size()); //fields_count
+        for (FieldRecord field : fields.values()) {
+            dout.write(field.toBytes());
+        }
+        dout.writeShort(0); //methods_count TODO учитываются ли конструкторы
         dout.writeShort(0); //attributes_count
     
         //Сохранить в файл

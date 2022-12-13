@@ -5,6 +5,9 @@ import ast.semantic.constants.UTF8Constant;
 import ast.semantic.context.ClassInitContext;
 import ast.semantic.typization.VariableType;
 
+import java.io.ByteArrayOutputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -130,5 +133,26 @@ public class FieldRecord extends VariableRecord{
         }
         copy.containerClass = classRecord;
         classRecord.fields.put(copy.name(), copy);
+    }
+
+    public byte[] toBytes() throws IOException {
+        ByteArrayOutputStream _bytes = new ByteArrayOutputStream();
+        DataOutputStream bytes = new DataOutputStream(_bytes);
+        bytes.writeShort(0x0001  | // public
+                0 | // private
+                0 | // protected
+                (this.isStatic   ? 0x0008 : 0) | // static
+                0 |    //final TODO делаем ли мы файнал?
+                0 |    // volatile
+                0 |    // transient
+                0 | //TODO проверить synthetic
+                (this.containerClass.isEnum() && this.isStatic ? 0x4000 : 0) //enum
+                );
+
+        bytes.writeShort(nameConst.number); // name_index
+        bytes.writeShort(descriptorConst.number); // descriptor_index
+
+        bytes.writeShort(0);
+        return _bytes.toByteArray();
     }
 }
