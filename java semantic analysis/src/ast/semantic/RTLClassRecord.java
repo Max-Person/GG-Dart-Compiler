@@ -82,16 +82,11 @@ public class RTLClassRecord extends ClassRecord{
         
         io = new RTLClassRecord(null, "InputOutput", false);
         ParameterRecord printParam = new ParameterRecord(null, null, VariableType._Object(), "obj", false);
-        MethodRecord print = new MethodRecord(io, true, false, VariableType._void(), "print", List.of(printParam), new StmtNode(StmtType.block));
-        io.methods.put("print", print);
-        ParameterRecord readParam = new ParameterRecord(null, null, VariableType._int(), "obj", false);
-        io.methods.put("readInt", new MethodRecord(io, true, false, VariableType._int(), "readInt", List.of(readParam), new StmtNode(StmtType.block)));
-        readParam = new ParameterRecord(null, null, VariableType._double(), "obj", false);
-        io.methods.put("readDouble", new MethodRecord(io, true, false, VariableType._double(), "readDouble", List.of(readParam), new StmtNode(StmtType.block)));
-        readParam = new ParameterRecord(null, null, VariableType._bool(), "obj", false);
-        io.methods.put("readBool", new MethodRecord(io, true, false, VariableType._bool(), "readBool", List.of(readParam), new StmtNode(StmtType.block)));
-        readParam = new ParameterRecord(null, null, VariableType._String(), "obj", false);
-        io.methods.put("readString", new MethodRecord(io, true, false, VariableType._String(), "readString", List.of(readParam), new StmtNode(StmtType.block)));
+        io.methods.put("print",  new MethodRecord(io, true, false, VariableType._void(), "print", List.of(printParam), new StmtNode(StmtType.block)));
+        io.methods.put("readInt", new MethodRecord(io, true, false, PlainType._int(), "readInt", new ArrayList<>(), new StmtNode(StmtType.block)));
+        io.methods.put("readDouble", new MethodRecord(io, true, false, PlainType._double(), "readDouble", new ArrayList<>(), new StmtNode(StmtType.block)));
+        io.methods.put("readBool", new MethodRecord(io, true, false, PlainType._bool(), "readBool", new ArrayList<>(), new StmtNode(StmtType.block)));
+        io.methods.put("readString", new MethodRecord(io, true, false, VariableType._String(), "readString", new ArrayList<>(), new StmtNode(StmtType.block)));
         
     }
 }

@@ -40,7 +40,7 @@ public class ClassRecord implements NamedRecord{
         addConstant(new UTF8Constant("Code"));
         addClassConstant(this);
     }
-    public static final String globalName = "<GLOBAL>";  //FIXME точно ли это работает...
+    public static final String globalName = "!GLOBAL";  //FIXME точно ли это работает...
     public ClassRecord(Map<String, ClassRecord> containerClassTable, String name, boolean isJavaInterface){
         this.containerClassTable = containerClassTable;
         this.declaration = null;
@@ -459,7 +459,7 @@ public class ClassRecord implements NamedRecord{
     
     //-- ГЕНЕРАЦИЯ КОДА!!!!
     
-    public void writeAsBytecode() throws IOException {
+    public byte[] toBytes() throws IOException {
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         DataOutputStream dout = new DataOutputStream(out);
         dout.writeInt(0xCAFEBABE); //"magic"
@@ -499,14 +499,7 @@ public class ClassRecord implements NamedRecord{
         dout.writeShort(0); //methods_count TODO учитываются ли конструкторы
         dout.writeShort(0); //attributes_count
     
-        //Сохранить в файл
-        byte[] store = out.toByteArray();
-        File target = new File("SEM_OUT/" + this.packageName() + this.javaName().replaceAll("[^A-Za-z0-9]", "!") + ".class");
-        target.getParentFile().mkdirs();
-        try (FileOutputStream fos = new FileOutputStream(target)) {
-            fos.write(store);
-            //fos.close(); There is no more need for this line since you had created the instance of "fos" inside the try. And this will automatically close the OutputStream
-        }
+        return out.toByteArray();
     }
     
     //-- ВСПОМОГАТЕЛЬНЫЕ МЕТОДЫ
@@ -612,7 +605,7 @@ public class ClassRecord implements NamedRecord{
         if(name.equals("bool")) return RTLClassRecord._bool;
         if(name.equals("String")) return RTLClassRecord.string;
         if(name.equals("Object")) return RTLClassRecord.object;
-        if(name.equals("List")) return new RTLListClassRecord(null, VariableType._Object());
+        if(name.equals("List")) return RTLListClassRecord.basic;
         
         return null;
     }

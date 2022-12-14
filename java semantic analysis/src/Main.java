@@ -5,9 +5,10 @@ import org.w3c.dom.Document;
 
 import javax.xml.parsers.DocumentBuilderFactory;
 import java.io.File;
+import java.io.IOException;
 
 public class Main {
-    public static void main(String[] args){
+    public static void main(String[] args) throws IOException {
         if(args.length == 0){
             System.err.println("Java Segment (semantic) ERR: provide path to parser's xmlOutput file.");
             return;
@@ -51,6 +52,8 @@ public class Main {
         System.out.println("Java Segment (semantic): semantic analysis SUCCESS!");
         System.out.println("Java Segment (semantic): Class Table description:\n");
         System.out.println(crawler.describe());
-
+    
+        crawler.writeClassesAsBytecode();
+    
     }
 }

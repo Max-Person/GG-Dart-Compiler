@@ -3,6 +3,11 @@ package ast.semantic;
 import ast.*;
 import ast.semantic.typization.VariableType;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -80,6 +85,43 @@ public class SemanticCrawler {
         
         //7. обработать методы (преобразовать к нужному виду - у конструкторов например), сформировать таблицы локалок
         classTable.values().forEach(c -> c.checkMethods());
+    }
+    
+    public static final String bytecodeDir = "GG_OUT/";
+    private void clearDir(File file) throws IOException {
+        if(!file.exists())
+            return;
+        if (file.isDirectory()) {
+            File[] entries = file.listFiles();
+            if (entries != null) {
+                for (File entry : entries) {
+                    clearDir(entry);
+                }
+            }
+        }
+        if (!file.delete()) {
+            throw new IOException("Failed to delete " + file);
+        }
+    }
+    public void writeClassesAsBytecode() throws IOException {
+        clearDir(new File(bytecodeDir));
+    
+        File targetIO = new File(bytecodeDir + RTLClassRecord.io.qualifiedName() + ".class");
+        targetIO.getParentFile().mkdirs();
+        Files.copy(Path.of("InputOutput.class"), targetIO.toPath());
+    
+        File targetList = new File(bytecodeDir + RTLListClassRecord.basic.qualifiedName() + ".class");
+        targetList.getParentFile().mkdirs();
+        Files.copy(Path.of("List.class"), targetList.toPath());
+        
+        for(ClassRecord clazz : classTable.values()){
+            File target = new File(bytecodeDir + clazz.qualifiedName() + ".class");
+            target.getParentFile().mkdirs();
+            try (FileOutputStream fos = new FileOutputStream(target)) {
+                fos.write(clazz.toBytes());
+                //fos.close(); There is no more need for this line since you had created the instance of "fos" inside the try. And this will automatically close the OutputStream
+            }
+        }
     }
     
     public void addClass(ClasslikeDeclaration clazz) {
