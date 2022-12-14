@@ -21,8 +21,11 @@ public class MethodContext extends ClassContext{
 
     @Override
     public NamedRecord lookup(String name) {
-        if(localsScope.containsKey(name)){
-            return localsScope.get(name);
+        if(scopeLocals.containsKey(name)){
+            return scopeLocals.get(name);
+        }
+        if(outsideLocals.containsKey(name)){
+            return outsideLocals.get(name);
         }
         if(methodRecord.parameters.stream().anyMatch(p -> p.name().equals(name))){
             return methodRecord.parameters.stream().filter(p -> p.name().equals(name)).findFirst().orElse(null); //FIXME ? мб сделать как то получше?
@@ -42,23 +45,20 @@ public class MethodContext extends ClassContext{
 
     public MethodContext childScope(){
         MethodContext methodContext = new MethodContext(methodRecord);
-        methodContext.localsScope = new HashMap<>(this.localsScope);
+        methodContext.outsideLocals = new HashMap<>(this.outsideLocals);
+        methodContext.outsideLocals.putAll(this.scopeLocals);
         methodContext.isSkippable = this.isSkippable;
         return methodContext;
     }
 
-    public Map<String, LocalVarRecord> localsScope = new HashMap<>();
+    public Map<String, LocalVarRecord> outsideLocals = new HashMap<>();
+    public Map<String, LocalVarRecord> scopeLocals = new HashMap<>();
 
     public void addLocalToScope(LocalVarRecord var){
-        if(localsScope.containsKey(var.name)){
+        if(scopeLocals.containsKey(var.name)){
             printError("The name '" + var.name + "' is already defined.", -1); // TODO номер строки
         }
         methodRecord.addLocalVar(var);
-        localsScope.put(var.name, var);
-    }
-
-    public void replaceLocalInScope(LocalVarRecord var){
-        methodRecord.addLocalVar(var);
-        localsScope.put(var.name, var);
+        scopeLocals.put(var.name, var);
     }
 }

@@ -162,7 +162,7 @@ public class StmtNode extends Node{
             return;
         }
         if(type == StmtType.forEach_statement){
-            MethodContext forContext = context.skippableChildScope();
+            MethodContext forContext = context.childScope();
             forContainerExpr.annotateTypes(forContext); //FIXME ? мб надо аннотировать после объявления переменной цикла
             if(!(forContainerExpr.annotatedType instanceof ListType)){
                 printError("The type '" + forContainerExpr.annotatedType + "' used in the 'for' loop must be a list type.", forContainerExpr.lineNum);
@@ -178,30 +178,20 @@ public class StmtNode extends Node{
             else {
                 LocalVarRecord localVarRecord = new LocalVarRecord(forContext.methodRecord, forEachVariableDecl);
                 localVarRecord.resolveType(forContext);
-                forContext.replaceLocalInScope(localVarRecord);  //FIXED если здесь объявлена переменная то она перезаписывает другую, если такая уже объявлена
+                forContext.addLocalToScope(localVarRecord);
                 type = localVarRecord.varType;
             }
 
             if(!type.isAssignableFrom(((ListType) forContainerExpr.annotatedType).valueType)){
                 printError("The type 'List<" + ((ListType) forContainerExpr.annotatedType).valueType +">' used in the 'for' loop must have a type argument that can be assigned to '" + type + "'.", forContainerExpr.lineNum);
             }
-            body.validateStmt(forContext);
+            body.validateStmt(forContext.skippableChildScope());
             return;
         }
         if(type == StmtType.forN_statement){
-            MethodContext forContext = context.skippableChildScope();
-
-            //FIXED если здесь объявлена переменная то она перезаписывает другую, если такая уже объявлена
-            if(forInitializerStmt.type == StmtType.variable_declaration_statement){
-                for (VariableDeclarationNode variable: forInitializerStmt.variableDeclaration) {
-                    LocalVarRecord localVarRecord = new LocalVarRecord(forContext.methodRecord, variable);
-                    localVarRecord.resolveType(forContext);
-                    forContext.replaceLocalInScope(localVarRecord);
-                }
-            }
-            else {
-                forInitializerStmt.validateStmt(forContext);
-            }
+            MethodContext forContext = context.childScope();
+    
+            forInitializerStmt.validateStmt(forContext);
             if(condition == null){
                 condition = new ExprNode(ExprType.bool_pr);
                 condition.boolValue = true;
@@ -211,7 +201,7 @@ public class StmtNode extends Node{
                 printError("Conditions must have a static type of 'bool'.", this.condition.lineNum);
             }
             forPostExpr.forEach(exprNode -> exprNode.annotateTypes(forContext));
-            body.validateStmt(forContext);
+            body.validateStmt(forContext.skippableChildScope());
             return;
         }
         if(type == StmtType.switch_statement){
