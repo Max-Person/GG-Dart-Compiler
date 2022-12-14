@@ -18,13 +18,11 @@ public class RTLClassRecord extends ClassRecord{
     
     private final boolean isStandartJavaClass;
     public String javaName;
-    public String descriptor() {
-        if(isStandartJavaClass){
-            return "Ljava/lang/" + javaName + ";";
-        }
-        else {
-            return "Lggdart/core/" + name() + ";";
-        }
+    public String javaName(){
+        return isStandartJavaClass ? javaName : name;
+    }
+    public String packageName(){
+        return isStandartJavaClass ? "java/lang/" : "ggdart/core/";
     }
     
     //Здесь как бы должна быть куча переопределений методов из ClassRecord, но они все равно никогда не вызовутся...

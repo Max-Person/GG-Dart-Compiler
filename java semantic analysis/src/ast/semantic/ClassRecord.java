@@ -7,10 +7,7 @@ import ast.semantic.context.ClassInitContext;
 import ast.semantic.typization.ClassType;
 import ast.semantic.typization.VariableType;
 
-import java.io.ByteArrayOutputStream;
-import java.io.DataOutputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
+import java.io.*;
 import java.util.*;
 
 import static ast.semantic.SemanticCrawler.printError;
@@ -41,8 +38,7 @@ public class ClassRecord implements NamedRecord{
         this.declaration = declaration;
         this.name = declaration.name();
         addConstant(new UTF8Constant("Code"));
-        UTF8Constant className = (UTF8Constant) addConstant(new UTF8Constant(name));
-        addConstant(new ClassConstant(className));
+        addClassConstant(this);
     }
     public static final String globalName = "<GLOBAL>";  //FIXME точно ли это работает...
     public ClassRecord(Map<String, ClassRecord> containerClassTable, String name, boolean isJavaInterface){
@@ -51,8 +47,7 @@ public class ClassRecord implements NamedRecord{
         this.name = name;
         this.isJavaInterface = isJavaInterface;
         addConstant(new UTF8Constant("Code"));
-        UTF8Constant className = (UTF8Constant) addConstant(new UTF8Constant(name));
-        addConstant(new ClassConstant(className));
+        addClassConstant(this);
     }
     
     //-- РАЗРЕШЕНИЕ ОБЪЯВЛЕНИЯ КЛАССА
@@ -122,7 +117,7 @@ public class ClassRecord implements NamedRecord{
         return potentialInheritance;
     }
     
-    //-- НАПОЛНЕНИЕ КЛАССА
+    //-- КОНСТАНТЫ
     
     private int constantCount = 0;
     public ConstantRecord addConstant(ConstantRecord constant){
@@ -135,6 +130,13 @@ public class ClassRecord implements NamedRecord{
         }
         else return existing;
     }
+    
+    public ClassConstant addClassConstant(ClassRecord clazz){
+        UTF8Constant className = (UTF8Constant) addConstant(new UTF8Constant(clazz.qualifiedName()));
+        return (ClassConstant) addConstant(new ClassConstant(className));
+    }
+    
+    //-- НАПОЛНЕНИЕ КЛАССА
 
     public void addField(VariableDeclarationNode var){
         String varName = var.name();
@@ -427,12 +429,8 @@ public class ClassRecord implements NamedRecord{
         return i;
     }
     public void addInheritanceConstants(){
-        UTF8Constant superName = (UTF8Constant) addConstant(new UTF8Constant(this._super.name));
-        addConstant(new ClassConstant(superName));
-        for(ClassRecord ji : this.allJavaInterfaces()){
-            UTF8Constant interfaceName = (UTF8Constant) addConstant(new UTF8Constant(ji.name));
-            addConstant(new ClassConstant(interfaceName));
-        }
+        addClassConstant(this._super);
+        this.allJavaInterfaces().forEach(ji -> addClassConstant(ji));
     }
     public List<ClassRecord> allJavaInterfaces(){
         List<ClassRecord> res = new ArrayList<>(javaInterfaces);
@@ -484,13 +482,13 @@ public class ClassRecord implements NamedRecord{
         
         dout.writeShort(3); //this_class FIXME ? Уточнить номер
         dout.writeShort(constants.values().stream().filter(c ->
-                        c instanceof ClassConstant && ((ClassConstant) c).nameConst.value.equals(this._super.name)
+                        c instanceof ClassConstant && ((ClassConstant) c).nameConst.value.equals(this._super.qualifiedName())
                 ).findFirst().orElseThrow().number); //super_class
         
         dout.writeShort(allJavaInterfaces().size()); //interfaces_count
         for(ClassRecord ji : allJavaInterfaces()){  //interfaces
             dout.writeShort(constants.values().stream().filter(c ->
-                    c instanceof ClassConstant && ((ClassConstant) c).nameConst.value.equals(ji.name)
+                    c instanceof ClassConstant && ((ClassConstant) c).nameConst.value.equals(ji.qualifiedName())
             ).findFirst().orElseThrow().number);
         }
         
@@ -503,7 +501,9 @@ public class ClassRecord implements NamedRecord{
     
         //Сохранить в файл
         byte[] store = out.toByteArray();
-        try (FileOutputStream fos = new FileOutputStream(this.name.replaceAll("[^A-Za-z0-9]", "") + ".class")) {
+        File target = new File("SEM_OUT/" + this.packageName() + this.javaName().replaceAll("[^A-Za-z0-9]", "!") + ".class");
+        target.getParentFile().mkdirs();
+        try (FileOutputStream fos = new FileOutputStream(target)) {
             fos.write(store);
             //fos.close(); There is no more need for this line since you had created the instance of "fos" inside the try. And this will automatically close the OutputStream
         }
@@ -630,8 +630,17 @@ public class ClassRecord implements NamedRecord{
     public String name(){
         return this.name;
     }
+    public String javaName(){
+        return this.name;
+    }
+    public String packageName(){
+        return "ggdart/gen/";
+    }
+    public String qualifiedName(){
+        return packageName() + javaName();
+    }
     public String descriptor() {
-        return "Lggdart/gen/" + name() + ";";
+        return "L" + qualifiedName() + ";";
     }
     public boolean isSubTypeOf(ClassRecord other){
         if(other == null) return false;
