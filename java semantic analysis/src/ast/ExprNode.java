@@ -367,26 +367,39 @@ public class ExprNode extends Node {
             checkCallArgumentsTyping(constructor, context);
             //this.annotatedRecord = constructor;
 
-            if(this.type == ExprType.constructRedirect){
-                this.operand = new ExprNode(ExprType.this_pr);
-                this.type = ExprType.methodCall;
-                this.identifierAccess = new IdentifierNode(constructor.associatedMethod().name);
-                return this.annotateTypes(context);
-            }else if (this.type == ExprType.constructSuper) {
-                if(constructed.equals(RTLClassRecord.object)){
-                    //  this.mimic(new ExprNode(Ex)); TODO остановились здесь
+            if(context instanceof MethodContext){ //Заменить конструкторы на вызовы методов
+                if(this.type == ExprType.constructRedirect){
+                    this.operand = new ExprNode(ExprType.this_pr);
+                    this.type = ExprType.methodCall;
+                    this.identifierAccess = new IdentifierNode(constructor.associatedMethod().name);
+                    return this.annotateTypes(context);
+                }else if (this.type == ExprType.constructSuper) {
+                    if(constructed.equals(RTLClassRecord.object)){
+                        this.mimic(new ExprNode(ExprType.this_pr)); //FIXME? Здесь как бы удаление экспра
+                        return this.annotateTypes(context);
+                    }
+                    this.operand = new ExprNode(ExprType.super_pr);
+                    this.type = ExprType.methodCall;
+                    this.identifierAccess = new IdentifierNode(constructor.associatedMethod().name);
+                    return this.annotateTypes(context);
+                }else {
+                    if(constructed instanceof RTLClassRecord && ((RTLClassRecord) constructed).isStandartJavaClass){ //Если стандартный класс то просто вызвать джава-конструктор
+                        this.type = ExprType.javaConstructCall;
+                        this.identifierAccess = new IdentifierNode(constructed.name);
+                        return this.annotateTypes(context);
+                    }
+                    else { //Если пользовательский класс - то вызвать джава конструктор и затем метод, представляющий дарт-конструктор
+                        this.operand = new ExprNode(ExprType.javaConstructCall);
+                        this.operand.identifierAccess = new IdentifierNode(constructed.name);
+                        this.operand.callArguments = new ArrayList<>();
+                        this.type = ExprType.methodCall;
+                        this.identifierAccess = new IdentifierNode(constructor.associatedMethod().name);
+                        return this.annotateTypes(context);
+                    }
                 }
-                this.operand = new ExprNode(ExprType.super_pr);
-                this.type = ExprType.methodCall;
-                this.identifierAccess = new IdentifierNode(constructor.associatedMethod().name);
-                return this.annotateTypes(context);
-            }else {
-                this.operand = new ExprNode(ExprType.javaConstructCall);
-                this.operand.identifierAccess = new IdentifierNode(constructed.name);
-                this.operand.callArguments = new ArrayList<>();
-                this.type = ExprType.methodCall;
-                this.identifierAccess = new IdentifierNode(constructor.associatedMethod().name);
-                return this.annotateTypes(context);
+            }
+            else {
+                result = this.type == ExprType.constructNew || this.type == ExprType.constructConst ? new ClassType(constructed) : VariableType._void();
             }
         }
         else if(this.type == ExprType.javaConstructSuper){
@@ -499,7 +512,7 @@ public class ExprNode extends Node {
             if(operand.type == ExprType.identifier && context.lookupClass(operand.identifierAccess.stringVal) != null){
                 classRecord = context.lookupClass(operand.identifierAccess.stringVal);
                 method = classRecord.staticMethods().get(this.identifierAccess.stringVal);
-                if(method == null && classRecord.constructors.containsKey(operand.identifierAccess.stringVal)){
+                if(method == null && classRecord.constructors.containsKey(this.identifierAccess.stringVal)){
                     //Именованный конструктор вызван без new или const
                     this.type = ExprType.constructNew;
                     this.constructName = this.identifierAccess;

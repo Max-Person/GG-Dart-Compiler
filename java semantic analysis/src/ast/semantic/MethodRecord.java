@@ -213,7 +213,7 @@ public class MethodRecord implements NamedRecord, Cloneable{
                     }
                 }
                 else if(initializer.type == InitializerType.thisAssign){
-                    if(initializers.stream().anyMatch(i -> i.type == InitializerType.thisAssign && i.thisFieldId.stringVal.equals(initializer.thisFieldId.stringVal))){
+                    if(initializers.stream().anyMatch(i -> i != initializer && i.type == InitializerType.thisAssign && i.thisFieldId.stringVal.equals(initializer.thisFieldId.stringVal))){
                         printError("The field '" + initializer.thisFieldId.stringVal + "' can't be initialized twice in the same constructor.", initializer.thisFieldId.lineNum);
                     }
                     if(parameters.stream().anyMatch(p -> p.isField && p.name().equals(initializer.thisFieldId.stringVal))){

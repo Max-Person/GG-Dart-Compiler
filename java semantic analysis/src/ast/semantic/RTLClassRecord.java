@@ -39,6 +39,8 @@ public class RTLClassRecord extends ClassRecord{
         object = new RTLClassRecord(null, "Object", true);
         MethodRecord defConstruct = new MethodRecord(object, false, true, VariableType._void(), "", new ArrayList<>(), new StmtNode(StmtType.block));
         object.constructors.put("", defConstruct);
+        defConstruct = new MethodRecord(object, false, false, VariableType._void(), "<init>", new ArrayList<>(), new StmtNode(StmtType.block));
+        object.methods.put("<init>", defConstruct);
     
         _integer = new RTLClassRecord(null, "int", true);
         _integer.javaName = "Integer";

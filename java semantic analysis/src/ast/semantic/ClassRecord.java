@@ -192,8 +192,6 @@ public class ClassRecord implements NamedRecord{
     }
     
     public void resolveClassMembers(){
-        if(this.isGlobal()) return;
-        
         if(this.isEnum()){
             // добавить поле
             FieldRecord field = new FieldRecord(this, false, false, false, true, VariableType._String(), "value");
@@ -222,7 +220,7 @@ public class ClassRecord implements NamedRecord{
             }
 
         }
-        else {
+        else if (!isGlobal()){
             ClassDeclarationNode clazz = (ClassDeclarationNode) declaration;
             for(ClassMemberDeclarationNode classMember : clazz.classMembers){
                 if(classMember.type == ClassMemberDeclarationType.field){
@@ -541,15 +539,18 @@ public class ClassRecord implements NamedRecord{
         //TODO проверить
         Map<String, MethodRecord> res = Utils.filterByValue(methods, method -> !method.isStatic());
         if(_super != null){
-            _super.nonStaticMethods().forEach((name, method) -> res.putIfAbsent(name, method));
+            Utils.filterByValue(_super.nonStaticMethods(), method -> !method.name.equals("<init>") && !method.isSyntheticConstructor())
+                    .forEach((name, method) -> res.putIfAbsent(name, method));
         }
         for(ClassRecord i : _interfaces){
-            i.nonStaticMethods().forEach((name, method) -> res.putIfAbsent(name, method));
+            Utils.filterByValue(i.nonStaticMethods(), method -> !method.name.equals("<init>") && !method.isSyntheticConstructor())
+                    .forEach((name, method) -> res.putIfAbsent(name, method));
         }
         List<ClassRecord> _mixinsRev = new ArrayList<>(_mixins);
         Collections.reverse(_mixinsRev);
         for(ClassRecord m : _mixinsRev){
-            m.nonStaticMethods().forEach((name, method) -> res.putIfAbsent(name, method));
+            Utils.filterByValue(m.nonStaticMethods(), method -> !method.name.equals("<init>") && !method.isSyntheticConstructor())
+                    .forEach((name, method) -> res.putIfAbsent(name, method));
         }
         return res;
     }

@@ -21,6 +21,8 @@ public class RTLListClassRecord extends RTLClassRecord{
         
         MethodRecord defConstruct = new MethodRecord(this, false, true, VariableType._void(), "", new ArrayList<>(), new StmtNode(StmtType.block));
         this.constructors.put("", defConstruct);
+        defConstruct = new MethodRecord(this, false, false, VariableType._void(), "<init>", new ArrayList<>(), new StmtNode(StmtType.block));
+        this.methods.put("<init>", defConstruct);
         
         ParameterRecord param = new ParameterRecord(null, null, PlainType._int(), "index", false);
         this.methods.put("elementAt", new MethodRecord(this, valueType.clone(), "elementAt", List.of(param), new StmtNode(StmtType.block)));
