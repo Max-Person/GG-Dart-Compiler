@@ -34,7 +34,7 @@ public class MethodContext extends ClassContext{
     }
     
     public boolean isSytheticGetterOrSetter(){
-        return this.methodRecord.name().contains("!");
+        return methodRecord.isSyntheticSetter() || methodRecord.isSyntheticGetter();
     }
 
     public MethodContext skippableChildScope(){

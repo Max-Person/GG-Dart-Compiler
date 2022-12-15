@@ -447,13 +447,24 @@ public class ClassRecord implements NamedRecord{
     }
 
     //-- ПРОВЕРКА МЕТОДОВ
+
+    public void normalizeConstructors(){
+        //Создание "прокидывающего" пустого конструктора
+        StmtNode callStmt = new StmtNode(StmtType.expr_statement);
+        callStmt.expr = new ExprNode(ExprType.javaConstructSuper);
+        StmtNode body = new StmtNode(StmtType.block);
+        body.blockStmts.add(callStmt);
+        MethodRecord defConstruct = new MethodRecord(this, false, false, VariableType._void(), "<init>", new ArrayList<>(), body);
+        this.methods.put("<init>", defConstruct);
+
+        for (MethodRecord constructor : constructors.values()) {
+            constructor.normalizeConstructor();
+        }
+    }
     
     public void checkMethods(){
         for (MethodRecord method : methods.values()) {
             method.checkMethod();
-        }
-        for (MethodRecord constructor : constructors.values()) {
-            constructor.checkMethod();
         }
     }
     
@@ -676,9 +687,9 @@ public class ClassRecord implements NamedRecord{
         for(MethodRecord methodRecord : methods.values()){
             description.append("\t").append(methodRecord.descriptor()).append(" ").append(methodRecord.name()).append("\n");
         }
-        for(MethodRecord methodRecord : constructors.values()){
-            description.append("\t").append(methodRecord.descriptor()).append(" ").append(methodRecord.name()).append("\n");
-        }
+//        for(MethodRecord methodRecord : constructors.values()){
+//            description.append("\t").append(methodRecord.descriptor()).append(" ").append(methodRecord.name()).append("\n");
+//        }
         return description.toString();
     }
 }

@@ -365,8 +365,38 @@ public class ExprNode extends Node {
                 constructor.inferType((ClassInitContext) context);
             }
             checkCallArgumentsTyping(constructor, context);
-            this.annotatedRecord = constructor;
-            result = this.type == ExprType.constructNew || this.type == ExprType.constructConst ? new ClassType(constructed) : VariableType._void();
+            //this.annotatedRecord = constructor;
+
+            if(this.type == ExprType.constructRedirect){
+                this.operand = new ExprNode(ExprType.this_pr);
+                this.type = ExprType.methodCall;
+                this.identifierAccess = new IdentifierNode(constructor.associatedMethod().name);
+                return this.annotateTypes(context);
+            }else if (this.type == ExprType.constructSuper) {
+                if(constructed.equals(RTLClassRecord.object)){
+                    //  this.mimic(new ExprNode(Ex)); TODO остановились здесь
+                }
+                this.operand = new ExprNode(ExprType.super_pr);
+                this.type = ExprType.methodCall;
+                this.identifierAccess = new IdentifierNode(constructor.associatedMethod().name);
+                return this.annotateTypes(context);
+            }else {
+                this.operand = new ExprNode(ExprType.javaConstructCall);
+                this.operand.identifierAccess = new IdentifierNode(constructed.name);
+                this.operand.callArguments = new ArrayList<>();
+                this.type = ExprType.methodCall;
+                this.identifierAccess = new IdentifierNode(constructor.associatedMethod().name);
+                return this.annotateTypes(context);
+            }
+        }
+        else if(this.type == ExprType.javaConstructSuper){
+            //TODO?
+            result = VariableType._void();
+        }
+        else if(this.type == ExprType.javaConstructCall){
+            //TODO?
+            ClassRecord constructed = context.lookupClass(this.identifierAccess.stringVal); //FIXME? тут проверки не нужны тк создается нами уже после
+            result = new ClassType(constructed);
         }
         else if(this.type == ExprType.identifier){
             //TODO вставить проверку на нуллабельность?
@@ -694,6 +724,10 @@ public class ExprNode extends Node {
                 result = operand.annotatedType;
             }
         
+        }
+
+        if(result == null){
+            throw new IllegalStateException();
         }
     
         this.annotatedType = result;

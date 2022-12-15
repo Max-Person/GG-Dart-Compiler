@@ -84,6 +84,7 @@ public class SemanticCrawler {
         });
         
         //7. обработать методы (преобразовать к нужному виду - у конструкторов например), сформировать таблицы локалок
+        classTable.values().forEach(c -> c.normalizeConstructors());
         classTable.values().forEach(c -> c.checkMethods());
     }
     

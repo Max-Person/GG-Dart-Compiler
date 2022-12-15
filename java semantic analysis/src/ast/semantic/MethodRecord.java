@@ -4,6 +4,7 @@ import ast.*;
 import ast.semantic.constants.UTF8Constant;
 import ast.semantic.context.ClassInitContext;
 import ast.semantic.context.MethodContext;
+import ast.semantic.typization.ClassType;
 import ast.semantic.typization.VariableType;
 
 import java.io.ByteArrayOutputStream;
@@ -174,80 +175,90 @@ public class MethodRecord implements NamedRecord, Cloneable{
         return override;
     }
 
+    public void normalizeConstructor(){
+        if(!this.isConstruct){
+            throw new IllegalStateException();
+        }
+
+        boolean constructorChain = false;
+        if(redirection != null){
+            if(parameters.stream().anyMatch(p -> p.isField)){
+                printError("The redirecting constructor can't have a field initializer.", redirection.lineNum);
+            }
+            RedirectionNode curRedir = redirection;
+            while(curRedir != null && containerClass.constructors.containsKey(curRedir.isNamed ? curRedir.name.stringVal : "")){
+                MethodRecord constructor = containerClass.constructors.get(curRedir.isNamed ? curRedir.name.stringVal : "");
+                if(constructor == null){
+                    printError("The constructor '" + containerClass.name()  + (curRedir.isNamed ? "." + curRedir.name : "") + "' couldn't be found in '" + containerClass.name() + "'.", redirection.lineNum);
+                }
+                if(constructor.equals(this)){
+                    printError("Constructors can't redirect to themselves either directly or indirectly.", redirection.lineNum);
+                }
+                curRedir = constructor.redirection;
+            }
+            body.blockStmts.add(0, redirection.toStmt());
+            constructorChain = true;
+            redirection = null; //Зачем хранить инфу о том чего больше не существует...
+        }
+        else if(initializers != null){
+            boolean superCalled = false;
+            for (InitializerNode initializer : initializers) {
+                if(initializer.type == InitializerType.superConstructor || initializer.type == InitializerType.superNamedConstructor){
+                    if(superCalled){
+                        printError("A constructor can have at most one 'super' initializer.", initializer.lineNum);
+                    }
+                    superCalled = true;
+                    if(!initializers.get(initializers.size() - 1).equals(initializer)) {
+                        printError("The superconstructor call must be last in an initializer list: 'Object'.", initializer.lineNum); //FIXME не Object а суперкласс
+                    }
+                }
+                else if(initializer.type == InitializerType.thisAssign){
+                    if(initializers.stream().anyMatch(i -> i.type == InitializerType.thisAssign && i.thisFieldId.stringVal.equals(initializer.thisFieldId.stringVal))){
+                        printError("The field '" + initializer.thisFieldId.stringVal + "' can't be initialized twice in the same constructor.", initializer.thisFieldId.lineNum);
+                    }
+                    if(parameters.stream().anyMatch(p -> p.isField && p.name().equals(initializer.thisFieldId.stringVal))){
+                        printError("'" + initializer.thisFieldId.stringVal +"' was already initialized by this constructor.", initializer.thisFieldId.lineNum);
+                    }
+                }
+                body.blockStmts.add(0, initializer.toStmt());
+            }
+            constructorChain = superCalled;
+            initializers = null; //Зачем хранить инфу о том чего больше не существует...
+        }
+        if(!constructorChain){
+            //Неявный вызов супер-конструктора
+            if(containerClass._super != null){
+                if(!containerClass._super.constructors.containsKey("")){
+                    printError("The class '"+ containerClass._super.name() +"' doesn't have an unnamed constructor.", -1); //TODO номер строки
+                }
+                else if(!containerClass._super.constructors.get("").parameters.isEmpty()){
+                    printError("The implicitly invoked unnamed constructor from '"+ containerClass._super.name() +"' has required parameters.", -1); //TODO номер строки
+                }
+            }
+            ExprNode expr = new ExprNode();
+            expr.type = ExprType.constructSuper;
+            expr.constructName = null;
+            expr.callArguments = new ArrayList<>();
+            StmtNode init = new StmtNode(StmtType.expr_statement);
+            init.expr = expr;
+            body.blockStmts.add(0, init);
+        }
+        parameters.forEach(param-> param.normalize()); //FIXME ? возможно плохо что вызов суперконструктора получается после присваивания полей
+
+        //добавление инициализаторов при полях в конструкторы
+        Utils.filterByValue(containerClass.fields, f -> !f.isStatic()).values().forEach(f -> {
+            if(f.initValue != null)
+                body.blockStmts.add(f.initStmt());
+        });
+
+        this.containerClass.methods.put(associatedMethod().name, associatedMethod());
+    }
+
     public void checkMethod(){
         if(isConstruct){
-            boolean constructorChain = false;
-            if(redirection != null){
-                if(parameters.stream().anyMatch(p -> p.isField)){
-                    printError("The redirecting constructor can't have a field initializer.", redirection.lineNum);
-                }
-                RedirectionNode curRedir = redirection;
-                while(curRedir != null && containerClass.constructors.containsKey(curRedir.isNamed ? curRedir.name.stringVal : "")){
-                    MethodRecord constructor = containerClass.constructors.get(curRedir.isNamed ? curRedir.name.stringVal : "");
-                    if(constructor == null){
-                        printError("The constructor '" + containerClass.name()  + (curRedir.isNamed ? "." + curRedir.name : "") + "' couldn't be found in '" + containerClass.name() + "'.", redirection.lineNum);
-                    }
-                    if(constructor.equals(this)){
-                        printError("Constructors can't redirect to themselves either directly or indirectly.", redirection.lineNum);
-                    }
-                    curRedir = constructor.redirection;
-                }
-                body.blockStmts.add(0, redirection.toStmt());
-                constructorChain = true;
-                redirection = null; //Зачем хранить инфу о том чего больше не существует...
-            }
-            else if(initializers != null){
-                boolean superCalled = false;
-                for (InitializerNode initializer : initializers) {
-                    if(initializer.type == InitializerType.superConstructor || initializer.type == InitializerType.superNamedConstructor){
-                        if(superCalled){
-                            printError("A constructor can have at most one 'super' initializer.", initializer.lineNum);
-                        }
-                        superCalled = true;
-                        if(!initializers.get(initializers.size() - 1).equals(initializer)) {
-                            printError("The superconstructor call must be last in an initializer list: 'Object'.", initializer.lineNum); //FIXME не Object а суперкласс
-                        }
-                    }
-                    else if(initializer.type == InitializerType.thisAssign){
-                        if(initializers.stream().anyMatch(i -> i.type == InitializerType.thisAssign && i.thisFieldId.stringVal.equals(initializer.thisFieldId.stringVal))){
-                            printError("The field '" + initializer.thisFieldId.stringVal + "' can't be initialized twice in the same constructor.", initializer.thisFieldId.lineNum);
-                        }
-                        if(parameters.stream().anyMatch(p -> p.isField && p.name().equals(initializer.thisFieldId.stringVal))){
-                            printError("'" + initializer.thisFieldId.stringVal +"' was already initialized by this constructor.", initializer.thisFieldId.lineNum);
-                        }
-                    }
-                    body.blockStmts.add(0, initializer.toStmt());
-                }
-                constructorChain = superCalled;
-                initializers = null; //Зачем хранить инфу о том чего больше не существует...
-            }
-            if(!constructorChain){
-                //Неявный вызов супер-конструктора
-                if(containerClass._super != null){
-                    if(!containerClass._super.constructors.containsKey("")){
-                        printError("The class '"+ containerClass._super.name() +"' doesn't have an unnamed constructor.", -1); //TODO номер строки
-                    }
-                    else if(!containerClass._super.constructors.get("").parameters.isEmpty()){
-                        printError("The implicitly invoked unnamed constructor from '"+ containerClass._super.name() +"' has required parameters.", -1); //TODO номер строки
-                    }
-                }
-                ExprNode expr = new ExprNode();
-                expr.type = ExprType.constructSuper;
-                expr.constructName = null;
-                expr.callArguments = new ArrayList<>();
-                StmtNode init = new StmtNode(StmtType.expr_statement);
-                init.expr = expr;
-                body.blockStmts.add(0, init);
-            }
-            parameters.forEach(param-> param.normalize()); //FIXME ? возможно плохо что вызов суперконструктора получается после присваивания полей
-            
-            //добавление инициализаторов при полях в конструкторы
-            Utils.filterByValue(containerClass.fields, f -> !f.isStatic()).values().forEach(f -> {
-                if(f.initValue != null)
-                    body.blockStmts.add(f.initStmt());
-            });
+            throw new IllegalStateException();
         }
-        
+
         if(!this.isAbstract()){
             this.body.validateStmt(new MethodContext(this));
             if(!this.body.endsWith(StmtType.return_statement) && !this.returnType.equals(VariableType._void())){
@@ -259,6 +270,37 @@ public class MethodRecord implements NamedRecord, Cloneable{
                 this.body.blockStmts.add(returnal);
             }
         }
+    }
+    public static final String constructorPrefix = "init!";
+    public static final String getterPrefix = "get!";
+    public static final String setterPrefix = "set!";
+
+    public boolean isSyntheticConstructor(){
+        return name.startsWith(constructorPrefix);
+    }
+    public boolean isSyntheticGetter(){
+        return name.startsWith(getterPrefix);
+    }
+    public boolean isSyntheticSetter(){
+        return name.startsWith(setterPrefix);
+    }
+    public boolean isSynthetic(){
+        return isSyntheticConstructor() || isSyntheticGetter() || isSyntheticSetter();
+    }
+
+    private MethodRecord associatedMethod = null;
+    public MethodRecord associatedMethod(){
+        if(!this.isConstruct){
+            throw new IllegalStateException();
+        }
+        if(associatedMethod == null){
+            associatedMethod = new MethodRecord(this.containerClass, new ClassType(this.containerClass), constructorPrefix + this.constructName, this.parameters, this.body);
+            StmtNode constructReturn = new StmtNode(StmtType.return_statement);
+            constructReturn.returnExpr = new ExprNode(ExprType.this_pr);
+            associatedMethod.body.blockStmts.add(constructReturn); //FIXME? используется то же самое тело, может привести к ошибкам
+            //this.containerClass.methods.put(associatedMethod.name, associatedMethod);
+        }
+        return associatedMethod;
     }
     
     public void copyTo(ClassRecord classRecord) {
@@ -305,7 +347,7 @@ public class MethodRecord implements NamedRecord, Cloneable{
                 0 |     // native
                 (this.isAbstract() ? 0x0400 : 0) | // abstract
                 0 |     // strictfp
-                (name.contains("!") ? 0x1000 : 0) //synthetic
+                (this.isSynthetic() ? 0x1000 : 0) //synthetic
         );
 
         bytes.writeShort(nameConst.number); // name_index

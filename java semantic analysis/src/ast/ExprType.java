@@ -20,6 +20,9 @@ public enum ExprType {
     constructRedirect,
     constructSuper,
 
+    javaConstructSuper,
+    javaConstructCall,
+
     identifier,
     call,
 

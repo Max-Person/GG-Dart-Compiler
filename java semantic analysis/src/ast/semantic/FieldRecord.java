@@ -86,7 +86,7 @@ public class FieldRecord extends VariableRecord{
             getterBody.returnExpr = new ExprNode(ExprType.identifier);
             getterBody.returnExpr.identifierAccess = new IdentifierNode(name);
     
-            this.getter = new MethodRecord(this.containerClass, this.isStatic, false, this.varType.clone(), "get!"+this.name(), new ArrayList<>(), getterBody);
+            this.getter = new MethodRecord(this.containerClass, this.isStatic, false, this.varType.clone(), MethodRecord.getterPrefix+this.name(), new ArrayList<>(), getterBody);
         }
         return getter;
     }
@@ -109,7 +109,7 @@ public class FieldRecord extends VariableRecord{
             expr.operand2.identifierAccess = new IdentifierNode(paramName);
             setterBody.returnExpr = expr;
     
-            this.setter = new MethodRecord(this.containerClass, this.isStatic, false, this.varType.clone(), "set!"+this.name(), List.of(setterParameter), setterBody);
+            this.setter = new MethodRecord(this.containerClass, this.isStatic, false, this.varType.clone(), MethodRecord.setterPrefix+this.name(), List.of(setterParameter), setterBody);
         }
         return setter;
     }
