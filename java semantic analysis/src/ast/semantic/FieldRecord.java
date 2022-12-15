@@ -152,7 +152,7 @@ public class FieldRecord extends VariableRecord{
         bytes.writeShort(nameConst.number); // name_index
         bytes.writeShort(descriptorConst.number); // descriptor_index
 
-        bytes.writeShort(0);
+        bytes.writeShort(0); //  attributes_count
         return _bytes.toByteArray();
     }
 }
