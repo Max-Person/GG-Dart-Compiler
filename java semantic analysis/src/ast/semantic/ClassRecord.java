@@ -1,8 +1,7 @@
 package ast.semantic;
 
 import ast.*;
-import ast.semantic.constants.ClassConstant;
-import ast.semantic.constants.UTF8Constant;
+import ast.semantic.constants.*;
 import ast.semantic.context.ClassInitContext;
 import ast.semantic.typization.ClassType;
 import ast.semantic.typization.VariableType;
@@ -119,12 +118,13 @@ public class ClassRecord implements NamedRecord{
     
     //-- КОНСТАНТЫ
     
-    private int constantCount = 0;
+    private int constantCount = 1;
     public ConstantRecord addConstant(ConstantRecord constant){
         ConstantRecord existing = constants.values().stream().filter(c -> c.equals(constant)).findFirst().orElse(null);
         if(existing == null){
-            constantCount++;
             constant.number = constantCount;
+            constantCount++;
+            if(constant instanceof DoubleConstant) constantCount++;
             constants.put(constant.number, constant);
             return constant;
         }
@@ -134,6 +134,30 @@ public class ClassRecord implements NamedRecord{
     public ClassConstant addClassConstant(ClassRecord clazz){
         UTF8Constant className = (UTF8Constant) addConstant(new UTF8Constant(clazz.qualifiedName()));
         return (ClassConstant) addConstant(new ClassConstant(className));
+    }
+    
+    public NameAndTypeConstant addNameAndTypeConstant(MethodRecord method){
+        UTF8Constant nameConst = (UTF8Constant) addConstant(new UTF8Constant(method.name()));
+        UTF8Constant typeConst = (UTF8Constant) addConstant(new UTF8Constant(method.descriptor()));
+        return (NameAndTypeConstant) addConstant(new NameAndTypeConstant(nameConst, typeConst));
+    }
+    
+    public NameAndTypeConstant addNameAndTypeConstant(FieldRecord field){
+        UTF8Constant nameConst = (UTF8Constant) addConstant(new UTF8Constant(field.name()));
+        UTF8Constant typeConst = (UTF8Constant) addConstant(new UTF8Constant(field.descriptor()));
+        return (NameAndTypeConstant) addConstant(new NameAndTypeConstant(nameConst, typeConst));
+    }
+    
+    public MethodRefConstant addMethodRefConstant(ClassRecord invokedFrom, MethodRecord method){
+        ClassConstant classConstant = addClassConstant(invokedFrom);
+        NameAndTypeConstant nameAndTypeConstant = addNameAndTypeConstant(method);
+        return (MethodRefConstant) addConstant(new MethodRefConstant(classConstant, nameAndTypeConstant));
+    }
+    
+    public FieldRefConstant addFieldRefConstant(ClassRecord accessedFrom, FieldRecord field){
+        ClassConstant classConstant = addClassConstant(accessedFrom);
+        NameAndTypeConstant nameAndTypeConstant = addNameAndTypeConstant(field);
+        return (FieldRefConstant) addConstant(new FieldRefConstant(classConstant, nameAndTypeConstant));
     }
     
     //-- НАПОЛНЕНИЕ КЛАССА
@@ -475,7 +499,7 @@ public class ClassRecord implements NamedRecord{
         dout.writeShort(0);     // минорная версия
         dout.writeShort(60);    // мажорная версия
         
-        dout.writeShort(constants.size() + 1); //constant_pool_count
+        dout.writeShort(constantCount); //constant_pool_count
         for (ConstantRecord c : constants.values()) {   //constant_pool
             byte[] cb = c.toBytes();
             dout.write(cb);

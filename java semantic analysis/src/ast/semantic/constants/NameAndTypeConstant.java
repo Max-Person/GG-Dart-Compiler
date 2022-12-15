@@ -8,10 +8,10 @@ import java.io.IOException;
 import java.util.Objects;
 
 public class NameAndTypeConstant extends ConstantRecord {
-    public final StringConstant nameConst;
-    public final StringConstant typeConst;
+    public final UTF8Constant nameConst;
+    public final UTF8Constant typeConst;
     
-    public NameAndTypeConstant(StringConstant nameConst, StringConstant typeConst) {
+    public NameAndTypeConstant(UTF8Constant nameConst, UTF8Constant typeConst) {
         this.nameConst = nameConst;
         this.typeConst = typeConst;
     }

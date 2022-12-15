@@ -134,7 +134,7 @@ public class StmtNode extends Node{
         }
         if (type == StmtType.if_statement || type == StmtType.while_statement || type == StmtType.do_statement) {
             this.condition.annotateTypes(context);
-            if (!this.condition.makeAssignableTo(PlainType._bool())) {
+            if (!this.condition.makeAssignableTo(PlainType._bool(), context)) {
                 printError("Conditions must have a static type of 'bool'.", this.condition.lineNum);
             }
 
@@ -146,7 +146,7 @@ public class StmtNode extends Node{
         if (type == StmtType.return_statement) {
             if( this.returnExpr != null){
                 this.returnExpr.annotateTypes(context);
-                if (!returnExpr.makeAssignableTo(context.methodRecord.returnType)) {
+                if (!returnExpr.makeAssignableTo(context.methodRecord.returnType, context)) {
                     printError("A value of type '" + returnExpr.annotatedType + "' can't be returned from the method '" + context.methodRecord.name + "' because it has a return type of '" + context.methodRecord.returnType + "'.", this.lineNum);
                 }
             }
@@ -197,7 +197,7 @@ public class StmtNode extends Node{
                 condition.boolValue = true;
             }
             condition.annotateTypes(forContext);
-            if (!this.condition.makeAssignableTo(PlainType._bool())) {
+            if (!this.condition.makeAssignableTo(PlainType._bool(), context)) {
                 printError("Conditions must have a static type of 'bool'.", this.condition.lineNum);
             }
             forPostExpr.forEach(exprNode -> exprNode.annotateTypes(forContext));
@@ -206,10 +206,10 @@ public class StmtNode extends Node{
         }
         if(type == StmtType.switch_statement){
             condition.annotateTypes(context);
-            condition.makeAssignableTo(VariableType._Object());
+            condition.makeAssignableTo(VariableType._Object(), context);
             for (SwitchCaseNode caseNode : switchCaseList) {
                 caseNode.condition.annotateTypes(context);
-                caseNode.condition.makeAssignableTo(VariableType._Object());
+                caseNode.condition.makeAssignableTo(VariableType._Object(), context);
                 if(!condition.annotatedType.isSubtypeOf(caseNode.condition.annotatedType)){
                     printError("The switch case expression type '" + caseNode.condition.annotatedType + "' must be a subtype of the switch expression type '" + condition.annotatedType + "'.", caseNode.condition.lineNum);
                 }

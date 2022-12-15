@@ -25,7 +25,7 @@ public class LocalVarRecord extends VariableRecord{
         if(this.varType == null){
             this.initValue.annotateTypes(context);
             this.initValue.assertNotVoid();
-            this.initValue.makeAssignableTo(VariableType._Object());
+            this.initValue.makeAssignableTo(VariableType._Object(), context);
             this.varType = initValue.annotatedType;
         }
         return this.varType;
@@ -36,7 +36,7 @@ public class LocalVarRecord extends VariableRecord{
             inferType(context);
         } else if (initValue != null){
             this.initValue.annotateTypes(context);
-            if (!this.initValue.makeAssignableTo(this.varType)){
+            if (!this.initValue.makeAssignableTo(this.varType, context)){
                 printError("A value of type '" + initValue.annotatedType + "' can't be assigned to a variable of type '" + varType + "'.", initValue.lineNum);
             }
         }

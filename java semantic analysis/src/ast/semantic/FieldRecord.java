@@ -45,7 +45,7 @@ public class FieldRecord extends VariableRecord{
             }
             this.initValue.annotateTypes(context.dependantContext(this));
             this.initValue.assertNotVoid();
-            this.initValue.makeAssignableTo(VariableType._Object());
+            this.initValue.makeAssignableTo(VariableType._Object(), context);
             this.varType = initValue.annotatedType;
             
             this.containerClass.methods.put(associatedGetter().name(), associatedGetter());
