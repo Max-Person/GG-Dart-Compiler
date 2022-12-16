@@ -261,13 +261,18 @@ public class MethodRecord implements NamedRecord, Cloneable{
 
         if(!this.isAbstract()){
             this.body.validateStmt(new MethodContext(this));
-            if(!this.body.endsWith(StmtType.return_statement) && !this.returnType.equals(VariableType._void())){
-                if(!this.returnType.isNullable){
-                    printError("The body might complete normally, causing 'null' to be returned, but the return type, '" + this.returnType + "', is a non-nullable type.", -1); //TODO номер строки
+            if(!this.body.endsWith(StmtType.return_statement)){
+                if(this.returnType.equals(VariableType._void())){
+                    this.body.blockStmts.add(new StmtNode(StmtType.return_statement));
                 }
-                StmtNode returnal = new StmtNode(StmtType.return_statement);
-                returnal.returnExpr = new ExprNode(ExprType.null_pr);
-                this.body.blockStmts.add(returnal);
+                else {
+                    if(!this.returnType.isNullable){
+                        printError("The body might complete normally, causing 'null' to be returned, but the return type, '" + this.returnType + "', is a non-nullable type.", -1); //TODO номер строки
+                    }
+                    StmtNode returnal = new StmtNode(StmtType.return_statement);
+                    returnal.returnExpr = new ExprNode(ExprType.null_pr);
+                    this.body.blockStmts.add(returnal);
+                }
             }
         }
     }
@@ -295,6 +300,7 @@ public class MethodRecord implements NamedRecord, Cloneable{
         }
         if(associatedMethod == null){
             associatedMethod = new MethodRecord(this.containerClass, new ClassType(this.containerClass), constructorPrefix + this.constructName, this.parameters, this.body);
+            associatedMethod.finalizeType();
             StmtNode constructReturn = new StmtNode(StmtType.return_statement);
             constructReturn.returnExpr = new ExprNode(ExprType.this_pr);
             associatedMethod.body.blockStmts.add(constructReturn); //FIXME? используется то же самое тело, может привести к ошибкам
@@ -358,18 +364,20 @@ public class MethodRecord implements NamedRecord, Cloneable{
             return _bytes.toByteArray();
         }
 
+        bytes.writeShort(1); //  attributes_count
+
+
         bytes.writeShort(1); // константа Code
 
-        //bytes.write(); // attribute_length
-        bytes.write(1000); //TODO? max_stack
-        bytes.write(localVarNumber + 1); //TODO? max_locals
-        //bytes.write(); // code_length
-        //bytes.write();
+        byte[] code = body.toBytes();
+
+        bytes.writeInt(code.length + 12); // attribute_length
+        bytes.writeShort(1000); //TODO? max_stack
+        bytes.writeShort(localVarNumber + 1); //TODO? max_locals
+        bytes.writeInt(code.length); // code_length
+        bytes.write(code); //code
+
         bytes.writeShort(0); //exception_table_length
-
-
-
-
         bytes.writeShort(0); //  attributes_count
         return _bytes.toByteArray();
     }

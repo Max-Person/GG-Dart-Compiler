@@ -11,6 +11,9 @@ import ast.semantic.typization.PlainType;
 import ast.semantic.typization.VariableType;
 import org.w3c.dom.Element;
 
+import java.io.ByteArrayOutputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -777,6 +780,113 @@ public class ExprNode extends Node {
                 printError("The argument type '" + argType.toString() + "' can't be assigned to the parameter type '"+ paramType.toString()+"'.", this.lineNum);
             }
         }
+    }
+
+    public byte[] toBytes() throws IOException {
+        ByteArrayOutputStream _bytes = new ByteArrayOutputStream();
+        DataOutputStream bytes = new DataOutputStream(_bytes);
+
+        if(this.type == ExprType.this_pr){
+
+        }
+        else if(this.type == ExprType.null_pr){
+        }
+        else if(this.type == ExprType.int_pr){
+        }
+        else if(this.type == ExprType.double_pr){
+        }
+        else if(this.type == ExprType.bool_pr){
+
+        }
+        else if(this.type == ExprType.string_pr){
+            bytes.write(BytecodeUtils.loadConstant(((StringRefInfo) this.refInfo).constant));
+        }
+        else if(this.type == ExprType.string_interpolation){
+
+        }
+
+        else if(this.type == ExprType.javaConstructSuper){
+            MethodRefInfo methodRefInfo = ((MethodRefInfo) this.refInfo);
+            bytes.write(BytecodeUtils.loadThis());
+            bytes.write(BytecodeUtils.invokeMethod(methodRefInfo));
+        }
+        else if(this.type == ExprType.javaConstructCall){
+        }
+        else if(this.type == ExprType.identifier){
+
+        }
+        else if(this.type == ExprType.call){
+            MethodRefInfo methodRefInfo = ((MethodRefInfo) this.refInfo);
+            if(!methodRefInfo.method.isStatic()){
+                bytes.write(BytecodeUtils.loadThis());
+            }
+            for (ExprNode arg : callArguments) {
+                bytes.write(arg.toBytes());
+            }
+            bytes.write(BytecodeUtils.invokeMethod(methodRefInfo));
+        }
+        else if(this.type == ExprType.fieldAccess){
+
+
+        }
+        else if (this.type == ExprType.methodCall) {
+
+        }
+        else if(this.type == ExprType.type_cast){
+        }
+        else if (this.type == ExprType.type_check || this.type == ExprType.neg_type_check) {
+        }
+        else if(this.isAssign()){
+            if(this.type == ExprType.assign){
+
+            }
+            else {
+                throw new IllegalStateException();
+            }
+        }
+        else if(this.isBinaryOp()){
+
+            if(this.type == ExprType.add || this.type == ExprType.sub || this.type == ExprType.mul || this.type == ExprType._div){
+
+            }
+            else if(this.type == ExprType.brackets) {
+
+            }
+            else if(this.type == ExprType.ifnull){
+
+            }
+            else if(this.type == ExprType.eq || this.type == ExprType.neq){
+
+            }
+            else if(this.type == ExprType.greater || this.type == ExprType.greater_eq || this.type == ExprType.less || this.type == ExprType.less_eq){
+
+            }
+            else if(this.type == ExprType._or || this.type == ExprType._and){
+
+            }
+            else
+                throw new IllegalStateException();
+
+        }
+        else {
+            //Унарные операторы
+            if(this.type == ExprType._not){
+
+            }
+            else if(this.type == ExprType.bang){
+
+            }
+            else {
+                //Арифметические унарные
+                throw new IllegalStateException();
+            }
+        }
+
+        if(_bytes.size() == 0){
+            throw new IllegalStateException();
+        }
+
+        return _bytes.toByteArray();
     }
 
 }

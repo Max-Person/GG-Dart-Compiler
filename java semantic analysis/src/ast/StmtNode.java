@@ -1,5 +1,6 @@
 package ast;
 
+import ast.semantic.BytecodeUtils;
 import ast.semantic.LocalVarRecord;
 import ast.semantic.VariableRecord;
 import ast.semantic.context.MethodContext;
@@ -8,6 +9,9 @@ import ast.semantic.typization.PlainType;
 import ast.semantic.typization.VariableType;
 import org.w3c.dom.Element;
 
+import java.io.ByteArrayOutputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -266,5 +270,49 @@ public class StmtNode extends Node{
                 return false;
         }
         return false;
+    }
+
+    public byte[] toBytes() throws IOException {
+        ByteArrayOutputStream _bytes = new ByteArrayOutputStream();
+        DataOutputStream bytes = new DataOutputStream(_bytes);
+
+        if (type == StmtType.block) {
+            for (StmtNode stmt: blockStmts) {
+                bytes.write(stmt.toBytes());
+            }
+        }
+        if (type == StmtType.expr_statement) {
+            if(expr != null)
+                bytes.write(expr.toBytes());
+        }
+        if(type == StmtType.variable_declaration_statement){
+
+        }
+        if (type == StmtType.if_statement || type == StmtType.while_statement || type == StmtType.do_statement) {
+
+        }
+        if (type == StmtType.return_statement) {
+            if(returnExpr == null){
+                bytes.write(BytecodeUtils.Instruction._return.code);
+            }
+        }
+        if (type == StmtType.break_statement || type == StmtType.continue_statement) {
+
+        }
+        if(type == StmtType.forEach_statement){
+
+        }
+        if(type == StmtType.forN_statement){
+
+        }
+        if(type == StmtType.switch_statement){
+
+        }
+
+        if(_bytes.size() == 0){
+            throw new IllegalStateException();
+        }
+
+        return _bytes.toByteArray();
     }
 }

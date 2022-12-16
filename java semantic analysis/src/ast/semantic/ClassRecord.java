@@ -476,7 +476,9 @@ public class ClassRecord implements NamedRecord{
         callStmt.expr = new ExprNode(ExprType.javaConstructSuper);
         StmtNode body = new StmtNode(StmtType.block);
         body.blockStmts.add(callStmt);
+        body.blockStmts.add(new StmtNode(StmtType.return_statement));
         MethodRecord defConstruct = new MethodRecord(this, false, false, VariableType._void(), "<init>", new ArrayList<>(), body);
+        defConstruct.finalizeType();
         this.methods.put("<init>", defConstruct);
 
         for (MethodRecord constructor : constructors.values()) {
@@ -529,7 +531,10 @@ public class ClassRecord implements NamedRecord{
         for (FieldRecord field : fields.values()) {
             dout.write(field.toBytes());
         }
-        dout.writeShort(0); //methods_count TODO учитываются ли конструкторы
+        dout.writeShort(methods.size()); //methods_count
+        for (MethodRecord method : methods.values()) {
+            dout.write(method.toBytes());
+        }
         dout.writeShort(0); //attributes_count
     
         return out.toByteArray();
