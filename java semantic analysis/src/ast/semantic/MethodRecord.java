@@ -5,6 +5,7 @@ import ast.semantic.constants.UTF8Constant;
 import ast.semantic.context.ClassInitContext;
 import ast.semantic.context.MethodContext;
 import ast.semantic.typization.ClassType;
+import ast.semantic.typization.JavaArrayType;
 import ast.semantic.typization.VariableType;
 
 import java.io.ByteArrayOutputStream;
@@ -105,6 +106,15 @@ public class MethodRecord implements NamedRecord, Cloneable{
         }
         if(!this.isStatic){
             localVarNumber++;
+        }
+        if(containerClass.isGlobal() && this.name.equals("main")){ //Проверка на мейн FIXME ? сделать ее нормальной
+            if(!signature.parameters.isEmpty()){
+                printError("GG-Dart's main function must have no parameters.", signature.lineNum);
+                return;
+            }
+            ParameterRecord parameter = new ParameterRecord(this, null, new JavaArrayType(VariableType._String()), "args", false);
+            parameter.number = ++localVarNumber;
+            this.parameters.add(parameter);
         }
         for (FormalParameterNode parameterNode : signature.parameters) {
             ParameterRecord parameter = new ParameterRecord(this, parameterNode);
