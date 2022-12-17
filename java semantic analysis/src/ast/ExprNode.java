@@ -787,22 +787,33 @@ public class ExprNode extends Node {
         DataOutputStream bytes = new DataOutputStream(_bytes);
 
         if(this.type == ExprType.this_pr){
-
+            bytes.write(BytecodeUtils.loadThis());
         }
         else if(this.type == ExprType.null_pr){
+            bytes.write(BytecodeUtils.loadNull());
         }
         else if(this.type == ExprType.int_pr){
+            if(this.intValue >= -1 && this.intValue <= 5){
+                bytes.write(BytecodeUtils.loadInt(this.intValue));
+            } else if(this.intValue >= -128 && this.intValue <= 127){
+                bytes.write(BytecodeUtils.bipushInt(this.intValue));
+            } else if(this.intValue >= -32768 && this.intValue <= 32767){
+                bytes.write(BytecodeUtils.sipushInt(this.intValue));
+            } else {
+                bytes.write(BytecodeUtils.loadConstant(((IntegerRefInfo) this.refInfo).constant));
+            }
         }
         else if(this.type == ExprType.double_pr){
+            bytes.write(BytecodeUtils.loadConstant(((DoubleRefInfo) this.refInfo).constant));
         }
         else if(this.type == ExprType.bool_pr){
-
+            bytes.write(BytecodeUtils.loadBoolean(this.boolValue));
         }
         else if(this.type == ExprType.string_pr){
             bytes.write(BytecodeUtils.loadConstant(((StringRefInfo) this.refInfo).constant));
         }
         else if(this.type == ExprType.string_interpolation){
-
+            //TODO на этапе семантике заменять интерполяцию и сложение строк на метод .concat()
         }
 
         else if(this.type == ExprType.javaConstructSuper){
@@ -811,9 +822,22 @@ public class ExprNode extends Node {
             bytes.write(BytecodeUtils.invokeMethod(methodRefInfo));
         }
         else if(this.type == ExprType.javaConstructCall){
+            MethodRefInfo methodRefInfo = ((MethodRefInfo) this.refInfo);
+            bytes.write(BytecodeUtils._new(methodRefInfo.constant.classConst.number));
+            bytes.write(BytecodeUtils.dup());
+            bytes.write(BytecodeUtils.invokeMethod(methodRefInfo));
         }
         else if(this.type == ExprType.identifier){
-
+            if(this.refInfo instanceof LocalVarRefInfo){
+                bytes.write(BytecodeUtils.aload(((LocalVarRefInfo) this.refInfo).localVar.number));
+            }
+            else {
+                FieldRefInfo fieldRefInfo = ((FieldRefInfo) this.refInfo);
+                if(!fieldRefInfo.field.isStatic()){
+                    bytes.write(BytecodeUtils.loadThis());
+                }
+                bytes.write(BytecodeUtils.loadField(fieldRefInfo));
+            }
         }
         else if(this.type == ExprType.call){
             MethodRefInfo methodRefInfo = ((MethodRefInfo) this.refInfo);
@@ -826,11 +850,21 @@ public class ExprNode extends Node {
             bytes.write(BytecodeUtils.invokeMethod(methodRefInfo));
         }
         else if(this.type == ExprType.fieldAccess){
-
-
+            FieldRefInfo fieldRefInfo = ((FieldRefInfo) this.refInfo);
+            if(!fieldRefInfo.field.isStatic()){
+                bytes.write(this.operand.toBytes());
+            }
+            bytes.write(BytecodeUtils.loadField(fieldRefInfo));
         }
         else if (this.type == ExprType.methodCall) {
-
+            MethodRefInfo methodRefInfo = ((MethodRefInfo) this.refInfo);
+            if(!methodRefInfo.method.isStatic()){
+                bytes.write(this.operand.toBytes());
+            }
+            for (ExprNode arg : callArguments) {
+                bytes.write(arg.toBytes());
+            }
+            bytes.write(BytecodeUtils.invokeMethod(methodRefInfo));
         }
         else if(this.type == ExprType.type_cast){
         }
@@ -838,7 +872,26 @@ public class ExprNode extends Node {
         }
         else if(this.isAssign()){
             if(this.type == ExprType.assign){
-
+                if(this.operand.refInfo instanceof LocalVarRefInfo){
+                    bytes.write(this.operand2.toBytes());
+                    bytes.write(BytecodeUtils.dup());
+                    bytes.write(BytecodeUtils.astore(((LocalVarRefInfo) this.operand.refInfo).localVar.number));
+                }
+                else {
+                    FieldRefInfo fieldRefInfo = ((FieldRefInfo) this.operand.refInfo);
+                    if(!fieldRefInfo.field.isStatic()){
+                        if(this.operand.type == ExprType.fieldAccess){
+                            bytes.write(this.operand.operand.toBytes());
+                        }
+                        else{
+                            bytes.write(BytecodeUtils.loadThis());
+                        }
+                        bytes.write(BytecodeUtils.dup());
+                    }
+                    bytes.write(this.operand2.toBytes());
+                    bytes.write(BytecodeUtils.storeField(fieldRefInfo));
+                    bytes.write(BytecodeUtils.loadField(fieldRefInfo));
+                }
             }
             else {
                 throw new IllegalStateException();
@@ -847,10 +900,7 @@ public class ExprNode extends Node {
         else if(this.isBinaryOp()){
 
             if(this.type == ExprType.add || this.type == ExprType.sub || this.type == ExprType.mul || this.type == ExprType._div){
-
-            }
-            else if(this.type == ExprType.brackets) {
-
+            
             }
             else if(this.type == ExprType.ifnull){
 
@@ -859,6 +909,26 @@ public class ExprNode extends Node {
 
             }
             else if(this.type == ExprType.greater || this.type == ExprType.greater_eq || this.type == ExprType.less || this.type == ExprType.less_eq){
+                bytes.write(this.operand.toBytes());
+                bytes.write(this.operand2.toBytes());
+                if(PlainType._int().isAssignableFrom(this.operand.annotatedType)){
+                    if(this.type == ExprType.greater)
+                        bytes.write(BytecodeUtils.Instruction.if_icmple.code);
+                    else if(this.type == ExprType.greater_eq)
+                        bytes.write(BytecodeUtils.Instruction.if_icmplt.code);
+                    else if(this.type == ExprType.less)
+                        bytes.write(BytecodeUtils.Instruction.if_icmpge.code);
+                    else if(this.type == ExprType.less)
+                        bytes.write(BytecodeUtils.Instruction.if_icmpgt.code);
+                    
+                    bytes.write(BytecodeUtils.iconst_1());
+                    bytes.write(BytecodeUtils._goto(2));
+                    bytes.write(BytecodeUtils.iconst_0());
+
+                }
+                else{
+                    //TODO
+                }
 
             }
             else if(this.type == ExprType._or || this.type == ExprType._and){

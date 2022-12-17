@@ -59,7 +59,8 @@ public class MethodRecord implements NamedRecord, Cloneable{
         }
         parameters.forEach(p -> {
             p.containerMethod = this;
-            p.number = ++localVarNumber;
+            p.number = localVarNumber;
+            localVarNumber++;
             this.parameters.add(p);
         });
         
@@ -113,7 +114,8 @@ public class MethodRecord implements NamedRecord, Cloneable{
                 return;
             }
             ParameterRecord parameter = new ParameterRecord(this, null, new JavaArrayType(VariableType._String()), "args", false);
-            parameter.number = ++localVarNumber;
+            parameter.number = localVarNumber;
+            localVarNumber++;
             this.parameters.add(parameter);
         }
         for (FormalParameterNode parameterNode : signature.parameters) {
@@ -122,7 +124,8 @@ public class MethodRecord implements NamedRecord, Cloneable{
                 printError("The name '" + parameter.name() +"' is already defined.", parameterNode.lineNum);
                 return;
             }
-            parameter.number = ++localVarNumber;
+            parameter.number = localVarNumber;
+            localVarNumber++;
             this.parameters.add(parameter);
         }
     }

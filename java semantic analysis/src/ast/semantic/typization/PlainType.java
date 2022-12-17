@@ -30,11 +30,11 @@ public class PlainType extends VariableType{
     }
 
     public static PlainType _int(){
-        return new PlainType("int (plain)", "D");
+        return new PlainType("int (plain)", "I");
     }
 
     public static PlainType _double(){
-        return new PlainType("double (plain)", "I");
+        return new PlainType("double (plain)", "D");
     }
 
     public static PlainType _bool(){
