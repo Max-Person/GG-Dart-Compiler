@@ -284,6 +284,9 @@ public class ExprNode extends Node {
             result = VariableType._null();
         }
         else if(this.type == ExprType.int_pr){
+            if(this.intValue != (int) this.intValue){
+                printError(intValue + " is too big to fit into 4 bytes", this.lineNum);
+            }
             if(this.intValue < -32768 || this.intValue > 32767){
                 refInfo = new IntegerRefInfo((int) this.intValue, context);
             }
@@ -725,6 +728,19 @@ public class ExprNode extends Node {
         }
         else {
             //Унарные операторы
+            if(this.type == ExprType.u_minus){
+                if(this.operand.type == ExprType.int_pr){
+                    this.mimic(this.operand);
+                    this.intValue = -this.intValue;
+                    return this.annotateTypes(context);
+                }
+                if(this.operand.type == ExprType.double_pr){
+                    this.mimic(this.operand);
+                    this.doubleValue = -this.doubleValue;
+                    return this.annotateTypes(context);
+                }
+            }
+            
             operand.annotateTypes(context);
             operand.assertNotVoid();
             if(this.type == ExprType._not){
