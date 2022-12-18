@@ -55,6 +55,20 @@ public abstract class BytecodeUtils {
 
         _goto(0xa7),
         _goto_w(0xc8),
+    
+        iadd(0x60),
+        isub(0x64),
+        imul(0x68),
+        ineg(0x74),
+    
+        i2d(0x87),
+    
+        dadd(0x63),
+        dsub(0x67),
+        dmul(0x6b),
+        ddiv(0x6f),
+        dneg(0x77),
+        
 
         ;
 
@@ -204,7 +218,7 @@ public abstract class BytecodeUtils {
         ByteArrayOutputStream _bytes = new ByteArrayOutputStream();
         DataOutputStream bytes = new DataOutputStream(_bytes);
         bytes.write(Instruction._new.code);
-        bytes.write(index);
+        bytes.writeShort(index);
         return _bytes.toByteArray();
     }
 
