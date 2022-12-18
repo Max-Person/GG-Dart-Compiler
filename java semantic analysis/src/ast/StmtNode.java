@@ -1,6 +1,6 @@
 package ast;
 
-import ast.semantic.BytecodeUtils;
+import ast.semantic.Bytecode;
 import ast.semantic.LocalVarRecord;
 import ast.semantic.VariableRecord;
 import ast.semantic.context.MethodContext;
@@ -9,8 +9,6 @@ import ast.semantic.typization.PlainType;
 import ast.semantic.typization.VariableType;
 import org.w3c.dom.Element;
 
-import java.io.ByteArrayOutputStream;
-import java.io.DataOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -272,18 +270,16 @@ public class StmtNode extends Node{
         return false;
     }
 
-    public byte[] toBytes() throws IOException {
-        ByteArrayOutputStream _bytes = new ByteArrayOutputStream();
-        DataOutputStream bytes = new DataOutputStream(_bytes);
-
+    public void toBytecode(Bytecode bytecode) throws IOException {
+        int prev = bytecode.currentOffset(); //FIXME дебаг инфа, удалить
         if (type == StmtType.block) {
             for (StmtNode stmt: blockStmts) {
-                bytes.write(stmt.toBytes());
+                stmt.toBytecode(bytecode);
             }
         }
         if (type == StmtType.expr_statement) {
             if(expr != null)
-                bytes.write(expr.toBytes());
+                expr.toBytecode(bytecode);
         }
         if(type == StmtType.variable_declaration_statement){
 
@@ -293,7 +289,7 @@ public class StmtNode extends Node{
         }
         if (type == StmtType.return_statement) {
             if(returnExpr == null){
-                bytes.write(BytecodeUtils.Instruction._return.code);
+                bytecode.writeSimple(Bytecode.Instruction._return);
             }
         }
         if (type == StmtType.break_statement || type == StmtType.continue_statement) {
@@ -308,11 +304,9 @@ public class StmtNode extends Node{
         if(type == StmtType.switch_statement){
 
         }
-
-        if(_bytes.size() == 0){
+    
+        if(prev - bytecode.currentOffset() == 0){
             throw new IllegalStateException();
         }
-
-        return _bytes.toByteArray();
     }
 }

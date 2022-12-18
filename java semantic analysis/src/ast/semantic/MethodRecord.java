@@ -382,7 +382,9 @@ public class MethodRecord implements NamedRecord, Cloneable{
 
         bytes.writeShort(1); // константа Code
 
-        byte[] code = body.toBytes();
+        Bytecode bytecode = new Bytecode();
+        body.toBytecode(bytecode);
+        byte[] code = bytecode.toBytes();
 
         bytes.writeInt(code.length + 12); // attribute_length
         bytes.writeShort(1000); //TODO? max_stack
