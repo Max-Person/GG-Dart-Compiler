@@ -21,6 +21,9 @@ public class MethodContext extends ClassContext{
 
     @Override
     public NamedRecord lookup(String name) {
+        if(pendingLocal != null && pendingLocal.name.equals(name)){
+            printError("Local variable '" + name + "' can't be referenced before it is declared.", -1); // TODO номер строки
+        }
         if(scopeLocals.containsKey(name)){
             return scopeLocals.get(name);
         }
@@ -53,12 +56,17 @@ public class MethodContext extends ClassContext{
 
     public Map<String, LocalVarRecord> outsideLocals = new HashMap<>();
     public Map<String, LocalVarRecord> scopeLocals = new HashMap<>();
+    public LocalVarRecord pendingLocal = null;
 
     public void addLocalToScope(LocalVarRecord var){
         if(scopeLocals.containsKey(var.name)){
             printError("The name '" + var.name + "' is already defined.", -1); // TODO номер строки
         }
-        methodRecord.addLocalVar(var);
-        scopeLocals.put(var.name, var);
+        pendingLocal = var;
+    }
+    public void resolvePendingLocal(){
+        methodRecord.addLocalVar(pendingLocal);
+        scopeLocals.put(pendingLocal.name, pendingLocal);
+        pendingLocal = null;
     }
 }

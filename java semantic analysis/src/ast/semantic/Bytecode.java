@@ -120,9 +120,22 @@ public class Bytecode {
         if_icmpge(0xa2),
         if_icmpgt(0xa3),
         if_icmple(0xa4),
+    
+        dcmpg(0x98),
+        dcmpl(0x97),
+    
+        ifeq(0x99),
+        ifne(0x9a),
+        iflt(0x9b),
+        ifge(0x9c),
+        ifgt(0x9d),
+        ifle(0x9e),
 
         _goto(0xa7),
         _goto_w(0xc8),
+    
+        pop(0x57),
+        pop2(0x58),
     
         iadd(0x60),
         isub(0x64),
@@ -147,7 +160,9 @@ public class Bytecode {
         }
         
         public boolean isJump(){
-            return this == if_icmpeq || this == if_icmpne || this == if_icmplt || this == if_icmpge || this == if_icmpgt || this == if_icmple || this == _goto || this == _goto_w;
+            return this == if_icmpeq || this == if_icmpne || this == if_icmplt || this == if_icmpge || this == if_icmpgt || this == if_icmple ||
+                    this == _goto || this == _goto_w ||
+                    this == ifeq || this == ifne || this == iflt || this == ifge || this == ifgt || this == ifle;
         }
     }
 

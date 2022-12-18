@@ -826,8 +826,8 @@ public class ExprNode extends Node {
         }
     }
 
-    public void toBytecode(Bytecode bytecode) throws IOException {
-        int prev = bytecode.currentOffset(); //FIXME дебаг инфа, удалить
+    public int toBytecode(Bytecode bytecode) throws IOException {
+        int startOffset = bytecode.currentOffset();
         if(this.type == ExprType.this_pr){
             bytecode.write(Bytecode.loadThis());
         }
@@ -935,6 +935,31 @@ public class ExprNode extends Node {
                 throw new IllegalStateException();
             }
         }
+        else if(this.type == ExprType._or){
+            Bytecode tmp = new Bytecode();
+            operand2.toBytecode(tmp);
+            byte[] _byte = tmp.toBytes();
+    
+            operand.toBytecode(bytecode);
+            bytecode.write(Bytecode.jump(Bytecode.Instruction.ifne, _byte.length + 3 + 3));
+            bytecode.write(_byte);
+            bytecode.write(Bytecode.jump(Bytecode.Instruction.ifeq, 3 + 1 + 3));
+            bytecode.writeSimple(Bytecode.Instruction.iconst_1);
+            bytecode.write(Bytecode.jump(Bytecode.Instruction._goto, 3 + 1));
+            bytecode.writeSimple(Bytecode.Instruction.iconst_0);
+        }
+        else if(this.type == ExprType._and){
+            Bytecode tmp = new Bytecode();
+            operand.toBytecode(bytecode);
+            operand2.toBytecode(tmp);
+            byte[] _byte = tmp.toBytes();
+            bytecode.write(Bytecode.jump(Bytecode.Instruction.ifeq, 3 + _byte.length + 3 + 1 + 3));
+            bytecode.write(_byte);
+            bytecode.write(Bytecode.jump(Bytecode.Instruction.ifeq, 3 + 1 + 3));
+            bytecode.writeSimple(Bytecode.Instruction.iconst_1);
+            bytecode.write(Bytecode.jump(Bytecode.Instruction._goto, 3 + 1));
+            bytecode.writeSimple(Bytecode.Instruction.iconst_0);
+        }
         else if(this.isBinaryOp()){
             this.operand.toBytecode(bytecode);
             this.operand2.toBytecode(bytecode);
@@ -967,18 +992,29 @@ public class ExprNode extends Node {
                         bytecode.write(Bytecode.jump(Bytecode.Instruction.if_icmpge, 7));
                     else if(this.type == ExprType.less_eq)
                         bytecode.write(Bytecode.jump(Bytecode.Instruction.if_icmpgt, 7));
-    
-                    bytecode.write(Bytecode.iconst_1());
-                    bytecode.write(Bytecode.jump(Bytecode.Instruction._goto,4));
-                    bytecode.write(Bytecode.iconst_0());
-
                 }
                 else{
-                    //TODO double
+                    if(this.type == ExprType.greater) {
+                        bytecode.writeSimple(Bytecode.Instruction.dcmpl);
+                        bytecode.write(Bytecode.jump(Bytecode.Instruction.ifle, 7));
+                    }
+                    else if(this.type == ExprType.greater_eq) {
+                        bytecode.writeSimple(Bytecode.Instruction.dcmpl);
+                        bytecode.write(Bytecode.jump(Bytecode.Instruction.iflt, 7));
+                    }
+                    else if(this.type == ExprType.less) {
+                        bytecode.writeSimple(Bytecode.Instruction.dcmpg);
+                        bytecode.write(Bytecode.jump(Bytecode.Instruction.ifge, 7));
+                    }
+                    else if(this.type == ExprType.less_eq) {
+                        bytecode.writeSimple(Bytecode.Instruction.dcmpg);
+                        bytecode.write(Bytecode.jump(Bytecode.Instruction.ifgt, 7));
+                    }
                 }
-
-            }
-            else if(this.type == ExprType._or || this.type == ExprType._and){
+    
+                bytecode.write(Bytecode.iconst_1());
+                bytecode.write(Bytecode.jump(Bytecode.Instruction._goto,4));
+                bytecode.write(Bytecode.iconst_0());
 
             }
             else
@@ -989,7 +1025,10 @@ public class ExprNode extends Node {
             //Унарные операторы
             this.operand.toBytecode(bytecode);
             if(this.type == ExprType._not){
-
+                bytecode.write(Bytecode.jump(Bytecode.Instruction.ifne, 3 + 1 + 3));
+                bytecode.writeSimple(Bytecode.Instruction.iconst_1);
+                bytecode.write(Bytecode.jump(Bytecode.Instruction._goto, 3 + 1));
+                bytecode.writeSimple(Bytecode.Instruction.iconst_0);
             }
             else if(this.type == ExprType.bang){
 
@@ -1004,9 +1043,11 @@ public class ExprNode extends Node {
             }
         }
 
-        if(prev - bytecode.currentOffset() == 0){
+        int written = bytecode.currentOffset() - startOffset;
+        if(written == 0){
             throw new IllegalStateException();
         }
+        return written;
     }
 
 }

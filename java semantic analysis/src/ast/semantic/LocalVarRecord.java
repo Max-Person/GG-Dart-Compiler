@@ -1,7 +1,6 @@
 package ast.semantic;
 
-import ast.DeclaratorNode;
-import ast.VariableDeclarationNode;
+import ast.*;
 import ast.semantic.context.MethodContext;
 import ast.semantic.typization.VariableType;
 
@@ -40,5 +39,16 @@ public class LocalVarRecord extends VariableRecord{
                 printError("A value of type '" + initValue.annotatedType + "' can't be assigned to a variable of type '" + varType + "'.", initValue.lineNum);
             }
         }
+    }
+    
+    public ExprNode toExpr(){
+        if (initValue != null){
+            ExprNode assign = new ExprNode(ExprType.assign);
+            assign.operand = new ExprNode(ExprType.identifier);
+            assign.operand.identifierAccess = new IdentifierNode(this.name);
+            assign.operand2 = this.initValue;
+            return assign;
+        }
+        return null;
     }
 }

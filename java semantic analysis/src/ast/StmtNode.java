@@ -29,6 +29,7 @@ public class StmtNode extends Node{
     public ExprNode returnExpr;
     
     public List<VariableDeclarationNode> variableDeclaration = new ArrayList<>();   //для variableDeclarationStatement
+    public List<ExprNode> variableDeclarationAssignments = new ArrayList<>();
     
     public ExprNode expr; // для exprStatement
     
@@ -129,8 +130,14 @@ public class StmtNode extends Node{
         if(type == StmtType.variable_declaration_statement){
             for (VariableDeclarationNode variable: variableDeclaration) {
                 LocalVarRecord localVarRecord = new LocalVarRecord(context.methodRecord, variable);
-                localVarRecord.resolveType(context);
                 context.addLocalToScope(localVarRecord);
+                localVarRecord.resolveType(context);
+                context.resolvePendingLocal();
+                ExprNode assign = localVarRecord.toExpr();
+                if(assign != null){
+                    assign.annotateTypes(context);
+                    variableDeclarationAssignments.add(assign);
+                }
             }
             return;
         }
@@ -270,19 +277,31 @@ public class StmtNode extends Node{
         return false;
     }
 
-    public void toBytecode(Bytecode bytecode) throws IOException {
-        int prev = bytecode.currentOffset(); //FIXME дебаг инфа, удалить
+    public int toBytecode(Bytecode bytecode) throws IOException {
+        int startOffset = bytecode.currentOffset();
         if (type == StmtType.block) {
             for (StmtNode stmt: blockStmts) {
                 stmt.toBytecode(bytecode);
             }
         }
         if (type == StmtType.expr_statement) {
-            if(expr != null)
+            if(expr != null){
                 expr.toBytecode(bytecode);
+                if(expr.annotatedType.equals(PlainType._double()))
+                    bytecode.writeSimple(Bytecode.Instruction.pop2);
+                else if(!expr.annotatedType.equals(VariableType._void()))
+                    bytecode.writeSimple(Bytecode.Instruction.pop);
+            }
+            
         }
         if(type == StmtType.variable_declaration_statement){
-
+            for (ExprNode expr : variableDeclarationAssignments) {
+                expr.toBytecode(bytecode);
+                if (expr.annotatedType.equals(PlainType._double()))
+                    bytecode.writeSimple(Bytecode.Instruction.pop2);
+                else if (!expr.annotatedType.equals(VariableType._void()))
+                    bytecode.writeSimple(Bytecode.Instruction.pop);
+            }
         }
         if (type == StmtType.if_statement || type == StmtType.while_statement || type == StmtType.do_statement) {
 
@@ -290,6 +309,10 @@ public class StmtNode extends Node{
         if (type == StmtType.return_statement) {
             if(returnExpr == null){
                 bytecode.writeSimple(Bytecode.Instruction._return);
+            }
+            else {
+                returnExpr.toBytecode(bytecode);
+                bytecode.writeSimple(Bytecode.Instruction.areturn);
             }
         }
         if (type == StmtType.break_statement || type == StmtType.continue_statement) {
@@ -305,8 +328,10 @@ public class StmtNode extends Node{
 
         }
     
-        if(prev - bytecode.currentOffset() == 0){
+        int written = bytecode.currentOffset() - startOffset;
+        if(written == 0){
             throw new IllegalStateException();
         }
+        return written;
     }
 }
