@@ -74,10 +74,13 @@ public class RTLClassRecord extends ClassRecord{
     
         string = new RTLClassRecord(null, "String", true);
         string._super = object;
-        ParameterRecord equalsParam = new ParameterRecord(null, null, VariableType._String(), "o", false);
-        MethodRecord equals = new MethodRecord(string, false, false, VariableType._bool(), "equals", List.of(equalsParam), new StmtNode(StmtType.block));
+        ParameterRecord otherStringParam = new ParameterRecord(null, null, VariableType._String(), "o", false);
+        MethodRecord equals = new MethodRecord(string, false, false, VariableType._bool(), "equals", List.of(otherStringParam), new StmtNode(StmtType.block));
         equals.visible = false;
         string.methods.put("equals", equals);
+        MethodRecord concat = new MethodRecord(string, false, false, VariableType._String(), "concat", List.of(otherStringParam), new StmtNode(StmtType.block));
+        concat.visible = false;
+        string.methods.put("concat", concat);
     
         MethodRecord toString =  new MethodRecord(object, false, false, VariableType._String(), "toString", new ArrayList<>(),  new StmtNode(StmtType.block));
         object.methods.put("toString", toString);

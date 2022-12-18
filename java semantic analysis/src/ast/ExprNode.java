@@ -338,17 +338,31 @@ public class ExprNode extends Node {
         }
         else if(this.type == ExprType.string_interpolation){
             this.operand.annotateTypes(context);
-            VariableType interpol = this.operand2.annotateTypes(context);
+            this.operand2.annotateTypes(context);
             operand2.assertNotVoid();
             operand2.makeAssignableTo(VariableType._Object(), context);
-            if(!interpol.equals(VariableType._String())){
+            if(!operand2.annotatedType.equals(VariableType._String())){
                 ExprNode toString = new ExprNode(ExprType.methodCall);
                 toString.operand = this.operand2;
                 toString.identifierAccess = new IdentifierNode("toString");
                 this.operand2 = toString;
-                this.operand2.annotateTypes(context);
             }
-            result = VariableType._String();
+            
+            ExprNode second = new ExprNode(ExprType.string_pr);
+            second.stringValue = this.stringValue;
+            
+            ExprNode concat1 = new ExprNode(ExprType.methodCall);
+            concat1.isSynthetic = true;
+            concat1.identifierAccess = new IdentifierNode("concat");
+            concat1.operand = this.operand;
+            concat1.callArguments = List.of(this.operand2);
+            ExprNode concat2 = new ExprNode(ExprType.methodCall);
+            concat2.isSynthetic = true;
+            concat2.identifierAccess = new IdentifierNode("concat");
+            concat2.operand = concat1;
+            concat2.callArguments = List.of(second);
+            this.mimic(concat2);
+            return this.annotateTypes(context);
         }
         else if(this.type == ExprType.constructNew || this.type == ExprType.constructConst ||
                 this.type == ExprType.constructRedirect || this.type == ExprType.constructSuper){
@@ -634,6 +648,18 @@ public class ExprNode extends Node {
             operand2.annotateTypes(context);
             operand2.assertNotVoid();
             if(this.type == ExprType.add || this.type == ExprType.sub || this.type == ExprType.mul || this.type == ExprType._div){
+                if(this.type == ExprType.add &&
+                        operand.annotatedType.equals(VariableType._String()) &&
+                        operand2.annotatedType.equals(VariableType._String())){ //сложение строк в конкатенацию
+                    ExprNode concat = new ExprNode(ExprType.methodCall);
+                    concat.isSynthetic = true;
+                    concat.identifierAccess = new IdentifierNode("concat");
+                    concat.operand = this.operand;
+                    concat.callArguments = List.of(this.operand2);
+                    this.mimic(concat);
+                    return this.annotateTypes(context);
+                }
+                
                 if(!operand.canBeAssignableTo(PlainType._double())){
                     printError("Cannot perform arithmetic on type '"+ operand.annotatedType.toString() +"'.", operand.lineNum);
                 }
@@ -828,10 +854,6 @@ public class ExprNode extends Node {
         else if(this.type == ExprType.string_pr){
             bytes.write(BytecodeUtils.loadConstant(((StringRefInfo) this.refInfo).constant));
         }
-        else if(this.type == ExprType.string_interpolation){
-            //TODO на этапе семантике заменять интерполяцию и сложение строк на метод .concat()
-        }
-
         else if(this.type == ExprType.javaConstructSuper){
             MethodRefInfo methodRefInfo = ((MethodRefInfo) this.refInfo);
             bytes.write(BytecodeUtils.loadThis());
