@@ -329,6 +329,7 @@ public class MethodRecord implements NamedRecord, Cloneable{
         } catch (CloneNotSupportedException e) {
             throw new RuntimeException(e);
         }
+        copy.body = this.body.deepCopy();
         copy.containerClass = classRecord;
         classRecord.methods.put(copy.name(), copy);
     }

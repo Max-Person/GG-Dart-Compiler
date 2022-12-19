@@ -14,6 +14,7 @@ import org.w3c.dom.Element;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static ast.semantic.SemanticCrawler.printError;
 
@@ -127,6 +128,15 @@ public class ExprNode extends Node {
     }
 
     public ExprNode() {
+    }
+
+    public ExprNode deepCopy(){
+        ExprNode copy = new ExprNode(this);
+        copy.operand = operand == null ? null : operand.deepCopy();
+        copy.operand2 = operand2 == null ? null : operand2.deepCopy();
+        copy.callArguments = callArguments.stream().map(ExprNode::deepCopy).collect(Collectors.toList());
+        copy.listValues = listValues.stream().map(ExprNode::deepCopy).collect(Collectors.toList());
+        return copy;
     }
     
     public void mimic(ExprNode other){
@@ -828,7 +838,7 @@ public class ExprNode extends Node {
 
     public int toBytecode(Bytecode bytecode) throws IOException {
         int startOffset = bytecode.currentOffset();
-        if(this.type == ExprType.this_pr){
+        if(this.type == ExprType.this_pr || this.type == ExprType.super_pr){
             bytecode.write(Bytecode.loadThis());
         }
         else if(this.type == ExprType.null_pr){

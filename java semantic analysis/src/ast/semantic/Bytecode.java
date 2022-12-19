@@ -3,6 +3,7 @@ package ast.semantic;
 import ast.semantic.constants.DoubleConstant;
 import ast.semantic.constants.info.FieldRefInfo;
 import ast.semantic.constants.info.MethodRefInfo;
+import ast.semantic.typization.PlainType;
 
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
@@ -86,6 +87,7 @@ public class Bytecode {
         invokespecial(0xb7),
         invokestatic(0xb8),
         invokevirtual(0xb6),
+        invokeinterface(0xb9),
 
 
         aload(0x19),
@@ -203,39 +205,33 @@ public class Bytecode {
         }
     }
 
-
-    public static byte[] invokespecial(int index) throws IOException {
-        ByteArrayOutputStream _bytes = new ByteArrayOutputStream();
-        DataOutputStream bytes = new DataOutputStream(_bytes);
-        bytes.write(Instruction.invokespecial.code);
-        bytes.writeShort(index);
-        return _bytes.toByteArray();
-    }
-
-    public static byte[] invokestatic(int index) throws IOException {
-        ByteArrayOutputStream _bytes = new ByteArrayOutputStream();
-        DataOutputStream bytes = new DataOutputStream(_bytes);
-        bytes.write(Instruction.invokestatic.code);
-        bytes.writeShort(index);
-        return _bytes.toByteArray();
-    }
-
-    public static byte[] invokevirtual(int index) throws IOException {
-        ByteArrayOutputStream _bytes = new ByteArrayOutputStream();
-        DataOutputStream bytes = new DataOutputStream(_bytes);
-        bytes.write(Instruction.invokevirtual.code);
-        bytes.writeShort(index);
-        return _bytes.toByteArray();
-    }
-
     public static byte[] invokeMethod(MethodRefInfo methodRefInfo) throws IOException {
+        ByteArrayOutputStream _bytes = new ByteArrayOutputStream();
+        DataOutputStream bytes = new DataOutputStream(_bytes);
         if(methodRefInfo.type == MethodRefInfo.MethodRefType.invokeStatic){
-            return invokestatic(methodRefInfo.constant.number);
+            bytes.write(Instruction.invokestatic.code);
         } else if(methodRefInfo.type == MethodRefInfo.MethodRefType.invokeSpecial){
-            return invokespecial(methodRefInfo.constant.number);
-        } else {
-            return invokevirtual(methodRefInfo.constant.number);
+            bytes.write(Instruction.invokespecial.code);
+        } else if(methodRefInfo.type == MethodRefInfo.MethodRefType.invokeVirtual) {
+            bytes.write(Instruction.invokevirtual.code);
+        } else if(methodRefInfo.type == MethodRefInfo.MethodRefType.invokeInterface) {
+            bytes.write(Instruction.invokeinterface.code);
+        } else throw new IllegalStateException();
+
+        bytes.writeShort(methodRefInfo.constant.number);
+
+        if(methodRefInfo.type == MethodRefInfo.MethodRefType.invokeInterface){
+            int size = 1;
+            for(ParameterRecord p : methodRefInfo.method.parameters){
+                if(p.varType.equals(PlainType._double()))
+                    size+=2;
+                else
+                    size+=1;
+            }
+            bytes.write(size);
+            bytes.write(0);
         }
+        return _bytes.toByteArray();
     }
 
     

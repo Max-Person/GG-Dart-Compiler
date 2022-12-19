@@ -10,8 +10,10 @@ import java.util.Objects;
 public class MethodRefConstant extends ConstantRecord {
     public final ClassConstant classConst;
     public final NameAndTypeConstant nameAndTypeConst;
+    public final boolean isInterfaceMethodRef;
     
-    public MethodRefConstant(ClassConstant classConst, NameAndTypeConstant nameAndTypeConst) {
+    public MethodRefConstant(boolean isInterfaceMethodRef, ClassConstant classConst, NameAndTypeConstant nameAndTypeConst) {
+        this.isInterfaceMethodRef = isInterfaceMethodRef;
         this.classConst = classConst;
         this.nameAndTypeConst = nameAndTypeConst;
     }
@@ -20,7 +22,7 @@ public class MethodRefConstant extends ConstantRecord {
     public byte[] toBytes() throws IOException {
         ByteArrayOutputStream _bytes = new ByteArrayOutputStream();
         DataOutputStream bytes = new DataOutputStream(_bytes);
-        bytes.write(10);
+        bytes.write(isInterfaceMethodRef? 11 : 10);
         bytes.writeShort(classConst.number);
         bytes.writeShort(nameAndTypeConst.number);
         

@@ -13,6 +13,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static ast.semantic.SemanticCrawler.printError;
 
@@ -113,6 +114,32 @@ public class StmtNode extends Node{
 
     public StmtNode(StmtType type) {
         this.type = type;
+    }
+
+    public StmtNode() {
+    }
+
+    public StmtNode deepCopy(){
+        StmtNode copy = new StmtNode();
+        copy.type = this.type;
+        copy.condition = this.condition == null ? null : this.condition.deepCopy(); //TODO
+        copy.body = this.body == null ? null : this.body.deepCopy();
+        copy.blockStmts = blockStmts.stream().map(StmtNode::deepCopy).collect(Collectors.toList());
+        copy.elseBody = this.elseBody == null ? null : this.elseBody.deepCopy();
+        copy.returnExpr = this.returnExpr == null ? null : this.returnExpr.deepCopy();
+        copy.variableDeclaration = new ArrayList<>(variableDeclaration);
+        copy.variableDeclarationAssignments = variableDeclarationAssignments.stream().map(ExprNode::deepCopy).collect(Collectors.toList());
+        copy.expr = this.expr == null ? null : this.expr.deepCopy();
+        copy.forInitializerStmt = this.forInitializerStmt == null ? null : this.forInitializerStmt.deepCopy();
+        copy.forPostExpr = forPostExpr.stream().map(ExprNode::deepCopy).collect(Collectors.toList());
+        copy.forEachVariableDecl = forEachVariableDecl;
+        copy.forEachVariableId = this.forEachVariableId == null ? null : new IdentifierNode(this.forEachVariableId.stringVal);
+        copy.forContainerExpr = this.forContainerExpr == null ? null : this.forContainerExpr.deepCopy();
+        copy.func = func;
+        copy.switchCaseList = switchCaseList.stream().map(SwitchCaseNode::deepCopy).collect(Collectors.toList());
+        copy.defaultSwitchActions = defaultSwitchActions.stream().map(StmtNode::deepCopy).collect(Collectors.toList());
+
+        return copy;
     }
 
     public void validateStmt(MethodContext context) {

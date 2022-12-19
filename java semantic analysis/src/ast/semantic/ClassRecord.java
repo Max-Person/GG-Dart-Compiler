@@ -151,7 +151,7 @@ public class ClassRecord implements NamedRecord{
     public MethodRefConstant addMethodRefConstant(ClassRecord invokedFrom, MethodRecord method){
         ClassConstant classConstant = addClassConstant(invokedFrom);
         NameAndTypeConstant nameAndTypeConstant = addNameAndTypeConstant(method);
-        return (MethodRefConstant) addConstant(new MethodRefConstant(classConstant, nameAndTypeConstant));
+        return (MethodRefConstant) addConstant(new MethodRefConstant(invokedFrom.isJavaInterface, classConstant, nameAndTypeConstant));
     }
     
     public FieldRefConstant addFieldRefConstant(ClassRecord accessedFrom, FieldRecord field){
@@ -471,6 +471,9 @@ public class ClassRecord implements NamedRecord{
     //-- ПРОВЕРКА МЕТОДОВ
 
     public void normalizeConstructors(){
+        if(isJavaInterface)
+            return;
+
         //Создание "прокидывающего" пустого конструктора
         StmtNode callStmt = new StmtNode(StmtType.expr_statement);
         callStmt.expr = new ExprNode(ExprType.javaConstructSuper);

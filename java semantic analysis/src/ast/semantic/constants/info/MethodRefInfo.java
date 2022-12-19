@@ -10,6 +10,7 @@ public class MethodRefInfo implements ConstantRefInfo<MethodRefConstant> {
         invokeStatic,
         invokeSpecial,
         invokeVirtual,
+        invokeInterface,
     }
     
     public final MethodRefConstant constant;
@@ -20,6 +21,9 @@ public class MethodRefInfo implements ConstantRefInfo<MethodRefConstant> {
         if(method.isStatic() && (type != MethodRefType.invokeStatic || invoker != method.containerClass)){
             throw new IllegalStateException();
         }
+        if(type == MethodRefType.invokeInterface && !invoker.isJavaInterface ||
+                type != MethodRefType.invokeInterface && invoker.isJavaInterface)
+            throw new IllegalStateException();
         
         this.type = type;
         this.constant = context.currentClass().addMethodRefConstant(invoker, method);
@@ -35,7 +39,7 @@ public class MethodRefInfo implements ConstantRefInfo<MethodRefConstant> {
     }
     
     public static MethodRefInfo invokeVirtual(MethodRecord method, ClassRecord invoker, Context context){
-        return new MethodRefInfo(MethodRefType.invokeVirtual, method, invoker, context);
+        return new MethodRefInfo(invoker.isJavaInterface? MethodRefType.invokeInterface : MethodRefType.invokeVirtual, method, invoker, context);
     }
     
     @Override
