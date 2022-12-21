@@ -242,12 +242,18 @@ public class ExprNode extends Node {
         if(type.isAssignableFrom(this.annotatedType))
             return true;
         
-        if(this.annotatedType instanceof PlainType && !(type instanceof PlainType)){
+        if((this.annotatedType.equals(PlainType._double()) ||
+                this.annotatedType.equals(PlainType._int()) ||
+                this.annotatedType.equals(PlainType._bool()))
+                && !(type instanceof PlainType)){
             this.wrapPlainAsClass();
             if(context != null) this.annotateTypes(context);
             return type.isAssignableFrom(this.annotatedType);
         }
-        else if(!(this.annotatedType instanceof PlainType) && type instanceof PlainType){
+        else if((this.annotatedType.equals(VariableType._double()) ||
+                this.annotatedType.equals(VariableType._int()) ||
+                this.annotatedType.equals(VariableType._bool()))
+                && type instanceof PlainType){
             this.unwrapClassToPlain();
             if(context != null) this.annotateTypes(context);
             return this.makeAssignableTo(type, context);
@@ -717,10 +723,8 @@ public class ExprNode extends Node {
             else if(this.type == ExprType.ifnull){
                 operand.makeAssignableTo(VariableType._Object(), context);
                 operand2.makeAssignableTo(VariableType._Object(), context);
-                if(!operand.annotatedType.equals(operand2.annotatedType)){
-                    printError("Types of operands in ?? operator must be equal for the expression to be statically typed.", this.lineNum);
-                }
-                result = operand.annotatedType;
+                result = new ClassType(ClassRecord.lastCommonSuper(operand.annotatedType.associatedClass(), operand2.annotatedType.associatedClass()));
+                result.isNullable = operand2.annotatedType.isNullable;
             }
             else if(this.type == ExprType.eq || this.type == ExprType.neq){
                 if(operand.annotatedType.equals(VariableType._String())){
@@ -1013,6 +1017,15 @@ public class ExprNode extends Node {
             bytecode.write(Bytecode.jump(Bytecode.Instruction._goto, 3 + 1));
             bytecode.writeSimple(Bytecode.Instruction.iconst_0);
         }
+        else if(this.type == ExprType.ifnull){
+            operand.toBytecode(bytecode);
+            Bytecode op2Bytecode = new Bytecode();
+            int op2size = operand2.toBytecode(op2Bytecode);
+            bytecode.writeSimple(Bytecode.Instruction.dup);
+            bytecode.write(Bytecode.jump(Bytecode.Instruction.ifnonnull, 3 + 1 + op2size));
+            bytecode.writeSimple(Bytecode.Instruction.pop);
+            bytecode.write(op2Bytecode.toBytes());
+        }
         else if(this.isBinaryOp()){
             this.operand.toBytecode(bytecode);
             this.operand2.toBytecode(bytecode);
@@ -1028,9 +1041,6 @@ public class ExprNode extends Node {
                 else if(this.type == ExprType._div)
                     bytecode.writeSimple(Bytecode.Instruction.ddiv);
             
-            }
-            else if(this.type == ExprType.ifnull){
-
             }
             else if(this.type == ExprType.eq || this.type == ExprType.neq){
                 if(this.operand.annotatedType.equals(PlainType._int()) ||

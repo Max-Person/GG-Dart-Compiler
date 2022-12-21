@@ -130,6 +130,9 @@ public class Bytecode {
         if_acmpeq(0xa5),
         if_acmpne(0xa6),
     
+        ifnonnull(0xc7),
+        ifnull(0xc6),
+    
         ifeq(0x99),
         ifne(0x9a),
         iflt(0x9b),
@@ -170,7 +173,9 @@ public class Bytecode {
         public boolean isJump(){
             return this == if_icmpeq || this == if_icmpne || this == if_icmplt || this == if_icmpge || this == if_icmpgt || this == if_icmple ||
                     this == _goto || this == _goto_w ||
-                    this == ifeq || this == ifne || this == iflt || this == ifge || this == ifgt || this == ifle;
+                    this == ifeq || this == ifne || this == iflt || this == ifge || this == ifgt || this == ifle ||
+                    this == if_acmpeq || this == if_acmpne ||
+                    this == ifnull || this == ifnonnull;
         }
     }
 

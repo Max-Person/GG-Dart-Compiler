@@ -11,7 +11,7 @@ public class PlainType extends VariableType{
     PlainType(String name, String descriptor) {
         this.name = name;
         this.descriptor = descriptor;
-        this.isNullable = false;
+        this.isNullable = descriptor.equals("Null");
     }
     
     @Override
