@@ -1,6 +1,7 @@
 package ast.semantic;
 
 import ast.semantic.constants.DoubleConstant;
+import ast.semantic.constants.info.ClassRefInfo;
 import ast.semantic.constants.info.FieldRefInfo;
 import ast.semantic.constants.info.MethodRefInfo;
 import ast.semantic.typization.PlainType;
@@ -154,7 +155,9 @@ public class Bytecode {
         dmul(0x6b),
         ddiv(0x6f),
         dneg(0x77),
-        
+    
+        checkcast(0xc0),
+        _instanceof(0xc1),
 
         ;
 
@@ -423,6 +426,22 @@ public class Bytecode {
         else
             throw new IllegalArgumentException();
 
+        return _bytes.toByteArray();
+    }
+    
+    public static byte[] checkcast(ClassRefInfo classRefInfo) throws IOException {
+        ByteArrayOutputStream _bytes = new ByteArrayOutputStream();
+        DataOutputStream bytes = new DataOutputStream(_bytes);
+        bytes.write(Instruction.checkcast.code);
+        bytes.writeShort(classRefInfo.constant.number);
+        return _bytes.toByteArray();
+    }
+    
+    public static byte[] _instanceof(ClassRefInfo classRefInfo) throws IOException {
+        ByteArrayOutputStream _bytes = new ByteArrayOutputStream();
+        DataOutputStream bytes = new DataOutputStream(_bytes);
+        bytes.write(Instruction._instanceof.code);
+        bytes.writeShort(classRefInfo.constant.number);
         return _bytes.toByteArray();
     }
 }

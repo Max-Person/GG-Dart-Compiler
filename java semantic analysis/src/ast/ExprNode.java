@@ -588,17 +588,26 @@ public class ExprNode extends Node {
                             MethodRefInfo.invokeVirtual(method, classRecord, context);
             result = method.returnType;
         }
-        else if(this.type == ExprType.type_cast){
+        else if(this.type == ExprType.type_cast || this.type == ExprType.type_check){
             operand.annotateTypes(context);
             operand.assertNotVoid();
             operand.makeAssignableTo(VariableType._Object(), context);
-            result = VariableType.from(context.classTable(), this.typeForCheckOrCast);
+            VariableType type = VariableType.from(context.classTable(), this.typeForCheckOrCast);
+            if(type == null || type.equals(VariableType._void())){
+                printError("Expected a type name.", this.lineNum);
+            }
+            else if(type instanceof ListType){
+                printError("GG-Dart disallows List casting.", this.lineNum);
+            }
+            this.refInfo = new ClassRefInfo(type.associatedClass(), context);
+            result = this.type == ExprType.type_cast ? type : PlainType._bool();
         }
-        else if (this.type == ExprType.type_check || this.type == ExprType.neg_type_check) {
-            operand.annotateTypes(context);
-            operand.assertNotVoid();
-            operand.makeAssignableTo(VariableType._Object(), context);
-            result = VariableType._bool(); //TODO ? доп преобразования?
+        else if (this.type == ExprType.neg_type_check){
+            ExprNode check = new ExprNode(this);
+            check.type = ExprType.type_check;
+            this.type = ExprType._not;
+            this.operand = check;
+            return this.annotateTypes(context);
         }
         else if(this.isAssign()){
             if(this.type == ExprType.assign){
@@ -945,8 +954,12 @@ public class ExprNode extends Node {
             bytecode.write(Bytecode.invokeMethod(methodRefInfo));
         }
         else if(this.type == ExprType.type_cast){
+            this.operand.toBytecode(bytecode);
+            bytecode.write(Bytecode.checkcast((ClassRefInfo) this.refInfo));
         }
-        else if (this.type == ExprType.type_check || this.type == ExprType.neg_type_check) {
+        else if (this.type == ExprType.type_check) {
+            this.operand.toBytecode(bytecode);
+            bytecode.write(Bytecode._instanceof((ClassRefInfo) this.refInfo));
         }
         else if(this.isAssign()){
             if(this.type == ExprType.assign){

@@ -499,8 +499,8 @@ namespace dotOut {
 			label(node->id, "as");
 			link(node->id, node->operand->id);
 			display(node->operand);
-			link(node->id, node->operand2->id);
-			display(node->operand2);
+			link(node->id, node->typeForCheckOrCast->id);
+			display(node->typeForCheckOrCast);
 			break;
 		}
 		case type_check: {
