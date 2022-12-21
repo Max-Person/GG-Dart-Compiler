@@ -352,14 +352,29 @@ public class StmtNode extends Node{
                 bytecode.writeSimple(Bytecode.Instruction.areturn);
             }
         }
-        if (type == StmtType.break_statement || type == StmtType.continue_statement) {
-
+        if (type == StmtType.break_statement) {
+            bytecode.markBreak();
+        }
+        if(type == StmtType.continue_statement) {
+            bytecode.markContinue();
         }
         if (type == StmtType.while_statement) {
+            Bytecode _bytecode = new Bytecode();
+            int bodySize = body.toBytecode(_bytecode);
 
+            //int continueLocation = bytecode.currentOffset();
+
+            int condSize = condition.toBytecode(bytecode);
+            bytecode.write(Bytecode.jump(Bytecode.Instruction.ifeq, 3 + bodySize + 3));
+            body.toBytecode(bytecode);
+            bytecode.write(Bytecode.jump(Bytecode.Instruction._goto, -condSize - bodySize - 3));
+            //bytecode.resolveBreaks();
+           // bytecode.resolveContinues(continueLocation);
         }
         if (type == StmtType.do_statement) {
-
+            int bodySize = body.toBytecode(bytecode);
+            int size = condition.toBytecode(bytecode);
+            bytecode.write(Bytecode.jump(Bytecode.Instruction.ifne, -size - bodySize));
         }
         if(type == StmtType.forEach_statement){
 
