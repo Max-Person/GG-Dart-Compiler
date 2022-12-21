@@ -178,7 +178,7 @@ public class ExprNode extends Node {
                 || type == ExprType.neq || type == ExprType.greater || type == ExprType.less || type == ExprType.greater_eq || type == ExprType.less_eq
                 || type == ExprType.add || type == ExprType.sub || type == ExprType.mul || type == ExprType._div || type == ExprType.assign || type == ExprType.and_assign
                 || type == ExprType.or_assign || type == ExprType.xor_assign || type == ExprType.mul_assign || type == ExprType.div_assign || type == ExprType.add_assign
-                || type == ExprType.sub_assign || type == ExprType.ifnull_assign;
+                || type == ExprType.sub_assign || type == ExprType.ifnull_assign || type == ExprType.disjoint;
     }
 
     private boolean isUnaryOp(){
@@ -659,7 +659,7 @@ public class ExprNode extends Node {
             }
             else {
                 //Комплексные ассигнменты
-                ExprNode expanded = new ExprNode(ExprType.complexAssignToOp.get(this.type), this.operand, this.operand2);
+                ExprNode expanded = new ExprNode(ExprType.complexAssignToOp.get(this.type), this.operand.deepCopy(), this.operand2);
                 this.type = ExprType.assign;
                 this.operand2 = expanded;
                 return this.annotateTypes(context);
@@ -801,6 +801,9 @@ public class ExprNode extends Node {
                 }
                 result = PlainType._bool();
             }
+            else if(this.type == ExprType.disjoint){
+                result = operand.annotatedType;
+            }
             
         }
         else {
@@ -840,14 +843,33 @@ public class ExprNode extends Node {
                 if(!operand.canBeAssignableTo(PlainType._double())){
                     printError("Cannot perform arithmetic on type '"+ operand.annotatedType.toString() +"'.", operand.lineNum);
                 }
-    
-                if(operand.canBeAssignableTo(PlainType._int())){
-                    operand.makeAssignableTo(PlainType._int(), context);
+                if(this.type == ExprType.u_minus){
+                    if(this.operand.canBeAssignableTo(PlainType._int()))
+                        this.operand.makeAssignableTo(PlainType._int(), context);
+                    else
+                        this.operand.makeAssignableTo(PlainType._double(), context);
+                    result = operand.annotatedType;
+                }
+                else if(this.type == ExprType.prefix_dec || this.type == ExprType.prefix_inc){
+                    this.type = this.type == ExprType.prefix_dec ? ExprType.sub_assign : ExprType.add_assign;
+                    this.operand2 = new ExprNode(ExprType.int_pr);
+                    this.operand2.intValue = 1;
+                    return this.annotateTypes(context);
+                }
+                else if(this.type == ExprType.postfix_dec || this.type == ExprType.postfix_inc){
+                    ExprNode action = new ExprNode(this.type == ExprType.postfix_dec ? ExprType.prefix_dec : ExprType.prefix_inc);
+                    action.operand = this.operand.deepCopy();
+                    this.type = ExprType.disjoint;
+                    if(this.operand.canBeAssignableTo(PlainType._int()))
+                        this.operand.makeAssignableTo(PlainType._int(), context);
+                    else
+                        this.operand.makeAssignableTo(PlainType._double(), context);
+                    this.operand2 = action;
+                    return this.annotateTypes(context);
                 }
                 else {
-                    operand.makeAssignableTo(PlainType._double(), context);
+                    throw new IllegalStateException();
                 }
-                result = operand.annotatedType;
             }
         
         }
@@ -1099,6 +1121,9 @@ public class ExprNode extends Node {
                 bytecode.write(Bytecode.iconst_0());
 
             }
+            else if(this.type == ExprType.disjoint){
+                bytecode.writeSimple(Bytecode.Instruction.pop);
+            }
             else
                 throw new IllegalStateException();
 
@@ -1117,7 +1142,10 @@ public class ExprNode extends Node {
             }
             else {
                 //Арифметические унарные
-                if(this.type == ExprType.i2d){
+                if(this.type == ExprType.u_minus){
+                    bytecode.writeSimple(operand.annotatedType.equals(PlainType._int()) ? Bytecode.Instruction.ineg : Bytecode.Instruction.dneg);
+                }
+                else if(this.type == ExprType.i2d){
                     bytecode.writeSimple(Bytecode.Instruction.i2d);
                 }
                 else

@@ -54,6 +54,7 @@ public enum ExprType {
     postfix_dec,
     bang,
     
+    disjoint,
     i2d,
 
     assign,
