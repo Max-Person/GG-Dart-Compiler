@@ -729,6 +729,36 @@ public class ExprNode extends Node {
                     }
                     return this.annotateTypes(context);
                 }
+                boolean op1Plain = operand.canBeAssignableTo(PlainType._int()) ||
+                        operand.canBeAssignableTo(PlainType._double()) ||
+                        operand.canBeAssignableTo(PlainType._bool());
+                boolean op2Plain = operand2.canBeAssignableTo(PlainType._int()) ||
+                        operand2.canBeAssignableTo(PlainType._double()) ||
+                        operand2.canBeAssignableTo(PlainType._bool());
+                if(op1Plain && op2Plain){
+                    if(operand.canBeAssignableTo(PlainType._bool()) && operand2.canBeAssignableTo(PlainType._bool())){
+                        operand.makeAssignableTo(PlainType._bool(), context);
+                        operand2.makeAssignableTo(PlainType._bool(), context);
+                    }
+                    else if(operand.canBeAssignableTo(PlainType._int()) && operand2.canBeAssignableTo(PlainType._int())){
+                        operand.makeAssignableTo(PlainType._int(), context);
+                        operand2.makeAssignableTo(PlainType._int(), context);
+                    }
+                    else if(operand.canBeAssignableTo(PlainType._double()) && operand2.canBeAssignableTo(PlainType._double())){
+                        operand.makeAssignableTo(PlainType._double(), context);
+                        operand2.makeAssignableTo(PlainType._double(), context);
+                    }
+                    else {
+                        ExprNode bool = new ExprNode(ExprType.bool_pr);
+                        bool.boolValue = false;
+                        this.mimic(bool);
+                        return this.annotateTypes(context);
+                    }
+                }
+                else{
+                    operand.makeAssignableTo(VariableType._Object(), context);
+                    operand2.makeAssignableTo(VariableType._Object(), context);
+                }
                 result = PlainType._bool();
             }
             else if(this.type == ExprType.greater || this.type == ExprType.greater_eq || this.type == ExprType.less || this.type == ExprType.less_eq){
@@ -990,7 +1020,26 @@ public class ExprNode extends Node {
 
             }
             else if(this.type == ExprType.eq || this.type == ExprType.neq){
-
+                if(this.operand.annotatedType.equals(PlainType._int()) ||
+                        this.operand.annotatedType.equals(PlainType._bool())){
+                    bytecode.write(Bytecode.jump(this.type == ExprType.eq ?
+                            Bytecode.Instruction.if_icmpne :
+                            Bytecode.Instruction.if_icmpeq, 7));
+                }
+                else if(this.operand.annotatedType.equals(PlainType._double())){
+                    bytecode.writeSimple(Bytecode.Instruction.dcmpl);
+                    bytecode.write(Bytecode.jump(this.type == ExprType.eq ?
+                            Bytecode.Instruction.ifne :
+                            Bytecode.Instruction.ifeq, 7));
+                }
+                else{
+                    bytecode.write(Bytecode.jump(this.type == ExprType.eq ?
+                            Bytecode.Instruction.if_acmpne :
+                            Bytecode.Instruction.if_acmpeq, 7));
+                }
+                bytecode.write(Bytecode.iconst_1());
+                bytecode.write(Bytecode.jump(Bytecode.Instruction._goto,4));
+                bytecode.write(Bytecode.iconst_0());
             }
             else if(this.type == ExprType.greater || this.type == ExprType.greater_eq || this.type == ExprType.less || this.type == ExprType.less_eq){
                 if(PlainType._int().isAssignableFrom(this.operand.annotatedType)){

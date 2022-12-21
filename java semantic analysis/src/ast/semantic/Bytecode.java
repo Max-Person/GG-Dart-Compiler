@@ -125,6 +125,9 @@ public class Bytecode {
     
         dcmpg(0x98),
         dcmpl(0x97),
+
+        if_acmpeq(0xa5),
+        if_acmpne(0xa6),
     
         ifeq(0x99),
         ifne(0x9a),

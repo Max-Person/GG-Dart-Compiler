@@ -330,8 +330,18 @@ public class StmtNode extends Node{
                     bytecode.writeSimple(Bytecode.Instruction.pop);
             }
         }
-        if (type == StmtType.if_statement || type == StmtType.while_statement || type == StmtType.do_statement) {
-
+        if (type == StmtType.if_statement) {
+            condition.toBytecode(bytecode);
+            Bytecode bodyBytecode = new Bytecode();
+            int bodySize = body.toBytecode(bodyBytecode);
+            bytecode.write(Bytecode.jump(Bytecode.Instruction.ifeq, 3 + bodySize + (elseBody != null ? 3 : 0)));
+            bytecode.write(bodyBytecode.toBytes());
+            if(elseBody != null){
+                Bytecode elseBytecode = new Bytecode();
+                int elseSize = elseBody.toBytecode(elseBytecode);
+                bytecode.write(Bytecode.jump(Bytecode.Instruction._goto, 3 + elseSize));
+                bytecode.write(elseBytecode.toBytes());
+            }
         }
         if (type == StmtType.return_statement) {
             if(returnExpr == null){
@@ -343,6 +353,12 @@ public class StmtNode extends Node{
             }
         }
         if (type == StmtType.break_statement || type == StmtType.continue_statement) {
+
+        }
+        if (type == StmtType.while_statement) {
+
+        }
+        if (type == StmtType.do_statement) {
 
         }
         if(type == StmtType.forEach_statement){
