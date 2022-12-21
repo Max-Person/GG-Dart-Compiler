@@ -327,7 +327,8 @@ public class ExprNode extends Node {
                     element = el.annotatedType;
                 }
                 else{
-                    element = new ClassType(ClassRecord.lastCommonSuper(element.associatedClass(), el.annotatedType.associatedClass()));
+                    ClassRecord clazz = ClassRecord.lastCommonSuper(element.associatedClass(), el.annotatedType.associatedClass());
+                    element = clazz instanceof RTLListClassRecord ? new ListType(((RTLListClassRecord) clazz).valueType): new ClassType(clazz);
                 }
             }
 
@@ -587,11 +588,15 @@ public class ExprNode extends Node {
             }
             checkCallArgumentsTyping(method, context);
             isSpecial = isSpecial && method.isSyntheticConstructor();
-            this.refInfo = method.isStatic() ?
-                    MethodRefInfo.invokeStatic(method, context) :
+            MethodRecord actual = method;
+            if(method.containerClass instanceof RTLListClassRecord ){
+                actual = RTLListClassRecord.basic.methods.get(method.name);
+            }
+            this.refInfo = actual.isStatic() ?
+                    MethodRefInfo.invokeStatic(actual, context) :
                     isSpecial ?
-                            MethodRefInfo.invokeSpecial(method, classRecord, context) :
-                            MethodRefInfo.invokeVirtual(method, classRecord, context);
+                            MethodRefInfo.invokeSpecial(actual, classRecord, context) :
+                            MethodRefInfo.invokeVirtual(actual, classRecord, context);
             result = method.returnType;
         }
         else if(this.type == ExprType.type_cast || this.type == ExprType.type_check){
@@ -714,7 +719,7 @@ public class ExprNode extends Node {
                     return this.annotateTypes(context);
                 }
                 else {
-                    if(!operand2.makeAssignableTo(VariableType._int(), context)) {
+                    if(!operand2.makeAssignableTo(PlainType._int(), context)) {
                         printError("The value type '" + operand2.annotatedType.toString() + "' can't be assigned to the expected type 'int'.", operand2.lineNum);
                     }
                     result = ((ListType) operand.annotatedType).valueType;

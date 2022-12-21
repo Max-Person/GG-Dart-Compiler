@@ -12,7 +12,7 @@ import java.util.List;
 import java.util.Map;
 
 public class RTLListClassRecord extends RTLClassRecord{
-    VariableType valueType;
+    public VariableType valueType;
     public static RTLListClassRecord basic = new RTLListClassRecord(null, VariableType._Object());
     
     public RTLListClassRecord(Map<String, ClassRecord> containerClassTable, VariableType valueType) {
@@ -39,7 +39,7 @@ public class RTLListClassRecord extends RTLClassRecord{
     
         param = new ParameterRecord(null, null, PlainType._int(), "index", false);
         ParameterRecord param2 = new ParameterRecord(null, null, valueType.clone(), "obj", false);
-        this.methods.put("set", new MethodRecord(this, valueType.clone(), "isEmpty", Arrays.asList(param, param2), new StmtNode(StmtType.block)));
+        this.methods.put("set", new MethodRecord(this, valueType.clone(), "set", Arrays.asList(param, param2), new StmtNode(StmtType.block)));
     
         param = new ParameterRecord(null, null, PlainType._int(), "index", false);
         param2 = new ParameterRecord(null, null, valueType.clone(), "obj", false);

@@ -29,8 +29,13 @@ public class ListType extends VariableType{
     }
     
     @Override
+    public boolean isAssignableFrom(VariableType o) {
+        return super.isAssignableFrom(o) || (o instanceof ListType && ((ListType) o).valueType == null);
+    }
+    
+    @Override
     public ClassRecord associatedClass() {
-        return new RTLListClassRecord(null, valueType); //FIXME ? null
+        return new RTLListClassRecord(null, valueType != null ? valueType : VariableType._Object()); //FIXED ? null
     }
     
     @Override
