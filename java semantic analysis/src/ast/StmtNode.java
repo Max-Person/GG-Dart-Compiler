@@ -304,7 +304,8 @@ public class StmtNode extends Node{
         return false;
     }
 
-    public int toBytecode(Bytecode bytecode) throws IOException {
+    public int toBytecode(Bytecode outBytecode) throws IOException {
+        Bytecode bytecode = new Bytecode();
         int startOffset = bytecode.currentOffset();
         if (type == StmtType.block) {
             for (StmtNode stmt: blockStmts) {
@@ -382,7 +383,23 @@ public class StmtNode extends Node{
 
         }
         if(type == StmtType.forN_statement){
+            forInitializerStmt.toBytecode(bytecode);
+            int initOffset = bytecode.currentOffset();
 
+            Bytecode tmp = new Bytecode();
+            int bodySize = body.toBytecode(tmp);
+
+            int postSize = 0;
+            for (ExprNode post : forPostExpr) {
+                postSize+=post.toBytecode(tmp);
+            }
+            bytecode.write(Bytecode.jump(Bytecode.Instruction._goto, 3 + bodySize + postSize));
+            bytecode.write(tmp);
+            int condSize = condition.toBytecode(bytecode);
+
+            bytecode.write(Bytecode.jump(Bytecode.Instruction.ifne, -bodySize - postSize - condSize));
+            bytecode.resolveContinues(initOffset + 3 + bodySize);
+            bytecode.resolveBreaks(bytecode.currentOffset());
         }
         if(type == StmtType.switch_statement){
 
@@ -392,6 +409,7 @@ public class StmtNode extends Node{
         if(written == 0){
             throw new IllegalStateException();
         }
+        outBytecode.write(bytecode);
         return written;
     }
 }

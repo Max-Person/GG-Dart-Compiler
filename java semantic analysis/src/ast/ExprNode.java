@@ -937,7 +937,8 @@ public class ExprNode extends Node {
         }
     }
 
-    public int toBytecode(Bytecode bytecode) throws IOException {
+    public int toBytecode(Bytecode outBytecode) throws IOException {
+        Bytecode bytecode = new Bytecode();
         int startOffset = bytecode.currentOffset();
         if(this.type == ExprType.this_pr || this.type == ExprType.super_pr){
             bytecode.write(Bytecode.loadThis());
@@ -1192,6 +1193,7 @@ public class ExprNode extends Node {
         if(written == 0){
             throw new IllegalStateException();
         }
+        outBytecode.write(bytecode);
         return written;
     }
 
