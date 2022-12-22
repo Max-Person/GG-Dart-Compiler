@@ -2,6 +2,7 @@ package ast.semantic;
 
 import ast.StmtNode;
 import ast.StmtType;
+import ast.semantic.typization.IteratorType;
 import ast.semantic.typization.ListType;
 import ast.semantic.typization.PlainType;
 import ast.semantic.typization.VariableType;
@@ -49,6 +50,10 @@ public class RTLListClassRecord extends RTLClassRecord{
         MethodRecord with =  new MethodRecord(this, new ListType(valueType), "with", List.of(param), new StmtNode(StmtType.block));
         with.visible = false;
         this.methods.put("with",with);
+    
+        MethodRecord iterator =  new MethodRecord(this, new IteratorType(valueType), "iterator", List.of(), new StmtNode(StmtType.block));
+        iterator.visible = false;
+        this.methods.put("iterator", iterator);
     }
     
     @Override

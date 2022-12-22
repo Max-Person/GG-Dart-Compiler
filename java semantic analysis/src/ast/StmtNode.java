@@ -214,15 +214,71 @@ public class StmtNode extends Node{
             else {
                 LocalVarRecord localVarRecord = new LocalVarRecord(forContext.methodRecord, forEachVariableDecl);
                 localVarRecord.resolveType(forContext);
-                forContext.addLocalToScope(localVarRecord);
+                //forContext.addLocalToScope(localVarRecord);
                 type = localVarRecord.varType;
             }
 
             if(!type.isAssignableFrom(((ListType) forContainerExpr.annotatedType).valueType)){
                 printError("The type 'List<" + ((ListType) forContainerExpr.annotatedType).valueType +">' used in the 'for' loop must have a type argument that can be assigned to '" + type + "'.", forContainerExpr.lineNum);
             }
-            body.validateStmt(forContext.skippableChildScope());
-            return;
+            
+            //Преобразовать for in в обычный for
+            {
+                this.type = StmtType.forN_statement;
+                //преддействие
+                ExprNode iterCall = new ExprNode(ExprType.methodCall);
+                iterCall.isSynthetic = true;
+                iterCall.operand = forContainerExpr;
+                iterCall.callArguments = new ArrayList<>();
+                iterCall.identifierAccess = new IdentifierNode("iterator");
+                VariableDeclarationNode iterDeclNode = new VariableDeclarationNode("!iter", iterCall);
+                StmtNode iterDecl = new StmtNode(StmtType.variable_declaration_statement);
+                iterDecl.variableDeclaration.add(iterDeclNode);
+                this.forInitializerStmt = iterDecl;
+                //условие
+                this.condition = new ExprNode(ExprType.methodCall);
+                this.condition.isSynthetic = true;
+                this.condition.identifierAccess = new IdentifierNode("hasNext");
+                this.condition.callArguments = new ArrayList<>();
+                this.condition.operand = new ExprNode(ExprType.identifier);
+                this.condition.operand.identifierAccess = new IdentifierNode("!iter");
+                //постдействие
+                this.forPostExpr = new ArrayList<>();
+                //тело
+                ExprNode nextExpr = new ExprNode(ExprType.methodCall);
+                nextExpr.isSynthetic = true;
+                nextExpr.identifierAccess = new IdentifierNode("next");
+                nextExpr.callArguments = new ArrayList<>();
+                nextExpr.operand = new ExprNode(ExprType.identifier);
+                nextExpr.operand.identifierAccess = new IdentifierNode("!iter");
+                StmtNode next;
+                if(forEachVariableId != null){
+                    ExprNode assign = new ExprNode(ExprType.assign);
+                    assign.operand = new ExprNode(ExprType.identifier);
+                    assign.operand.identifierAccess = forEachVariableId;
+                    assign.operand2 = nextExpr;
+                    next = new StmtNode(StmtType.expr_statement);
+                    next.expr = assign;
+                }
+                else {
+                    forEachVariableDecl.isAssign = true;
+                    forEachVariableDecl.value = nextExpr;
+                    next = new StmtNode(StmtType.variable_declaration_statement);
+                    next.variableDeclaration.add(forEachVariableDecl);
+                }
+                StmtNode newBody = new StmtNode(StmtType.block);
+                newBody.blockStmts.add(next);
+                StmtNode wrapper = this.body;
+                if(this.body.type != StmtType.block){
+                    wrapper = new StmtNode(StmtType.block);
+                    wrapper.blockStmts.add(this.body);
+                }
+                newBody.blockStmts.add(wrapper);
+                this.body = newBody;
+                this.forEachVariableId = null;
+                this.forEachVariableDecl = null;
+                this.forContainerExpr = null;
+            }
         }
         if(type == StmtType.forN_statement){
             MethodContext forContext = context.childScope();
@@ -307,6 +363,7 @@ public class StmtNode extends Node{
     public int toBytecode(Bytecode outBytecode) throws IOException {
         Bytecode bytecode = new Bytecode();
         int startOffset = bytecode.currentOffset();
+        boolean expectZero = false;
         if (type == StmtType.block) {
             for (StmtNode stmt: blockStmts) {
                 stmt.toBytecode(bytecode);
@@ -320,6 +377,7 @@ public class StmtNode extends Node{
                 else if(!expr.annotatedType.equals(VariableType._void()))
                     bytecode.writeSimple(Bytecode.Instruction.pop);
             }
+            else expectZero = true;
             
         }
         if(type == StmtType.variable_declaration_statement){
@@ -330,6 +388,7 @@ public class StmtNode extends Node{
                 else if (!expr.annotatedType.equals(VariableType._void()))
                     bytecode.writeSimple(Bytecode.Instruction.pop);
             }
+            expectZero = variableDeclarationAssignments.isEmpty();
         }
         if (type == StmtType.if_statement) {
             condition.toBytecode(bytecode);
@@ -379,9 +438,6 @@ public class StmtNode extends Node{
             bytecode.write(Bytecode.jump(Bytecode.Instruction.ifne, -condSize - bodySize));
             bytecode.resolveBreaks(bytecode.currentOffset());
         }
-        if(type == StmtType.forEach_statement){
-
-        }
         if(type == StmtType.forN_statement){
             forInitializerStmt.toBytecode(bytecode);
             int initOffset = bytecode.currentOffset();
@@ -406,7 +462,7 @@ public class StmtNode extends Node{
         }
     
         int written = bytecode.currentOffset() - startOffset;
-        if(written == 0){
+        if(written == 0 && !expectZero){
             throw new IllegalStateException();
         }
         outBytecode.write(bytecode);

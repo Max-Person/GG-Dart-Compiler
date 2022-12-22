@@ -286,16 +286,16 @@ public class ExprNode extends Node {
         VariableType cur = this.annotatedType.clone();
         cur.isNullable = false;
         
-        if(strict.equals(PlainType._bool()) && cur.equals(VariableType._bool())) return true;
-        if(strict.equals(PlainType._int()) && cur.equals(VariableType._int())) return true;
-        if(strict.equals(PlainType._double()) && (
+        if(strict.isAssignableFrom(PlainType._bool()) && cur.equals(VariableType._bool())) return true;
+        if(strict.isAssignableFrom(PlainType._int()) && cur.equals(VariableType._int())) return true;
+        if(strict.isAssignableFrom(PlainType._double()) && (
                 cur.equals(VariableType._double())
                 || cur.equals(VariableType._int())
                 || cur.equals(PlainType._int())
         )) return true;
-        if(strict.equals(VariableType._bool()) && cur.equals(PlainType._bool())) return true;
-        if(strict.equals(VariableType._int()) && cur.equals(PlainType._int())) return true;
-        if(strict.equals(VariableType._double()) && (
+        if(strict.isAssignableFrom(VariableType._bool()) && cur.equals(PlainType._bool())) return true;
+        if(strict.isAssignableFrom(VariableType._int()) && cur.equals(PlainType._int())) return true;
+        if(strict.isAssignableFrom(VariableType._double()) && (
                 cur.equals(PlainType._double())
                         || cur.equals(PlainType._int())
                         || cur.equals(VariableType._int())
@@ -620,9 +620,10 @@ public class ExprNode extends Node {
             checkCallArgumentsTyping(method, context);
             isSpecial = isSpecial && method.isSyntheticConstructor();
             MethodRecord actual = method;
-            if(method.containerClass instanceof RTLListClassRecord ){
+            if(method.containerClass instanceof RTLListClassRecord )
                 actual = RTLListClassRecord.basic.methods.get(method.name);
-            }
+            else if (method.containerClass instanceof RTLIteratorClassRecord )
+                actual = RTLIteratorClassRecord.basic.methods.get(method.name);
             this.refInfo = actual.isStatic() ?
                     MethodRefInfo.invokeStatic(actual, context) :
                     isSpecial ?

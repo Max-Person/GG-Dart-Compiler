@@ -24,4 +24,16 @@ public class DeclaratorNode extends Node{
             valueType = new TypeNode(unlink(element, "valueType"));
         }
     }
+    
+    public DeclaratorNode(boolean isStatic, boolean isLate, boolean isFinal, boolean isConst, TypeNode valueType) {
+        this.isStatic = isStatic;
+        this.isLate = isLate;
+        this.isFinal = isFinal;
+        this.isConst = isConst;
+        this.isTyped = valueType != null;
+        
+        if(isTyped){
+            this.valueType = valueType;
+        }
+    }
 }
