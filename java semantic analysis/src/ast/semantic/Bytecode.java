@@ -22,6 +22,11 @@ public class Bytecode {
     public void write(byte[] code) throws IOException {
         bytes.write(code);
     }
+    public void write(Bytecode other) throws IOException {
+        other.markedBreaks.forEach(offset -> this.markedBreaks.add(offset + currentOffset()));
+        other.markedContinues.forEach(offset -> this.markedContinues.add(offset + currentOffset()));
+        bytes.write(other.toBytes());
+    }
     public void writeSimple(Instruction b) throws IOException {
         bytes.write(b.code);
     }
@@ -36,47 +41,33 @@ public class Bytecode {
         return _bytes.toByteArray();
     }
     
+    private void resolveJumps(List<Integer> jumps, int locationOffset) throws IOException {
+        bytes.flush(); //? не уверен
+        byte[] newBytes = _bytes.toByteArray();
+        while(!jumps.isEmpty()){
+            int jumpOffset = jumps.get(0);
+            jumps.remove(0);
+            byte[] jump = jump(Instruction._goto, locationOffset - jumpOffset);
+            newBytes = insertReplace(newBytes, jump, jumpOffset, 3);
+        }
+        _bytes.reset();
+        _bytes.write(newBytes);
+    }
     private List<Integer> markedBreaks = new ArrayList<>();
     public void markBreak() throws IOException {
         markedBreaks.add(currentOffset());
         bytes.write(jump(Instruction._goto, 3));
     }
-    public void resolveBreaks() throws IOException {
-        bytes.flush(); //FIXME ? не уверен
-        byte[] newBytes = _bytes.toByteArray();
-        while(!markedBreaks.isEmpty()){
-            int breakOffset = markedBreaks.get(0);
-            markedBreaks.remove(0);
-            byte[] jump = jump(Instruction._goto, breakOffset - currentOffset());
-            newBytes = insertReplace(newBytes, jump, breakOffset, 3);
-            if(jump.length > 3){
-                markedBreaks.replaceAll(offset -> offset > breakOffset ? offset+2 : offset);
-                markedContinues.replaceAll(offset -> offset > breakOffset ? offset+2 : offset);
-            }
-        }
-        _bytes.reset();
-        _bytes.write(newBytes);
+    public void resolveBreaks(int locationOffset) throws IOException {
+        resolveJumps(markedBreaks, locationOffset);
     }
     private List<Integer> markedContinues = new ArrayList<>();
     public void markContinue() throws IOException {
         markedContinues.add(currentOffset());
         bytes.write(jump(Instruction._goto,3));
     }
-    public void resolveContinues() throws IOException {
-        bytes.flush(); //FIXME ? не уверен
-        byte[] newBytes = _bytes.toByteArray();
-        while(!markedContinues.isEmpty()){
-            int continueOffset = markedContinues.get(0);
-            markedContinues.remove(0);
-            byte[] jump = jump(Instruction._goto, continueOffset - currentOffset());
-            newBytes = insertReplace(newBytes, jump, continueOffset, 3);
-            if(jump.length > 3){
-                markedBreaks.replaceAll(offset -> offset > continueOffset ? offset+2 : offset);
-                markedContinues.replaceAll(offset -> offset > continueOffset ? offset+2 : offset);
-            }
-        }
-        _bytes.reset();
-        _bytes.write(newBytes);
+    public void resolveContinues(int locationOffset) throws IOException {
+        resolveJumps(markedContinues, locationOffset);
     }
     
     public enum Instruction{
@@ -141,7 +132,6 @@ public class Bytecode {
         ifle(0x9e),
 
         _goto(0xa7),
-        _goto_w(0xc8),
     
         pop(0x57),
         pop2(0x58),
@@ -172,7 +162,7 @@ public class Bytecode {
         
         public boolean isJump(){
             return this == if_icmpeq || this == if_icmpne || this == if_icmplt || this == if_icmpge || this == if_icmpgt || this == if_icmple ||
-                    this == _goto || this == _goto_w ||
+                    this == _goto ||
                     this == ifeq || this == ifne || this == iflt || this == ifge || this == ifgt || this == ifle ||
                     this == if_acmpeq || this == if_acmpne ||
                     this == ifnull || this == ifnonnull;
@@ -418,18 +408,10 @@ public class Bytecode {
     public static byte[] jump(Instruction jump, int offset) throws IOException {
         ByteArrayOutputStream _bytes = new ByteArrayOutputStream();
         DataOutputStream bytes = new DataOutputStream(_bytes);
-        if(!jump.isJump())
+        if(!jump.isJump() || offset < -32768 || offset > 32767 )
             throw new IllegalArgumentException();
-        if(offset >= -32768 && offset <= 32767){
-            bytes.write(jump != Instruction._goto_w ? jump.code : Instruction._goto.code);
-            bytes.writeShort(offset);
-        }
-        else if(jump == Instruction._goto || jump == Instruction._goto_w){
-            bytes.write(Instruction._goto_w.code);
-            bytes.writeInt(offset);
-        }
-        else
-            throw new IllegalArgumentException();
+        bytes.write(jump.code);
+        bytes.writeShort(offset);
 
         return _bytes.toByteArray();
     }

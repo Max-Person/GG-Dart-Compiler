@@ -1020,25 +1020,24 @@ public class ExprNode extends Node {
             }
         }
         else if(this.type == ExprType._or){
-            Bytecode tmp = new Bytecode();
-            operand2.toBytecode(tmp);
-            byte[] _byte = tmp.toBytes();
+            Bytecode op2Bytecode = new Bytecode();
+            int op2Size = operand2.toBytecode(op2Bytecode);
     
             operand.toBytecode(bytecode);
-            bytecode.write(Bytecode.jump(Bytecode.Instruction.ifne, _byte.length + 3 + 3));
-            bytecode.write(_byte);
+            bytecode.write(Bytecode.jump(Bytecode.Instruction.ifne, op2Size + 3 + 3));
+            bytecode.write(op2Bytecode);
             bytecode.write(Bytecode.jump(Bytecode.Instruction.ifeq, 3 + 1 + 3));
             bytecode.writeSimple(Bytecode.Instruction.iconst_1);
             bytecode.write(Bytecode.jump(Bytecode.Instruction._goto, 3 + 1));
             bytecode.writeSimple(Bytecode.Instruction.iconst_0);
         }
         else if(this.type == ExprType._and){
-            Bytecode tmp = new Bytecode();
+            Bytecode op2Bytecode = new Bytecode();
+            int op2Size = operand2.toBytecode(op2Bytecode);
+    
             operand.toBytecode(bytecode);
-            operand2.toBytecode(tmp);
-            byte[] _byte = tmp.toBytes();
-            bytecode.write(Bytecode.jump(Bytecode.Instruction.ifeq, 3 + _byte.length + 3 + 1 + 3));
-            bytecode.write(_byte);
+            bytecode.write(Bytecode.jump(Bytecode.Instruction.ifeq, 3 + op2Size + 3 + 1 + 3));
+            bytecode.write(op2Bytecode);
             bytecode.write(Bytecode.jump(Bytecode.Instruction.ifeq, 3 + 1 + 3));
             bytecode.writeSimple(Bytecode.Instruction.iconst_1);
             bytecode.write(Bytecode.jump(Bytecode.Instruction._goto, 3 + 1));
@@ -1051,7 +1050,7 @@ public class ExprNode extends Node {
             bytecode.writeSimple(Bytecode.Instruction.dup);
             bytecode.write(Bytecode.jump(Bytecode.Instruction.ifnonnull, 3 + 1 + op2size));
             bytecode.writeSimple(Bytecode.Instruction.pop);
-            bytecode.write(op2Bytecode.toBytes());
+            bytecode.write(op2Bytecode);
         }
         else if(this.isBinaryOp()){
             this.operand.toBytecode(bytecode);

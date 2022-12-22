@@ -335,12 +335,12 @@ public class StmtNode extends Node{
             Bytecode bodyBytecode = new Bytecode();
             int bodySize = body.toBytecode(bodyBytecode);
             bytecode.write(Bytecode.jump(Bytecode.Instruction.ifeq, 3 + bodySize + (elseBody != null ? 3 : 0)));
-            bytecode.write(bodyBytecode.toBytes());
+            bytecode.write(bodyBytecode);
             if(elseBody != null){
                 Bytecode elseBytecode = new Bytecode();
                 int elseSize = elseBody.toBytecode(elseBytecode);
                 bytecode.write(Bytecode.jump(Bytecode.Instruction._goto, 3 + elseSize));
-                bytecode.write(elseBytecode.toBytes());
+                bytecode.write(elseBytecode);
             }
         }
         if (type == StmtType.return_statement) {
@@ -359,22 +359,24 @@ public class StmtNode extends Node{
             bytecode.markContinue();
         }
         if (type == StmtType.while_statement) {
-            Bytecode _bytecode = new Bytecode();
-            int bodySize = body.toBytecode(_bytecode);
+            Bytecode bodyBytecode = new Bytecode();
+            int bodySize = body.toBytecode(bodyBytecode);
 
-            //int continueLocation = bytecode.currentOffset();
-
+            int continueLocation = bytecode.currentOffset();
             int condSize = condition.toBytecode(bytecode);
             bytecode.write(Bytecode.jump(Bytecode.Instruction.ifeq, 3 + bodySize + 3));
-            body.toBytecode(bytecode);
+            bytecode.write(bodyBytecode);
             bytecode.write(Bytecode.jump(Bytecode.Instruction._goto, -condSize - bodySize - 3));
-            //bytecode.resolveBreaks();
-           // bytecode.resolveContinues(continueLocation);
+            
+            bytecode.resolveBreaks(bytecode.currentOffset());
+            bytecode.resolveContinues(continueLocation);
         }
         if (type == StmtType.do_statement) {
             int bodySize = body.toBytecode(bytecode);
-            int size = condition.toBytecode(bytecode);
-            bytecode.write(Bytecode.jump(Bytecode.Instruction.ifne, -size - bodySize));
+            bytecode.resolveContinues(bytecode.currentOffset());
+            int condSize = condition.toBytecode(bytecode);
+            bytecode.write(Bytecode.jump(Bytecode.Instruction.ifne, -condSize - bodySize));
+            bytecode.resolveBreaks(bytecode.currentOffset());
         }
         if(type == StmtType.forEach_statement){
 
