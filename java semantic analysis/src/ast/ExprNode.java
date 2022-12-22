@@ -216,6 +216,8 @@ public class ExprNode extends Node {
         ExprNode op = new ExprNode(this);
         this.type = ExprType.methodCall;
         this.operand = op;
+    
+        //TODO если делать нулл-сейфти то здесь надо избегать нуллов ???
         
         VariableType result;
         if(this.annotatedType.equals(VariableType._bool())){
@@ -241,6 +243,8 @@ public class ExprNode extends Node {
     public boolean makeAssignableTo(VariableType type, Context context){
         if(type.isAssignableFrom(this.annotatedType))
             return true;
+        if(!this.canBeAssignableTo(type))
+            return false;
         
         if((this.annotatedType.equals(PlainType._double()) ||
                 this.annotatedType.equals(PlainType._int()) ||
@@ -270,7 +274,34 @@ public class ExprNode extends Node {
     }
     
     public boolean canBeAssignableTo(VariableType type){
-        return new ExprNode(this).makeAssignableTo(type, null);
+        if(type.isAssignableFrom(this.annotatedType))
+            return true;
+        if(type.equals(VariableType._void()) || type.equals(VariableType._null()))
+            return false;
+        if(!type.isNullable && this.annotatedType.isNullable)
+            return false;
+        
+        VariableType strict = type.clone();
+        strict.isNullable = false;
+        VariableType cur = this.annotatedType.clone();
+        cur.isNullable = false;
+        
+        if(strict.equals(PlainType._bool()) && cur.equals(VariableType._bool())) return true;
+        if(strict.equals(PlainType._int()) && cur.equals(VariableType._int())) return true;
+        if(strict.equals(PlainType._double()) && (
+                cur.equals(VariableType._double())
+                || cur.equals(VariableType._int())
+                || cur.equals(PlainType._int())
+        )) return true;
+        if(strict.equals(VariableType._bool()) && cur.equals(PlainType._bool())) return true;
+        if(strict.equals(VariableType._int()) && cur.equals(PlainType._int())) return true;
+        if(strict.equals(VariableType._double()) && (
+                cur.equals(PlainType._double())
+                        || cur.equals(PlainType._int())
+                        || cur.equals(VariableType._int())
+        )) return true;
+        
+        return false;
     }
     
     public void assertNotVoid(){
