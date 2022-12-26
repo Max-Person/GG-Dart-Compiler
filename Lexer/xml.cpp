@@ -323,7 +323,7 @@ namespace xmlOut {
 		}
 		case string_pr: {
 			xml->SetAttribute("type", "string_pr");
-			xml->SetAttribute("string_value", node->string_value);
+			xml->SetText(node->string_value);
 			break;
 		}
 		case list_pr: {

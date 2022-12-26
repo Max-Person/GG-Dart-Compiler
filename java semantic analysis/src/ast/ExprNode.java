@@ -51,7 +51,7 @@ public class ExprNode extends Node {
             doubleValue = Double.parseDouble(element.getAttribute("double_value"));
         }
         if(type == ExprType.string_pr){
-            stringValue = element.getAttribute("string_value");
+            stringValue = element.getTextContent();
         }
         if(type == ExprType.bool_pr){
             boolValue = Boolean.parseBoolean(element.getAttribute("bool_value"));
@@ -345,6 +345,7 @@ public class ExprNode extends Node {
             result = PlainType._bool();
         }
         else if(this.type == ExprType.string_pr){
+            String multi  = "multi \n line";
             refInfo = new StringRefInfo(this.stringValue, context);
             result = VariableType._String();
         }
