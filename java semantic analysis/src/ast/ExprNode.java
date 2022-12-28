@@ -355,13 +355,10 @@ public class ExprNode extends Node {
                 el.annotateTypes(context);
                 el.assertNotVoid();
                 el.makeAssignableTo(VariableType._Object(), context);
-                if(element == null){
+                if(element == null)
                     element = el.annotatedType;
-                }
-                else{
-                    ClassRecord clazz = ClassRecord.lastCommonSuper(element.associatedClass(), el.annotatedType.associatedClass());
-                    element = clazz instanceof RTLListClassRecord ? new ListType(((RTLListClassRecord) clazz).valueType): new ClassType(clazz);
-                }
+                else
+                    element = VariableType.supertype(element, el.annotatedType);
             }
 
             ExprNode construct = new ExprNode(ExprType.constructNew);
@@ -471,7 +468,7 @@ public class ExprNode extends Node {
                 }
             }
             else {
-                result = this.type == ExprType.constructNew || this.type == ExprType.constructConst ? new ClassType(constructed) : VariableType._void();
+                result = this.type == ExprType.constructNew || this.type == ExprType.constructConst ? VariableType.from(constructed) : VariableType._void();
             }
         }
         else if(this.type == ExprType.javaConstructSuper){
@@ -481,7 +478,7 @@ public class ExprNode extends Node {
         else if(this.type == ExprType.javaConstructCall){
             ClassRecord constructed = context.lookupClass(this.identifierAccess.stringVal); //FIXME? тут проверки не нужны тк создается нами уже после
             refInfo = MethodRefInfo.invokeSpecial(constructed.methods.get("<init>"), constructed, context);
-            result = new ClassType(constructed);
+            result = VariableType.from(constructed);
         }
         else if(this.type == ExprType.identifier){
             //TODO вставить проверку на нуллабельность?
@@ -512,6 +509,7 @@ public class ExprNode extends Node {
                     this.type = ExprType.call;
                     this.identifierAccess.stringVal = field.associatedGetter().name();
                     this.callArguments = new ArrayList<>();
+                    this.isSynthetic = true;
                     return this.annotateTypes(context);
                 }
             }
@@ -574,6 +572,7 @@ public class ExprNode extends Node {
                 this.type = ExprType.methodCall;
                 this.identifierAccess.stringVal = field.associatedGetter().name();
                 this.callArguments = new ArrayList<>();
+                this.isSynthetic = true;
                 return this.annotateTypes(context);
             }
             
@@ -764,7 +763,7 @@ public class ExprNode extends Node {
             else if(this.type == ExprType.ifnull){
                 operand.makeAssignableTo(VariableType._Object(), context);
                 operand2.makeAssignableTo(VariableType._Object(), context);
-                result = new ClassType(ClassRecord.lastCommonSuper(operand.annotatedType.associatedClass(), operand2.annotatedType.associatedClass()));
+                result = VariableType.from(ClassRecord.lastCommonSuper(operand.annotatedType.associatedClass(), operand2.annotatedType.associatedClass()));
                 result.isNullable = operand2.annotatedType.isNullable;
             }
             else if(this.type == ExprType.eq || this.type == ExprType.neq){
@@ -918,9 +917,12 @@ public class ExprNode extends Node {
         if(result == null){
             throw new IllegalStateException();
         }
-    
-        this.annotatedType = result;
-        return result;
+        if (this.annotatedType == null) {
+            this.annotatedType = result;
+        } /*else if(this.annotatedType.equals(result)){
+            System.out.println("Annotate Types WARN: stopped overwriting " + this.annotatedType + " with " + result);
+        }*/
+        return this.annotatedType;
     }
     
     private void checkCallArgumentsTyping(MethodRecord method, Context context){

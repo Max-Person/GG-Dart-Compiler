@@ -6,6 +6,8 @@ import java.util.Objects;
 import ast.TypeNode;
 import ast.semantic.ClassRecord;
 import ast.semantic.RTLClassRecord;
+import ast.semantic.RTLIteratorClassRecord;
+import ast.semantic.RTLListClassRecord;
 
 import static ast.semantic.SemanticCrawler.printError;
 
@@ -36,6 +38,16 @@ public abstract class VariableType implements Cloneable {
         }
         result.isNullable = typeNode.isNullable;
         return result;
+    }
+    
+    public static VariableType from(ClassRecord clazz){
+        if(clazz instanceof RTLListClassRecord){
+            return new ListType(((RTLListClassRecord) clazz).valueType);
+        }
+        if(clazz instanceof RTLIteratorClassRecord){
+            return new IteratorType(((RTLIteratorClassRecord) clazz).valueType);
+        }
+        return new ClassType(clazz);
     }
     
     public static boolean isStandartName(String name){
@@ -70,8 +82,31 @@ public abstract class VariableType implements Cloneable {
     }
     
     public boolean isAssignableFrom(VariableType o){
-        return (o.isSubtypeOf(this) || this.descriptor().equals(o.descriptor()) || o.descriptor().equals("Null")) &&
+        return ((this.associatedClass() != null ? o.isSubtypeOf(this) : this.descriptor().equals(o.descriptor())) || o.descriptor().equals("Null")) &&
                 (this.isNullable || !o.isNullable);
+    }
+    
+    public static VariableType supertype(VariableType a, VariableType b){
+        if(a.isAssignableFrom(b))
+            return a;
+        if(b.isAssignableFrom(a))
+            return b;
+        
+        if(a.equals(VariableType._null())){
+            VariableType res = b.clone();
+            res.isNullable = true;
+            return res;
+        }
+        if(b.equals(VariableType._null())){
+            VariableType res = a.clone();
+            res.isNullable = true;
+            return res;
+        }
+        if(a.associatedClass() != null && b.associatedClass() != null){
+            ClassRecord superclass = ClassRecord.lastCommonSuper(a.associatedClass(), b.associatedClass());
+            return  VariableType.from(superclass);
+        }
+        return null;
     }
     
     public void finalyze(){}

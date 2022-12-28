@@ -1,7 +1,6 @@
 package ast.semantic.typization;
 
 import ast.semantic.ClassRecord;
-import ast.semantic.RTLClassRecord;
 import ast.semantic.RTLListClassRecord;
 
 import java.util.Objects;
@@ -49,7 +48,7 @@ public class ListType extends VariableType{
         if (!(o instanceof ListType)) return false;
         if (!super.equals(o)) return false;
         ListType listType = (ListType) o;
-        return valueType.equals(listType.valueType);
+        return Objects.equals(valueType, listType.valueType);
     }
     
     @Override

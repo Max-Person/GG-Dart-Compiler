@@ -3,7 +3,7 @@ void main() {
   var numbers = [1, 2, 3, 4, 5];
 
   // Test the length property
-  print(numbers.length()); // Output: 5
+  print(numbers.length); // Output: 5
   
   // Test the [] operator for accessing elements
   print(numbers[0]); // Output: 1

@@ -28,7 +28,12 @@ public class RTLListClassRecord extends RTLClassRecord{
         ParameterRecord param = new ParameterRecord(null, null, PlainType._int(), "index", false);
         this.methods.put("elementAt", new MethodRecord(this, valueType.clone(), "elementAt", List.of(param), new StmtNode(StmtType.block)));
     
-        this.methods.put("length", new MethodRecord(this, PlainType._int(), "length", List.of(), new StmtNode(StmtType.block)));
+        MethodRecord getLength = new MethodRecord(this, PlainType._int(), "length", List.of(), new StmtNode(StmtType.block));
+        getLength.visible = false;
+        this.methods.put("length", getLength);
+        FieldRecord length = new FieldRecord(this, false, false, false, true, PlainType._int(), "length");
+        length.addAssociatedGetter(getLength);
+        this.fields.put("length", length);
         
         param = new ParameterRecord(null, null, valueType.clone(), "obj", false);
         this.methods.put("add", new MethodRecord(this, VariableType._void(), "add", List.of(param), new StmtNode(StmtType.block)));

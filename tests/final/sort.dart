@@ -4,8 +4,8 @@ void main() {
   print(numbers);
 
   // Sort the list using the bubble sort algorithm
-  for (int i = 0; i < numbers.length(); i++) {
-    for (int j = 0; j < numbers.length() - i - 1; j++) {
+  for (int i = 0; i < numbers.length; i++) {
+    for (int j = 0; j < numbers.length - i - 1; j++) {
       if (numbers[j] > numbers[j + 1]) {
         // Swap the elements if they are in the wrong order
         int temp = numbers[j];

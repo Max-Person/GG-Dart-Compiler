@@ -17,8 +17,8 @@ void main(){
 void fill(List<List<int>> list, int row, int col, int filler){
   	//print("row $row, col $col = ${list[row][col]}");
 	int filled = list[row][col];
-	int height = list.length();
-	int width = list[0].length();
+	int height = list.length;
+	int width = list[0].length;
   	//print("width $width, height $height");
 	list[row][col] = filler;
 	if(row + 1 < height && list[row+1][col] == filled) fill(list, row+1, col, filler);

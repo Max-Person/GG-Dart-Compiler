@@ -23,4 +23,9 @@ public class RTLIteratorClassRecord extends RTLClassRecord{
     
         this.methods.put("next", new MethodRecord(this, valueType.clone(), "next", List.of(), null));
     }
+    
+    @Override
+    public boolean isSubTypeOf(ClassRecord other) {
+        return super.isSubTypeOf(other) || (other instanceof RTLIteratorClassRecord && this.valueType.isSubtypeOf(((RTLIteratorClassRecord) other).valueType));
+    }
 }

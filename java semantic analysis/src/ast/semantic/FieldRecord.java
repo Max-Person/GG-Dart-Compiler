@@ -78,6 +78,11 @@ public class FieldRecord extends VariableRecord{
     }
     
     private MethodRecord getter = null;
+    public void addAssociatedGetter(MethodRecord getter){
+        if(!(this.containerClass instanceof RTLClassRecord))
+            throw new IllegalStateException();
+        this.getter = getter;
+    }
     public MethodRecord associatedGetter(){
         if(getter == null){
             if(this.varType == null){
