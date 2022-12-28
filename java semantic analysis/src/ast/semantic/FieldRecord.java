@@ -3,6 +3,8 @@ package ast.semantic;
 import ast.*;
 import ast.semantic.constants.UTF8Constant;
 import ast.semantic.context.ClassInitContext;
+import ast.semantic.context.Context;
+import ast.semantic.context.MethodContext;
 import ast.semantic.typization.VariableType;
 
 import java.io.ByteArrayOutputStream;
@@ -112,6 +114,19 @@ public class FieldRecord extends VariableRecord{
             this.setter = new MethodRecord(this.containerClass, this.isStatic, false, this.varType.clone(), MethodRecord.setterPrefix+this.name(), List.of(setterParameter), setterBody);
         }
         return setter;
+    }
+    
+    //FIXME?
+    public boolean isAssignable(Context context){
+        if(!(context instanceof MethodContext))
+            return true;
+        
+        MethodRecord methodRecord = ((MethodContext) context).methodRecord;
+        if(this.isFinal){
+            return this.isStatic && methodRecord.containerClass.equals(this.containerClass) && methodRecord.name.equals("<clinit>") ||
+                    !this.isStatic && methodRecord.containerClass.equals(this.containerClass) && (methodRecord.isSyntheticConstructor() || methodRecord.isConstruct);
+        }
+        return true;
     }
     
     public boolean isValidOverrideOf(FieldRecord other){

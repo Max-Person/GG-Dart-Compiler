@@ -666,6 +666,9 @@ public class ExprNode extends Node {
                     operand.getterTransformsAllowed = false;
                     operand.annotateTypes(context);
                     FieldRecord field = ((FieldRefInfo) operand.refInfo).field;
+                    if(!field.isAssignable(context)){
+                        printError("Field '" + field.name + "' isn't assignable here.", operand.lineNum);
+                    }
                     this.type = operand.type == ExprType.identifier ? ExprType.call : ExprType.methodCall;
                     this.identifierAccess = new IdentifierNode(field.associatedSetter().name());
                     this.callArguments = List.of(this.operand2);
