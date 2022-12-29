@@ -39,7 +39,7 @@ public class ClassRecord implements NamedRecord{
         addConstant(new UTF8Constant("Code"));
         addClassConstant(this);
     }
-    public static final String globalName = "!GLOBAL";  //FIXME точно ли это работает...
+    public static final String globalName = "!GLOBAL";
     public ClassRecord(Map<String, ClassRecord> containerClassTable, String name, boolean isJavaInterface){
         this.containerClassTable = containerClassTable;
         this.declaration = null;
@@ -54,7 +54,7 @@ public class ClassRecord implements NamedRecord{
     public void resolveDeclaration(List<ClassRecord> children) {
         if (this.isDeclResolved) return;
         if (this.declaration == null) return;
-        if (this.isEnum()) return;//TODO ?
+        if (this.isEnum()) return;
         
         ClassDeclarationNode clazz = (ClassDeclarationNode) this.declaration;
         if (children.contains(this)) {
@@ -168,7 +168,7 @@ public class ClassRecord implements NamedRecord{
             printError("a class member can't have the same name as the enclosing class.", var.lineNum);
             return;
         }
-        if(fields.containsKey(varName) || methods.containsKey(varName)){ //TODO В дарте нельзя объявить поле и метод с одинаковым именем, но у нас мб можно??
+        if(fields.containsKey(varName) || methods.containsKey(varName)){
             printError("The name '" + varName  + "' is already defined.", var.lineNum);
             return;
         }
@@ -182,13 +182,16 @@ public class ClassRecord implements NamedRecord{
         fields.put(fieldRecord.name(), fieldRecord);
     }
 
-    public void addMethod(SignatureNode signature, StmtNode body){ //TODO статические методы и именованные конструкторы
+    public void addMethod(SignatureNode signature, StmtNode body){
         if(signature.isConstruct){
             if(!signature.name.stringVal.equals(this.name())){
                 printError("The name of a constructor must match the name of the enclosing class.", signature.lineNum);
             }
             if(signature.isNamed && constructors.containsKey(signature.constructName.stringVal)){
                 printError("The constructor with name '" + signature.name.stringVal +"' is already defined.", signature.lineNum);
+            }
+            if(signature.isNamed && staticMethods().containsKey(signature.constructName.stringVal)){
+                printError("'" + signature.constructName.stringVal +"' can't be used to name both a constructor and a static method in this class.", signature.lineNum);
             }
             if(!signature.isNamed && constructors.containsKey("")){
                 printError("The unnamed constructor is already defined.", signature.lineNum);
@@ -206,7 +209,10 @@ public class ClassRecord implements NamedRecord{
                     printError("'" + signature.name.stringVal + "' must have a method body because '" + this.name() +  "' isn't abstract.", signature.lineNum);
                 }
             }
-            if(fields.containsKey(signature.name.stringVal) || methods.containsKey(signature.name.stringVal)){ //TODO В дарте нельзя объявить поле и метод с одинаковым именем, но у нас мб можно??
+            if(signature.isStatic && constructors.containsKey(signature.name.stringVal)){
+                printError("'" + signature.name.stringVal +"' can't be used to name both a constructor and a static method in this class.", signature.lineNum);
+            }
+            if(fields.containsKey(signature.name.stringVal) || methods.containsKey(signature.name.stringVal)){
                 printError("The name '" + signature.name.stringVal + "' is already defined.", signature.name.lineNum);
             }
             
@@ -233,11 +239,11 @@ public class ClassRecord implements NamedRecord{
                     printError("The name '" + value.stringVal + "' is already defined.", value.lineNum);
                 }
                 field = new FieldRecord(this, false, true, false, true, new ClassType(this), value.stringVal);
-                field.initValue = new ExprNode(ExprType.constructNew);
+                field.initValue = new ExprNode(ExprType.constructNew, value.lineNum);
                 field.initValue.identifierAccess = new IdentifierNode(this.name);
                 field.initValue.constructName = null;
                 field.initValue.isSynthetic = true;
-                ExprNode arg = new ExprNode(ExprType.string_pr);
+                ExprNode arg = new ExprNode(ExprType.string_pr, value.lineNum);
                 arg.stringValue = value.stringVal;
                 field.initValue.callArguments = Collections.singletonList(arg);
                 this.fields.put(value.stringVal, field);
@@ -268,7 +274,7 @@ public class ClassRecord implements NamedRecord{
         }
         if(!this.staticFields().isEmpty()){
             //Создание классового конструктора <clinit>
-            StmtNode body = new StmtNode(StmtType.block);
+            StmtNode body = new StmtNode(StmtType.block, this.declaration != null ? declaration.lineNum() : 0);
             this.staticFields().values().forEach(f -> {
                 if(f.initValue != null)
                     body.blockStmts.add(f.initStmt());
@@ -475,11 +481,12 @@ public class ClassRecord implements NamedRecord{
             return;
 
         //Создание "прокидывающего" пустого конструктора
-        StmtNode callStmt = new StmtNode(StmtType.expr_statement);
-        callStmt.expr = new ExprNode(ExprType.javaConstructSuper);
-        StmtNode body = new StmtNode(StmtType.block);
+        int linenum = this.declaration != null ? declaration.lineNum() : 0;
+        StmtNode callStmt = new StmtNode(StmtType.expr_statement, linenum);
+        callStmt.expr = new ExprNode(ExprType.javaConstructSuper, linenum);
+        StmtNode body = new StmtNode(StmtType.block, linenum);
         body.blockStmts.add(callStmt);
-        body.blockStmts.add(new StmtNode(StmtType.return_statement));
+        body.blockStmts.add(new StmtNode(StmtType.return_statement, linenum));
         MethodRecord defConstruct = new MethodRecord(this, false, false, VariableType._void(), "<init>", new ArrayList<>(), body);
         defConstruct.finalizeType();
         this.methods.put("<init>", defConstruct);

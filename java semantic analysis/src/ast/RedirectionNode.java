@@ -24,7 +24,7 @@ public class RedirectionNode extends Node{
     }
 
     public ExprNode toExpr(){
-        ExprNode expr = new ExprNode(ExprType.constructRedirect);
+        ExprNode expr = new ExprNode(ExprType.constructRedirect, lineNum);
         expr.constructName = isNamed ? this.name : null;
         expr.callArguments = this.args;
         expr.lineNum = this.lineNum;
@@ -32,7 +32,7 @@ public class RedirectionNode extends Node{
     }
     
     public StmtNode toStmt(){
-        StmtNode redir = new StmtNode(StmtType.expr_statement);
+        StmtNode redir = new StmtNode(StmtType.expr_statement, lineNum);
         redir.expr = this.toExpr();
         return redir;
     }

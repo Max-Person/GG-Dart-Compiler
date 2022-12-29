@@ -60,19 +60,19 @@ public class FieldRecord extends VariableRecord{
         if(this.initValue == null)
             return null;
         
-        ExprNode expr = new ExprNode(ExprType.assign);
+        ExprNode expr = new ExprNode(ExprType.assign, initValue.lineNum);
         expr.operand2 = initValue;
         if(this.isStatic){
-            expr.operand = new ExprNode(ExprType.identifier);
+            expr.operand = new ExprNode(ExprType.identifier, initValue.lineNum);
             expr.operand.identifierAccess = new IdentifierNode(this.name);
         }
         else {
-            expr.operand = new ExprNode(ExprType.fieldAccess);
-            expr.operand.operand = new ExprNode(ExprType.this_pr);
+            expr.operand = new ExprNode(ExprType.fieldAccess, initValue.lineNum);
+            expr.operand.operand = new ExprNode(ExprType.this_pr, initValue.lineNum);
             expr.operand.identifierAccess = new IdentifierNode(this.name);
         }
         
-        StmtNode init = new StmtNode(StmtType.expr_statement);
+        StmtNode init = new StmtNode(StmtType.expr_statement, initValue.lineNum);
         init.expr = expr;
         return init;
     }
@@ -89,8 +89,8 @@ public class FieldRecord extends VariableRecord{
                 throw new IllegalStateException();
             }
             
-            StmtNode getterBody = new StmtNode(StmtType.return_statement);
-            getterBody.returnExpr = new ExprNode(ExprType.identifier);
+            StmtNode getterBody = new StmtNode(StmtType.return_statement, lineNum);
+            getterBody.returnExpr = new ExprNode(ExprType.identifier, lineNum);
             getterBody.returnExpr.identifierAccess = new IdentifierNode(name);
     
             this.getter = new MethodRecord(this.containerClass, this.isStatic, false, this.varType.clone(), MethodRecord.getterPrefix+this.name(), new ArrayList<>(), getterBody);
@@ -108,11 +108,11 @@ public class FieldRecord extends VariableRecord{
             String paramName = "new";
             ParameterRecord setterParameter = new ParameterRecord(null, null, this.varType.clone(), paramName, false);
     
-            StmtNode setterBody = new StmtNode(StmtType.return_statement);
-            ExprNode expr = new ExprNode(ExprType.assign);
-            expr.operand = new ExprNode(ExprType.identifier);
+            StmtNode setterBody = new StmtNode(StmtType.return_statement, lineNum);
+            ExprNode expr = new ExprNode(ExprType.assign, lineNum);
+            expr.operand = new ExprNode(ExprType.identifier, lineNum);
             expr.operand.identifierAccess = new IdentifierNode(this.name);
-            expr.operand2 = new ExprNode(ExprType.identifier);
+            expr.operand2 = new ExprNode(ExprType.identifier, lineNum);
             expr.operand2.identifierAccess = new IdentifierNode(paramName);
             setterBody.returnExpr = expr;
     

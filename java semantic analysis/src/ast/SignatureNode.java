@@ -30,7 +30,7 @@ public class SignatureNode extends Node{
                 constructName = new IdentifierNode(unlink(element, "constructName"));
             }
             if(Node.getImmediateChildByName(element, "initializers") != null){
-                unlinkList(element, "initializers").forEach(e -> initializers.add(new InitializerNode(e))); //TODO сделать
+                unlinkList(element, "initializers").forEach(e -> initializers.add(new InitializerNode(e)));
             }
             if(Node.getImmediateChildByName(element, "redirection") != null){
                 redirection = new RedirectionNode(unlink(element, "redirection"));
@@ -42,7 +42,7 @@ public class SignatureNode extends Node{
         name = new IdentifierNode(unlink(element, "name"));
 
         if(Node.getImmediateChildByName(element, "parameters") != null){
-            unlinkList(element, "parameters").forEach(e -> parameters.add(new FormalParameterNode(e))); //TODO доделать
+            unlinkList(element, "parameters").forEach(e -> parameters.add(new FormalParameterNode(e)));
         }
     }
     

@@ -14,9 +14,8 @@ public abstract class VariableRecord implements NamedRecord, Cloneable{
     public VariableType varType;
     public String name;
     
-    //public int lineNum = -1;
     public ExprNode initValue = null;
-    public int lineNum;
+    public int lineNum = -1;
     
     protected VariableRecord(boolean isLate, boolean isStatic, boolean isConst, boolean isFinal, VariableType varType, String name) {
         this.isLate = isLate;
@@ -46,6 +45,8 @@ public abstract class VariableRecord implements NamedRecord, Cloneable{
         
         if(declarationNode.isAssign)
             this.initValue = declarationNode.value;
+        
+        this.lineNum = declarationNode.lineNum;
     }
     
     public String name(){

@@ -35,6 +35,7 @@ public class MethodRecord implements NamedRecord, Cloneable{
     public List<InitializerNode> initializers = null;
     
     public StmtNode body;
+    public int lineNum = -1;
     
     public ConstantRecord nameConst;
     public ConstantRecord descriptorConst;
@@ -70,7 +71,7 @@ public class MethodRecord implements NamedRecord, Cloneable{
         this.body = body;
         if(this.isConstruct) {
             if (this.body == null) {
-                this.body = new StmtNode(StmtType.block);
+                this.body = new StmtNode(StmtType.block, lineNum);
             } else if (this.body.type == StmtType.return_statement) {
                 printError("Constructors can't return values.", body.lineNum);
             }
@@ -88,11 +89,12 @@ public class MethodRecord implements NamedRecord, Cloneable{
         
         this.redirection = signature.redirection;
         this.initializers = signature.initializers;
-        
+    
+        this.lineNum = signature.lineNum;
         this.body = body;
         if(this.isConstruct) {
             if (this.body == null) {
-                this.body = new StmtNode(StmtType.block);
+                this.body = new StmtNode(StmtType.block, this.lineNum);
             } else if (this.body.type == StmtType.return_statement) {
                 printError("Constructors can't return values.", body.lineNum);
             }
@@ -222,7 +224,7 @@ public class MethodRecord implements NamedRecord, Cloneable{
                     }
                     superCalled = true;
                     if(!initializers.get(initializers.size() - 1).equals(initializer)) {
-                        printError("The superconstructor call must be last in an initializer list: 'Object'.", initializer.lineNum); //FIXME не Object а суперкласс
+                        printError("The superconstructor call must be last in an initializer list: '" + this.containerClass._super.name + "'.", initializer.lineNum);
                     }
                 }
                 else if(initializer.type == InitializerType.thisAssign){
@@ -242,17 +244,16 @@ public class MethodRecord implements NamedRecord, Cloneable{
             //Неявный вызов супер-конструктора
             if(containerClass._super != null){
                 if(!containerClass._super.constructors.containsKey("")){
-                    printError("The class '"+ containerClass._super.name() +"' doesn't have an unnamed constructor.", -1); //TODO номер строки
+                    printError("The class '"+ containerClass._super.name() +"' doesn't have an unnamed constructor.", lineNum);
                 }
                 else if(!containerClass._super.constructors.get("").parameters.isEmpty()){
-                    printError("The implicitly invoked unnamed constructor from '"+ containerClass._super.name() +"' has required parameters.", -1); //TODO номер строки
+                    printError("The implicitly invoked unnamed constructor from '"+ containerClass._super.name() +"' has required parameters.", lineNum);
                 }
             }
-            ExprNode expr = new ExprNode();
-            expr.type = ExprType.constructSuper;
+            ExprNode expr = new ExprNode(ExprType.constructSuper, lineNum);
             expr.constructName = null;
             expr.callArguments = new ArrayList<>();
-            StmtNode init = new StmtNode(StmtType.expr_statement);
+            StmtNode init = new StmtNode(StmtType.expr_statement, lineNum);
             init.expr = expr;
             body.blockStmts.add(0, init);
         }
@@ -276,14 +277,14 @@ public class MethodRecord implements NamedRecord, Cloneable{
             this.body.validateStmt(new MethodContext(this));
             if(!this.body.endsWith(StmtType.return_statement)){
                 if(this.returnType.equals(VariableType._void())){
-                    this.body.blockStmts.add(new StmtNode(StmtType.return_statement));
+                    this.body.blockStmts.add(new StmtNode(StmtType.return_statement, body.lineNum));
                 }
                 else {
                     if(!this.returnType.isNullable){
-                        printError("The body might complete normally, causing 'null' to be returned, but the return type, '" + this.returnType + "', is a non-nullable type.", -1); //TODO номер строки
+                        printError("The body might complete normally, causing 'null' to be returned, but the return type, '" + this.returnType + "', is a non-nullable type.", body.lineNum);
                     }
-                    StmtNode returnal = new StmtNode(StmtType.return_statement);
-                    returnal.returnExpr = new ExprNode(ExprType.null_pr);
+                    StmtNode returnal = new StmtNode(StmtType.return_statement, body.lineNum);
+                    returnal.returnExpr = new ExprNode(ExprType.null_pr, body.lineNum);
                     this.body.blockStmts.add(returnal);
                 }
             }
@@ -314,8 +315,8 @@ public class MethodRecord implements NamedRecord, Cloneable{
         if(associatedMethod == null){
             associatedMethod = new MethodRecord(this.containerClass, new ClassType(this.containerClass), constructorPrefix + this.constructName, this.parameters, this.body);
             associatedMethod.finalizeType();
-            StmtNode constructReturn = new StmtNode(StmtType.return_statement);
-            constructReturn.returnExpr = new ExprNode(ExprType.this_pr);
+            StmtNode constructReturn = new StmtNode(StmtType.return_statement, lineNum);
+            constructReturn.returnExpr = new ExprNode(ExprType.this_pr, lineNum);
             associatedMethod.body.blockStmts.add(constructReturn); //FIXME? используется то же самое тело, может привести к ошибкам
             //this.containerClass.methods.put(associatedMethod.name, associatedMethod);
         }

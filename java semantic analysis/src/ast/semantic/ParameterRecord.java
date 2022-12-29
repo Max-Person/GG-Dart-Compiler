@@ -29,6 +29,8 @@ public class ParameterRecord extends LocalVarRecord{
                 printError("Undefined field name '"+ this.name +"'.", parameter.lineNum);
             }
         }
+        
+        this.lineNum = parameter.lineNum;
     }
     
     public void normalize(){
@@ -38,16 +40,16 @@ public class ParameterRecord extends LocalVarRecord{
         if(this.varType == null){
             throw new IllegalStateException("normalize() was called before inferType() on a Field ParameterRecord");
         }
-        ExprNode expr = new ExprNode(ExprType.assign); //FIXME? не хватает lineNum?
+        ExprNode expr = new ExprNode(ExprType.assign, lineNum);
         
-        expr.operand = new ExprNode(ExprType.fieldAccess);
-        expr.operand.operand = new ExprNode(ExprType.this_pr);
+        expr.operand = new ExprNode(ExprType.fieldAccess, lineNum);
+        expr.operand.operand = new ExprNode(ExprType.this_pr, lineNum);
         expr.operand.identifierAccess = new IdentifierNode(name);
         
-        expr.operand2 = new ExprNode(ExprType.identifier);
+        expr.operand2 = new ExprNode(ExprType.identifier, lineNum);
         expr.operand2.identifierAccess = new IdentifierNode(name);
     
-        StmtNode initStmt = new StmtNode(StmtType.expr_statement);
+        StmtNode initStmt = new StmtNode(StmtType.expr_statement, lineNum);
         initStmt.expr = expr;
         this.containerMethod.body.blockStmts.add(0, initStmt);
         this.isField = false;

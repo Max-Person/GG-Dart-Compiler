@@ -54,7 +54,7 @@ public class StmtNode extends Node{
         }
 
         if(type == StmtType.expr_statement && Node.getImmediateChildByName(element, "expr") != null){
-            expr = new ExprNode(unlink(element, "expr")); //TODO подумать
+            expr = new ExprNode(unlink(element, "expr"));
         }
 
         if(type == StmtType.variable_declaration_statement && Node.getImmediateChildByName(element, "variableDeclaration") != null){
@@ -112,17 +112,18 @@ public class StmtNode extends Node{
         }
     }
 
-    public StmtNode(StmtType type) {
+    public StmtNode(StmtType type, int linenum) {
         this.type = type;
+        this.lineNum = linenum;
     }
-
-    public StmtNode() {
+    
+    public StmtNode(StmtType type) {
+        this(type, 0);
     }
 
     public StmtNode deepCopy(){
-        StmtNode copy = new StmtNode();
-        copy.type = this.type;
-        copy.condition = this.condition == null ? null : this.condition.deepCopy(); //TODO
+        StmtNode copy = new StmtNode(this.type, this.lineNum);
+        copy.condition = this.condition == null ? null : this.condition.deepCopy();
         copy.body = this.body == null ? null : this.body.deepCopy();
         copy.blockStmts = blockStmts.stream().map(StmtNode::deepCopy).collect(Collectors.toList());
         copy.elseBody = this.elseBody == null ? null : this.elseBody.deepCopy();
@@ -226,51 +227,52 @@ public class StmtNode extends Node{
             {
                 this.type = StmtType.forN_statement;
                 //преддействие
-                ExprNode iterCall = new ExprNode(ExprType.methodCall);
+                ExprNode iterCall = new ExprNode(ExprType.methodCall, forContainerExpr.lineNum);
                 iterCall.isSynthetic = true;
                 iterCall.operand = forContainerExpr;
                 iterCall.callArguments = new ArrayList<>();
                 iterCall.identifierAccess = new IdentifierNode("iterator");
                 VariableDeclarationNode iterDeclNode = new VariableDeclarationNode("!iter", iterCall);
-                StmtNode iterDecl = new StmtNode(StmtType.variable_declaration_statement);
+                StmtNode iterDecl = new StmtNode(StmtType.variable_declaration_statement, forContainerExpr.lineNum);
                 iterDecl.variableDeclaration.add(iterDeclNode);
                 this.forInitializerStmt = iterDecl;
                 //условие
-                this.condition = new ExprNode(ExprType.methodCall);
+                this.condition = new ExprNode(ExprType.methodCall, forContainerExpr.lineNum);
                 this.condition.isSynthetic = true;
                 this.condition.identifierAccess = new IdentifierNode("hasNext");
                 this.condition.callArguments = new ArrayList<>();
-                this.condition.operand = new ExprNode(ExprType.identifier);
+                this.condition.operand = new ExprNode(ExprType.identifier, forContainerExpr.lineNum);
                 this.condition.operand.identifierAccess = new IdentifierNode("!iter");
                 //постдействие
                 this.forPostExpr = new ArrayList<>();
                 //тело
-                ExprNode nextExpr = new ExprNode(ExprType.methodCall);
+                int varLinenum = forEachVariableId != null ? forEachVariableId.lineNum : forEachVariableDecl.lineNum;
+                ExprNode nextExpr = new ExprNode(ExprType.methodCall, varLinenum);
                 nextExpr.isSynthetic = true;
                 nextExpr.identifierAccess = new IdentifierNode("next");
                 nextExpr.callArguments = new ArrayList<>();
-                nextExpr.operand = new ExprNode(ExprType.identifier);
+                nextExpr.operand = new ExprNode(ExprType.identifier, varLinenum);
                 nextExpr.operand.identifierAccess = new IdentifierNode("!iter");
                 StmtNode next;
                 if(forEachVariableId != null){
-                    ExprNode assign = new ExprNode(ExprType.assign);
-                    assign.operand = new ExprNode(ExprType.identifier);
+                    ExprNode assign = new ExprNode(ExprType.assign, varLinenum);
+                    assign.operand = new ExprNode(ExprType.identifier, varLinenum);
                     assign.operand.identifierAccess = forEachVariableId;
                     assign.operand2 = nextExpr;
-                    next = new StmtNode(StmtType.expr_statement);
+                    next = new StmtNode(StmtType.expr_statement, varLinenum);
                     next.expr = assign;
                 }
                 else {
                     forEachVariableDecl.isAssign = true;
                     forEachVariableDecl.value = nextExpr;
-                    next = new StmtNode(StmtType.variable_declaration_statement);
+                    next = new StmtNode(StmtType.variable_declaration_statement, varLinenum);
                     next.variableDeclaration.add(forEachVariableDecl);
                 }
-                StmtNode newBody = new StmtNode(StmtType.block);
+                StmtNode newBody = new StmtNode(StmtType.block, body.lineNum);
                 newBody.blockStmts.add(next);
                 StmtNode wrapper = this.body;
                 if(this.body.type != StmtType.block){
-                    wrapper = new StmtNode(StmtType.block);
+                    wrapper = new StmtNode(StmtType.block, body.lineNum);
                     wrapper.blockStmts.add(this.body);
                 }
                 newBody.blockStmts.add(wrapper);
@@ -285,7 +287,7 @@ public class StmtNode extends Node{
     
             forInitializerStmt.validateStmt(forContext);
             if(condition == null){
-                condition = new ExprNode(ExprType.bool_pr);
+                condition = new ExprNode(ExprType.bool_pr, lineNum);
                 condition.boolValue = true;
             }
             condition.annotateTypes(forContext);
@@ -309,7 +311,7 @@ public class StmtNode extends Node{
                 for (StmtNode action : caseNode.actions) {
                     action.validateStmt(caseContext);
                 }
-                if(caseNode.actions.stream().noneMatch(stmt -> stmt.endsWith(StmtType.break_statement, StmtType.return_statement, StmtType.continue_statement))){ //FIXME ? как поступать с континью без лейблов?
+                if(caseNode.actions.stream().noneMatch(stmt -> stmt.endsWith(StmtType.break_statement, StmtType.return_statement, StmtType.continue_statement))){
                     printError("The 'case' shouldn't complete normally.", caseNode.lineNum);
                 }
             }

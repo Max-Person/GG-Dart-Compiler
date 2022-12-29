@@ -22,7 +22,7 @@ public class MethodContext extends ClassContext{
     @Override
     public NamedRecord lookup(String name) {
         if(pendingLocal != null && pendingLocal.name.equals(name)){
-            printError("Local variable '" + name + "' can't be referenced before it is declared.", -1); // TODO номер строки
+            printError("Local variable '" + name + "' can't be referenced before it is declared.", pendingLocal.lineNum); // FIXED? номер строки
         }
         if(scopeLocals.containsKey(name)){
             return scopeLocals.get(name);
@@ -31,7 +31,7 @@ public class MethodContext extends ClassContext{
             return outsideLocals.get(name);
         }
         if(methodRecord.parameters.stream().anyMatch(p -> p.name().equals(name))){
-            return methodRecord.parameters.stream().filter(p -> p.name().equals(name)).findFirst().orElse(null); //FIXME ? мб сделать как то получше?
+            return methodRecord.parameters.stream().filter(p -> p.name().equals(name)).findFirst().orElse(null);
         }
         return super.lookup(name);
     }
@@ -60,7 +60,7 @@ public class MethodContext extends ClassContext{
 
     public void addLocalToScope(LocalVarRecord var){
         if(scopeLocals.containsKey(var.name)){
-            printError("The name '" + var.name + "' is already defined.", -1); // TODO номер строки
+            printError("The name '" + var.name + "' is already defined.", scopeLocals.get(var.name).lineNum);
         }
         pendingLocal = var;
     }

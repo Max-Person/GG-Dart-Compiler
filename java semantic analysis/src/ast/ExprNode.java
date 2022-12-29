@@ -115,19 +115,10 @@ public class ExprNode extends Node {
         }
 
     }
-    
-    //Для преобразование бинарных операторов
-    private ExprNode(ExprType type, ExprNode operand, ExprNode operand2){
-        this.type = type;
-        this.operand = operand;
-        this.operand2 = operand2;
-    }
 
-    public ExprNode(ExprType type) {
+    public ExprNode(ExprType type, int linenum) {
         this.type = type;
-    }
-
-    public ExprNode() {
+        this.lineNum = linenum;
     }
 
     public ExprNode deepCopy(){
@@ -160,7 +151,7 @@ public class ExprNode extends Node {
     }
     
     public void clear(){
-        this.mimic(new ExprNode());
+        this.mimic(new ExprNode((ExprType) null, -1));
     }
     
     public ExprNode(ExprNode other){
@@ -188,7 +179,7 @@ public class ExprNode extends Node {
     private void wrapPlainAsClass(){
         ExprNode val = new ExprNode(this);
         this.type = ExprType.methodCall;
-        this.operand = new ExprNode(ExprType.identifier);
+        this.operand = new ExprNode(ExprType.identifier, lineNum);
         
         VariableType result;
         if(this.annotatedType.equals(PlainType._bool())){
@@ -361,13 +352,13 @@ public class ExprNode extends Node {
                     element = VariableType.supertype(element, el.annotatedType);
             }
 
-            ExprNode construct = new ExprNode(ExprType.constructNew);
+            ExprNode construct = new ExprNode(ExprType.constructNew, lineNum);
             construct.identifierAccess = new IdentifierNode("List");
             construct.annotatedType = new ListType(element);
             construct.isSynthetic = true;
             ExprNode op = construct;
             for(ExprNode el: this.listValues){
-                ExprNode with = new ExprNode(ExprType.methodCall);
+                ExprNode with = new ExprNode(ExprType.methodCall, el.lineNum);
                 with.operand = op;
                 with.identifierAccess = new IdentifierNode("with");
                 with.callArguments = List.of(el);
@@ -386,21 +377,21 @@ public class ExprNode extends Node {
             operand2.assertNotVoid();
             operand2.makeAssignableTo(VariableType._Object(), context);
             if(!operand2.annotatedType.equals(VariableType._String())){
-                ExprNode toString = new ExprNode(ExprType.methodCall);
+                ExprNode toString = new ExprNode(ExprType.methodCall, operand2.lineNum);
                 toString.operand = this.operand2;
                 toString.identifierAccess = new IdentifierNode("toString");
                 this.operand2 = toString;
             }
             
-            ExprNode second = new ExprNode(ExprType.string_pr);
+            ExprNode second = new ExprNode(ExprType.string_pr, operand2.lineNum);
             second.stringValue = this.stringValue;
             
-            ExprNode concat1 = new ExprNode(ExprType.methodCall);
+            ExprNode concat1 = new ExprNode(ExprType.methodCall, operand.lineNum);
             concat1.isSynthetic = true;
             concat1.identifierAccess = new IdentifierNode("concat");
             concat1.operand = this.operand;
             concat1.callArguments = List.of(this.operand2);
-            ExprNode concat2 = new ExprNode(ExprType.methodCall);
+            ExprNode concat2 = new ExprNode(ExprType.methodCall, operand2.lineNum);
             concat2.isSynthetic = true;
             concat2.identifierAccess = new IdentifierNode("concat");
             concat2.operand = concat1;
@@ -438,16 +429,16 @@ public class ExprNode extends Node {
 
             if(context instanceof MethodContext){ //Заменить конструкторы на вызовы методов
                 if(this.type == ExprType.constructRedirect){
-                    this.operand = new ExprNode(ExprType.this_pr);
+                    this.operand = new ExprNode(ExprType.this_pr, lineNum);
                     this.type = ExprType.methodCall;
                     this.identifierAccess = new IdentifierNode(constructor.associatedMethod().name);
                     return this.annotateTypes(context);
                 }else if (this.type == ExprType.constructSuper) {
                     if(constructed.equals(RTLClassRecord.object)){
-                        this.mimic(new ExprNode(ExprType.this_pr)); //FIXME? Здесь как бы удаление экспра
+                        this.mimic(new ExprNode(ExprType.this_pr, lineNum)); //FIXME? Здесь как бы удаление экспра
                         return this.annotateTypes(context);
                     }
-                    this.operand = new ExprNode(ExprType.super_pr);
+                    this.operand = new ExprNode(ExprType.super_pr, lineNum);
                     this.type = ExprType.methodCall;
                     this.identifierAccess = new IdentifierNode(constructor.associatedMethod().name);
                     return this.annotateTypes(context);
@@ -458,7 +449,7 @@ public class ExprNode extends Node {
                         return this.annotateTypes(context);
                     }
                     else { //Если пользовательский класс - то вызвать джава конструктор и затем метод, представляющий дарт-конструктор
-                        this.operand = new ExprNode(ExprType.javaConstructCall);
+                        this.operand = new ExprNode(ExprType.javaConstructCall, lineNum);
                         this.operand.identifierAccess = new IdentifierNode(constructed.name);
                         this.operand.callArguments = new ArrayList<>();
                         this.type = ExprType.methodCall;
@@ -535,9 +526,9 @@ public class ExprNode extends Node {
                 MethodRecord method = (MethodRecord) foundRecord;
                 checkCallArgumentsTyping(method, context);
                 if(method.name.equals("toString") && !method.containerClass.isGlobal()){ //Заменить toString() на !stringify - для учета нуллов
-                    ExprNode stringify = new ExprNode(ExprType.call);
+                    ExprNode stringify = new ExprNode(ExprType.call, lineNum);
                     stringify.identifierAccess = new IdentifierNode("!stringify");
-                    stringify.callArguments = List.of(new ExprNode(ExprType.this_pr));
+                    stringify.callArguments = List.of(new ExprNode(ExprType.this_pr, lineNum));
                     this.mimic(stringify);
                     return this.annotateTypes(context);
                 }
@@ -626,7 +617,7 @@ public class ExprNode extends Node {
             }
             checkCallArgumentsTyping(method, context);
             if(method.name.equals("toString") && !method.containerClass.isGlobal()){ //Заменить toString() на !stringify - для учета нуллов
-                ExprNode stringify = new ExprNode(ExprType.call);
+                ExprNode stringify = new ExprNode(ExprType.call, lineNum);
                 stringify.identifierAccess = new IdentifierNode("!stringify");
                 stringify.callArguments = List.of(this.operand);
                 this.mimic(stringify);
@@ -713,7 +704,9 @@ public class ExprNode extends Node {
             }
             else {
                 //Комплексные ассигнменты
-                ExprNode expanded = new ExprNode(ExprType.complexAssignToOp.get(this.type), this.operand.deepCopy(), this.operand2);
+                ExprNode expanded = new ExprNode(ExprType.complexAssignToOp.get(this.type), lineNum);
+                expanded.operand = this.operand.deepCopy();
+                expanded.operand2 = this.operand2;
                 this.type = ExprType.assign;
                 this.operand2 = expanded;
                 return this.annotateTypes(context);
@@ -728,7 +721,7 @@ public class ExprNode extends Node {
                 if(this.type == ExprType.add &&
                         operand.annotatedType.equals(VariableType._String()) &&
                         operand2.annotatedType.equals(VariableType._String())){ //сложение строк в конкатенацию
-                    ExprNode concat = new ExprNode(ExprType.methodCall);
+                    ExprNode concat = new ExprNode(ExprType.methodCall, lineNum);
                     concat.isSynthetic = true;
                     concat.identifierAccess = new IdentifierNode("concat");
                     concat.operand = this.operand;
@@ -816,7 +809,7 @@ public class ExprNode extends Node {
                         operand2.makeAssignableTo(PlainType._double(), context);
                     }
                     else {
-                        ExprNode bool = new ExprNode(ExprType.bool_pr);
+                        ExprNode bool = new ExprNode(ExprType.bool_pr, lineNum);
                         bool.boolValue = false;
                         this.mimic(bool);
                         return this.annotateTypes(context);
@@ -906,12 +899,12 @@ public class ExprNode extends Node {
                 }
                 else if(this.type == ExprType.prefix_dec || this.type == ExprType.prefix_inc){
                     this.type = this.type == ExprType.prefix_dec ? ExprType.sub_assign : ExprType.add_assign;
-                    this.operand2 = new ExprNode(ExprType.int_pr);
+                    this.operand2 = new ExprNode(ExprType.int_pr, lineNum);
                     this.operand2.intValue = 1;
                     return this.annotateTypes(context);
                 }
                 else if(this.type == ExprType.postfix_dec || this.type == ExprType.postfix_inc){
-                    ExprNode action = new ExprNode(this.type == ExprType.postfix_dec ? ExprType.prefix_dec : ExprType.prefix_inc);
+                    ExprNode action = new ExprNode(this.type == ExprType.postfix_dec ? ExprType.prefix_dec : ExprType.prefix_inc, lineNum);
                     action.operand = this.operand.deepCopy();
                     this.type = ExprType.disjoint;
                     if(this.operand.canBeAssignableTo(PlainType._int()))
@@ -945,7 +938,7 @@ public class ExprNode extends Node {
         List<VariableType> argTypes = new ArrayList<>();
         this.callArguments.forEach(arg -> argTypes.add(arg.annotateTypes(context)));
         if(argTypes.size() != method.parameters.size()){
-            printError("Parameter count mismatch", this.lineNum); //TODO улучшить сообщение
+            printError("Argument count mismatch: " + method.parameters.size() + " expected, but " + argTypes.size() + " found.", this.lineNum);
         }
         for(int i = 0; i< method.parameters.size(); i++){
             VariableType paramType = method.parameters.get(i).varType;

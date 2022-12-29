@@ -4,7 +4,6 @@ import ast.semantic.ClassRecord;
 
 import java.util.Objects;
 
-//TODO ? стандартные джава-массивы используются только в мейне, так что особого функционала здесь нет
 public class JavaArrayType extends VariableType{
     public VariableType valueType;
     

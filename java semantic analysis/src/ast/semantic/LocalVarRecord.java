@@ -43,8 +43,8 @@ public class LocalVarRecord extends VariableRecord{
     
     public ExprNode toExpr(){
         if (initValue != null){
-            ExprNode assign = new ExprNode(ExprType.assign);
-            assign.operand = new ExprNode(ExprType.identifier);
+            ExprNode assign = new ExprNode(ExprType.assign, lineNum);
+            assign.operand = new ExprNode(ExprType.identifier, lineNum);
             assign.operand.identifierAccess = new IdentifierNode(this.name);
             assign.operand2 = this.initValue;
             return assign;

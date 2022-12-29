@@ -44,24 +44,23 @@ public class InitializerNode extends Node{
     }
 
     public ExprNode toExpr(){
-        ExprNode expr = new ExprNode();
+        ExprNode expr = null;
         if(type == InitializerType.superNamedConstructor || type == InitializerType.superConstructor){
-            expr.type = ExprType.constructSuper;
+            expr = new ExprNode(ExprType.constructSuper, lineNum);
             expr.constructName = superConstructorName;
             expr.callArguments = args;
         } else if(type == InitializerType.thisAssign){
-            expr.type = ExprType.assign;
-            expr.operand = new ExprNode(ExprType.fieldAccess);
-            expr.operand.operand = new ExprNode(ExprType.this_pr);
+            expr = new ExprNode(ExprType.assign, lineNum);
+            expr.operand = new ExprNode(ExprType.fieldAccess, lineNum);
+            expr.operand.operand = new ExprNode(ExprType.this_pr, lineNum);
             expr.operand.identifierAccess = thisFieldId;
             expr.operand2 = value;
         }
-        expr.lineNum = this.lineNum;
         return expr;
     }
     
     public StmtNode toStmt(){
-        StmtNode init = new StmtNode(StmtType.expr_statement);
+        StmtNode init = new StmtNode(StmtType.expr_statement, lineNum);
         init.expr = this.toExpr();
         return init;
     }

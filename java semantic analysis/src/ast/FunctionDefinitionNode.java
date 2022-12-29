@@ -15,6 +15,6 @@ public class FunctionDefinitionNode extends Node implements Declaration{
     
     @Override
     public String name() {
-        return signature.name.stringVal; //TODO что делать с конструкторами и статическими методами
+        return signature.name.stringVal;
     }
 }
