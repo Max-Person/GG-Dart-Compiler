@@ -1,6 +1,13 @@
 void main() {
   // Create a list of integers
-  var numbers = [5, 2, 7, 1, 3];
+  print("Input array size:");
+  int size = readInt();
+  print("Input $size array elements (ints):");
+  List<int> numbers = [];
+  for(int i = 0; i < size; i ++){
+    numbers.add(readInt());
+  }
+
   print(numbers);
 
   // Sort the list using the bubble sort algorithm

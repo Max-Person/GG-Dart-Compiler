@@ -309,6 +309,7 @@ public class StmtNode extends Node{
             return;
         }
         if(type == StmtType.switch_statement){
+            printError("GG-Dart does not support switch statements.", lineNum);
             condition.annotateTypes(context);
             condition.makeAssignableTo(VariableType._Object(), context);
             for (SwitchCaseNode caseNode : switchCaseList) {

@@ -9,6 +9,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import static ast.semantic.SemanticCrawler.printError;
+
 public abstract class VariableRecord implements NamedRecord, Cloneable{
     protected boolean isLate, isStatic, isConst, isFinal;
     public VariableType varType;
@@ -42,6 +44,10 @@ public abstract class VariableRecord implements NamedRecord, Cloneable{
                 declarationNode.declarator.isFinal,
                 declarationNode.declarator.isTyped ? VariableType.from(classTable, declarationNode.declarator.valueType) : null,
                 declarationNode.identifier.stringVal);
+        
+        if(this.isFinal || this.isConst || this.isLate){
+            printError("GG-Dart does not support variable modifiers such as 'late', 'final', or 'const'.", declarationNode.lineNum);
+        }
         
         if(declarationNode.isAssign)
             this.initValue = declarationNode.value;

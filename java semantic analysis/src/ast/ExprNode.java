@@ -412,6 +412,10 @@ public class ExprNode extends Node {
         }
         else if(this.type == ExprType.constructNew || this.type == ExprType.constructConst ||
                 this.type == ExprType.constructRedirect || this.type == ExprType.constructSuper){
+    
+            if(this.type == ExprType.constructConst){
+                printError("GG-Dart does not support constant constructors.", lineNum);
+            }
             
             ClassRecord constructed;
             if(this.type == ExprType.constructRedirect){
