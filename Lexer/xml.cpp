@@ -289,6 +289,13 @@ namespace xmlOut {
 		if (node->next != NULL) gen.splice(gen.end(), display(node->next));
 		return gen;
 	}
+	list<XMLElement*> display(char* str) {
+		list<XMLElement*> gen;
+		XMLElement* xml = xmlDoc.NewElement("string");
+		xml->SetText(str);
+		gen.push_back(xml);
+		return gen;
+	}
 	list<XMLElement*> display(expr_node* node) {
 		list<XMLElement*> gen;
 		XMLElement* xml = xmlDoc.NewElement("expr_node");
@@ -334,9 +341,9 @@ namespace xmlOut {
 
 		case string_interpolation: {
 			xml->SetAttribute("type", "string_interpolation");
-			xml->SetAttribute("string_value", node->string_value);
 			link(xml, display(node->operand), "operand");
 			link(xml, display(node->operand2), "operand2");
+			link(xml, display(node->string_value));
 			break;
 		}
 

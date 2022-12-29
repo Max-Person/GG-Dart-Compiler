@@ -61,7 +61,7 @@ public class ExprNode extends Node {
         }
 
         if(type == ExprType.string_interpolation){
-            stringValue = element.getAttribute("string_value");
+            stringValue = Node.getImmediateChildByName(element, "string").getTextContent();
             operand = new ExprNode(unlink(element, "operand"));
             operand2 = new ExprNode(unlink(element, "operand2"));
         }
