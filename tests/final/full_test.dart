@@ -100,6 +100,8 @@ void main() {
   print('Input str: ');
   var str = readString();
   print("THIS IS INPUT $str");
+  
+  print("");
 
   var customer = Customer("bezkoder", 26, "US"); // Customer [name=bezkoder,age=26,location=US]
   print("customer name = ${customer.name}, age = ${customer.age}, location = ${customer.location}");
@@ -113,6 +115,8 @@ void main() {
   var customer3 = Customer.withoutLocation2("zkode", 27);
   print("customer3 name = ${customer3.name}, age = ${customer3.age}, location = ${customer3.location}");
 
+  print("");
+
   var car = new Car("a", "2002");
   print("car model = ${car.model}, yearMade = ${car.yearMade}");
   var car2 = new Car.withoutYearMade("car");
@@ -124,6 +128,8 @@ void main() {
   digit first = digit.digit_1;
   digit second = digit.digit_2;
 
+  print("");
+
   if(first == digit.digit_1){
     print("equals!");
   }
@@ -131,12 +137,31 @@ void main() {
     print("not equal!");
   }
 
-  bool t = true;
-  bool f = false;
-  if(t || f){
-    print("true");
-  } 
+  print("");
 
+  bool t = true;
+  if(t){
+	  print("a = $t");
+  }
+  if(!t){
+	  print("!a = $t");
+  }
+  if(t && getTrue()){
+	  print("a AND getTrue()");
+  }
+  if(t || getTrue()){
+	  print("a OR getTrue()");
+  }
+
+  print("");
+
+  hello();
+
+  print("");
+
+  int s = 0;
+  s = sum(1, 1);
+  print("s = " + s.toString());
 
 }
 
@@ -178,4 +203,22 @@ class Car {
     print("car created!");
     print("car model = $model, yearMade = $yearMade");
   }
+}
+
+bool getTrue(){
+	print("getTrue called");
+	return true;
+}
+
+bool getFalse(){
+	print("getFalse called");
+	return false;
+}
+
+void hello(){
+  print("Hello!");
+}
+
+int sum(int a, int b){
+    return a + b;
 }
