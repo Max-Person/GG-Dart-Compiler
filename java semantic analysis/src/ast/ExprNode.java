@@ -534,6 +534,13 @@ public class ExprNode extends Node {
             else {
                 MethodRecord method = (MethodRecord) foundRecord;
                 checkCallArgumentsTyping(method, context);
+                if(method.name.equals("toString") && !method.containerClass.isGlobal()){ //Заменить toString() на !stringify - для учета нуллов
+                    ExprNode stringify = new ExprNode(ExprType.call);
+                    stringify.identifierAccess = new IdentifierNode("!stringify");
+                    stringify.callArguments = List.of(new ExprNode(ExprType.this_pr));
+                    this.mimic(stringify);
+                    return this.annotateTypes(context);
+                }
                 this.refInfo = method.isStatic() ? MethodRefInfo.invokeStatic(method, context) : MethodRefInfo.invokeVirtual(method, method.containerClass, context);
                 result = method.returnType;
             }
@@ -618,6 +625,13 @@ public class ExprNode extends Node {
                 printError("The instance member '" + method.name() + "' can't be accessed in an initializer.", this.lineNum);
             }
             checkCallArgumentsTyping(method, context);
+            if(method.name.equals("toString") && !method.containerClass.isGlobal()){ //Заменить toString() на !stringify - для учета нуллов
+                ExprNode stringify = new ExprNode(ExprType.call);
+                stringify.identifierAccess = new IdentifierNode("!stringify");
+                stringify.callArguments = List.of(this.operand);
+                this.mimic(stringify);
+                return this.annotateTypes(context);
+            }
             isSpecial = isSpecial && method.isSyntheticConstructor();
             MethodRecord actual = method;
             if(method.containerClass instanceof RTLListClassRecord )

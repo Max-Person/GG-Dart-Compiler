@@ -310,7 +310,7 @@ public class ClassRecord implements NamedRecord{
             //Получить список всех наследуемых ДИНАМИЧЕСКИХ функций и убедиться,
             // что все определенные в классе функции либо не переопределяют наследуемые, либо переопределяют их правильно
             for(MethodRecord inhMethod : this._super.nonStaticMethods().values()){
-                if(this.methods.containsKey(inhMethod.name()) && !this.methods.get(inhMethod.name()).isValidOverrideOf(inhMethod)){
+                if(this.methods.containsKey(inhMethod.name()) && !this.methods.get(inhMethod.name()).isValidOverrideOf(inhMethod) && !this.isGlobal()){
                     printError("'" + this.name() + "." + inhMethod.name + "' isn’t a valid override of '" + _super.name() + "." + inhMethod.name + "'", this.declaration.lineNum());
                 }
             }

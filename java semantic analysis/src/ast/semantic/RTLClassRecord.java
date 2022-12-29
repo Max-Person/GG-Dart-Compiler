@@ -86,12 +86,15 @@ public class RTLClassRecord extends ClassRecord{
         object.methods.put("toString", toString);
         
         io = new RTLClassRecord(null, "InputOutput", false);
-        ParameterRecord printParam = new ParameterRecord(null, null, VariableType._Object(), "obj", false);
-        io.methods.put("print",  new MethodRecord(io, true, false, VariableType._void(), "print", List.of(printParam), new StmtNode(StmtType.block)));
+        VariableType any = VariableType._Object();
+        any.isNullable = true;
+        ParameterRecord anyParam = new ParameterRecord(null, null, any, "obj", false);
+        io.methods.put("print",  new MethodRecord(io, true, false, VariableType._void(), "print", List.of(anyParam), new StmtNode(StmtType.block)));
         io.methods.put("readInt", new MethodRecord(io, true, false, PlainType._int(), "readInt", new ArrayList<>(), new StmtNode(StmtType.block)));
         io.methods.put("readDouble", new MethodRecord(io, true, false, PlainType._double(), "readDouble", new ArrayList<>(), new StmtNode(StmtType.block)));
         io.methods.put("readBool", new MethodRecord(io, true, false, PlainType._bool(), "readBool", new ArrayList<>(), new StmtNode(StmtType.block)));
         io.methods.put("readString", new MethodRecord(io, true, false, VariableType._String(), "readString", new ArrayList<>(), new StmtNode(StmtType.block)));
+        io.methods.put("!stringify", new MethodRecord(io, true, false, VariableType._String(), "!stringify", List.of(anyParam), new StmtNode(StmtType.block)));
         
     }
 }
