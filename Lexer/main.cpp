@@ -30,15 +30,16 @@ int main(int argc, char** argv) {
             dotOut::displayInit(root);
             xmlOut::displayInit(root);
             printf("C++ Segment (lexer + parser): SUCCESS!\n");
+            fclose(yyin);
+
+            if (!flagged(argc, argv, "--no-sem")) {
+                //string command = "java -cp \"..\\java semantic analysis\\out\\production\\java semantic analysis\" Main xmlOutput.xml";
+                string command = "java -jar \"java semantic analysis.jar\" xmlOutput.xml";
+                system(command.c_str());
+            }
         }
         else fprintf(stderr, "C++ Segment (lexer + parser) ERR: parse FAILED;\n");
-        fclose(yyin);
-
-        if (!flagged(argc, argv, "--no-sem")) {
-            //string command = "java -cp \"..\\java semantic analysis\\out\\production\\java semantic analysis\" Main xmlOutput.xml";
-            string command = "java -jar \"java semantic analysis.jar\" xmlOutput.xml";
-            system(command.c_str());
-        }
+    
     }
     else {
         fprintf(stderr, "C++ Segment (lexer + parser) ERR: FILE NOT FOUND;\n");
