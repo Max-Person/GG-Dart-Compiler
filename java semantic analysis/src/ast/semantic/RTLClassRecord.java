@@ -95,6 +95,6 @@ public class RTLClassRecord extends ClassRecord{
         io.methods.put("readBool", new MethodRecord(io, true, false, PlainType._bool(), "readBool", new ArrayList<>(), new StmtNode(StmtType.block)));
         io.methods.put("readString", new MethodRecord(io, true, false, VariableType._String(), "readString", new ArrayList<>(), new StmtNode(StmtType.block)));
         io.methods.put("!stringify", new MethodRecord(io, true, false, VariableType._String(), "!stringify", List.of(anyParam), new StmtNode(StmtType.block)));
-        
+        io.methods.put("!bang", new MethodRecord(io, true, false, VariableType._Object(), "!bang", List.of(anyParam), new StmtNode(StmtType.block)));
     }
 }

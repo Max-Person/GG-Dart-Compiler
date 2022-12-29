@@ -23,7 +23,7 @@ public class LocalVarRecord extends VariableRecord{
     public VariableType inferType(MethodContext context){
         if(this.varType == null){
             this.initValue.annotateTypes(context);
-            this.initValue.assertNotVoid();
+            this.initValue.assertUsable(context);
             this.initValue.makeAssignableTo(VariableType._Object(), context);
             this.varType = initValue.annotatedType;
         }

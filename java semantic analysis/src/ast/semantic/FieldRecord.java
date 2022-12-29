@@ -26,6 +26,10 @@ public class FieldRecord extends VariableRecord{
         
         this.containerClass = containerClass;
         if(varType != null){
+            if(isStatic && !varType.isNullable && initValue == null){
+                printError("The non-nullable variable '" + name + "' must be initialized.", declaration.lineNum);
+            }
+            
             this.containerClass.methods.put(associatedGetter().name(), associatedGetter());
             this.containerClass.methods.put(associatedSetter().name(), associatedSetter());
         }
@@ -46,7 +50,7 @@ public class FieldRecord extends VariableRecord{
                 printError("The type of '"+this.name()+"' can't be inferred because it depends on itself through the dependency cycle.", initValue.lineNum); //TODO Вывести цикл зависимости
             }
             this.initValue.annotateTypes(context.dependantContext(this));
-            this.initValue.assertNotVoid();
+            this.initValue.assertUsable(context);
             this.initValue.makeAssignableTo(VariableType._Object(), context);
             this.varType = initValue.annotatedType;
             

@@ -195,7 +195,6 @@ public class MethodRecord implements NamedRecord, Cloneable{
             throw new IllegalStateException();
         }
 
-        boolean constructorChain = false;
         if(redirection != null){
             if(parameters.stream().anyMatch(p -> p.isField)){
                 printError("The redirecting constructor can't have a field initializer.", redirection.lineNum);
@@ -212,58 +211,84 @@ public class MethodRecord implements NamedRecord, Cloneable{
                 curRedir = constructor.redirection;
             }
             body.blockStmts.add(0, redirection.toStmt());
-            constructorChain = true;
             redirection = null; //Зачем хранить инфу о том чего больше не существует...
         }
-        else if(initializers != null){
+        else {
+            ArrayList<FieldRecord> initializedFields = new ArrayList<>();
+            Map<String, FieldRecord> canBeInitializedFields = Utils.filterByValue(this.containerClass.fields, f -> !f.isStatic);
             boolean superCalled = false;
-            for (InitializerNode initializer : initializers) {
-                if(initializer.type == InitializerType.superConstructor || initializer.type == InitializerType.superNamedConstructor){
-                    if(superCalled){
-                        printError("A constructor can have at most one 'super' initializer.", initializer.lineNum);
+            //обработка сигнатурных инициализаторов
+            if (initializers != null) {
+                for (InitializerNode initializer : initializers) {
+                    if (initializer.type == InitializerType.superConstructor || initializer.type == InitializerType.superNamedConstructor) {
+                        if (superCalled) {
+                            printError("A constructor can have at most one 'super' initializer.", initializer.lineNum);
+                        }
+                        superCalled = true;
+                        if (!initializers.get(initializers.size() - 1).equals(initializer)) {
+                            printError("The superconstructor call must be last in an initializer list: '" + this.containerClass._super.name + "'.", initializer.lineNum);
+                        }
                     }
-                    superCalled = true;
-                    if(!initializers.get(initializers.size() - 1).equals(initializer)) {
-                        printError("The superconstructor call must be last in an initializer list: '" + this.containerClass._super.name + "'.", initializer.lineNum);
+                    else if (initializer.type == InitializerType.thisAssign) {
+                        FieldRecord init = canBeInitializedFields.get(initializer.thisFieldId.stringVal); //Не "nonStaticFields", потому что нельзя использовать унаследованные поля
+                        if (init == null) {
+                            printError("'" + this.name + "' isn't a non-static field in the enclosing class.", lineNum);
+                        }
+                        if (initializedFields.contains(init)) {
+                            printError("'" + init.name + "' was already initialized by this constructor.", initializer.thisFieldId.lineNum);
+                        }
+                        initializedFields.add(init);
                     }
+                    body.blockStmts.add(0, initializer.toStmt());
                 }
-                else if(initializer.type == InitializerType.thisAssign){
-                    if(initializers.stream().anyMatch(i -> i != initializer && i.type == InitializerType.thisAssign && i.thisFieldId.stringVal.equals(initializer.thisFieldId.stringVal))){
-                        printError("The field '" + initializer.thisFieldId.stringVal + "' can't be initialized twice in the same constructor.", initializer.thisFieldId.lineNum);
-                    }
-                    if(parameters.stream().anyMatch(p -> p.isField && p.name().equals(initializer.thisFieldId.stringVal))){
-                        printError("'" + initializer.thisFieldId.stringVal +"' was already initialized by this constructor.", initializer.thisFieldId.lineNum);
-                    }
-                }
-                body.blockStmts.add(0, initializer.toStmt());
+                initializers = null; //Зачем хранить инфу о том чего больше не существует...
             }
-            constructorChain = superCalled;
-            initializers = null; //Зачем хранить инфу о том чего больше не существует...
-        }
-        if(!constructorChain){
-            //Неявный вызов супер-конструктора
-            if(containerClass._super != null){
-                if(!containerClass._super.constructors.containsKey("")){
-                    printError("The class '"+ containerClass._super.name() +"' doesn't have an unnamed constructor.", lineNum);
+            if (!superCalled) {
+                //Неявный вызов супер-конструктора
+                if (containerClass._super != null) {
+                    if (!containerClass._super.constructors.containsKey("")) {
+                        printError("The class '" + containerClass._super.name() + "' doesn't have an unnamed constructor.", lineNum);
+                    } else if (!containerClass._super.constructors.get("").parameters.isEmpty()) {
+                        printError("The implicitly invoked unnamed constructor from '" + containerClass._super.name() + "' has required parameters.", lineNum);
+                    }
                 }
-                else if(!containerClass._super.constructors.get("").parameters.isEmpty()){
-                    printError("The implicitly invoked unnamed constructor from '"+ containerClass._super.name() +"' has required parameters.", lineNum);
-                }
+                ExprNode expr = new ExprNode(ExprType.constructSuper, lineNum);
+                expr.constructName = null;
+                expr.callArguments = new ArrayList<>();
+                StmtNode init = new StmtNode(StmtType.expr_statement, lineNum);
+                init.expr = expr;
+                body.blockStmts.add(0, init);
             }
-            ExprNode expr = new ExprNode(ExprType.constructSuper, lineNum);
-            expr.constructName = null;
-            expr.callArguments = new ArrayList<>();
-            StmtNode init = new StmtNode(StmtType.expr_statement, lineNum);
-            init.expr = expr;
-            body.blockStmts.add(0, init);
+            //Обработка field-параметров как инициализаторов
+            //FIXME ? возможно плохо что вызов суперконструктора получается после присваивания полей
+            for (ParameterRecord param : parameters) {
+                if (param.isField) {
+                    FieldRecord init = canBeInitializedFields.get(param.name); //Не "nonStaticFields", потому что нельзя использовать унаследованные поля
+                    if (init == null) {
+                        printError("'" + param.name + "' isn't a non-static field in the enclosing class.", lineNum);
+                    }
+                    if (initializedFields.contains(init)) {
+                        printError("'" + init.name + "' was already initialized by this constructor.", param.lineNum);
+                    }
+                    initializedFields.add(init);
+                }
+                param.normalize();
+            }
+    
+            //добавление инициализаторов при полях в конструкторы
+            canBeInitializedFields.values().forEach(f -> {
+                if (f.initValue != null) {
+                    body.blockStmts.add(0, f.initStmt());
+                    initializedFields.add(f);
+                }
+            });
+    
+            Utils.filterByValue(containerClass.fields, f -> !f.isStatic && !f.varType.isNullable).values().forEach(f -> {
+                if (!initializedFields.contains(f)) {
+                    printError("The non-nullable variable '" + f.name + "' must be initialized.", lineNum);
+                }
+            });
         }
-        parameters.forEach(param-> param.normalize()); //FIXME ? возможно плохо что вызов суперконструктора получается после присваивания полей
-
-        //добавление инициализаторов при полях в конструкторы
-        Utils.filterByValue(containerClass.fields, f -> !f.isStatic()).values().forEach(f -> {
-            if(f.initValue != null)
-                body.blockStmts.add(f.initStmt());
-        });
 
         this.containerClass.methods.put(associatedMethod().name, associatedMethod());
     }

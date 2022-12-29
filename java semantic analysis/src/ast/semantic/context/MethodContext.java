@@ -4,6 +4,7 @@ import ast.semantic.LocalVarRecord;
 import ast.semantic.MethodRecord;
 import ast.semantic.NamedRecord;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -17,6 +18,7 @@ public class MethodContext extends ClassContext{
     public MethodContext(MethodRecord method) {
         super(method.containerClass, method.isStatic());
         methodRecord = method;
+        assignedLocals = new ArrayList<>(method.parameters);
     }
 
     @Override
@@ -50,6 +52,7 @@ public class MethodContext extends ClassContext{
         MethodContext methodContext = new MethodContext(methodRecord);
         methodContext.outsideLocals = new HashMap<>(this.outsideLocals);
         methodContext.outsideLocals.putAll(this.scopeLocals);
+        methodContext.assignedLocals.addAll(this.assignedLocals);
         methodContext.isSkippable = this.isSkippable;
         return methodContext;
     }
@@ -57,6 +60,7 @@ public class MethodContext extends ClassContext{
     public Map<String, LocalVarRecord> outsideLocals = new HashMap<>();
     public Map<String, LocalVarRecord> scopeLocals = new HashMap<>();
     public LocalVarRecord pendingLocal = null;
+    public ArrayList<LocalVarRecord> assignedLocals = new ArrayList<>();
 
     public void addLocalToScope(LocalVarRecord var){
         if(scopeLocals.containsKey(var.name)){
@@ -67,6 +71,15 @@ public class MethodContext extends ClassContext{
     public void resolvePendingLocal(){
         methodRecord.addLocalVar(pendingLocal);
         scopeLocals.put(pendingLocal.name, pendingLocal);
+        if(pendingLocal.initValue != null){
+            markAssigned(pendingLocal);
+        }
         pendingLocal = null;
+    }
+    public void markAssigned(LocalVarRecord var){
+        if(!scopeLocals.containsValue(var) && !outsideLocals.containsValue(var))
+            return;
+    
+        assignedLocals.add(var);
     }
 }

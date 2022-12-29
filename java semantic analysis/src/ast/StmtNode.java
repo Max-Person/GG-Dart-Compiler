@@ -149,6 +149,7 @@ public class StmtNode extends Node{
             for (StmtNode block : blockStmts) {
                 block.validateStmt(scope);
             }
+            scope.assignedLocals.forEach(var -> context.markAssigned(var));
             return;
         }
         if (type == StmtType.expr_statement) {
@@ -174,10 +175,17 @@ public class StmtNode extends Node{
             if (!this.condition.makeAssignableTo(PlainType._bool(), context)) {
                 printError("Conditions must have a static type of 'bool'.", this.condition.lineNum);
             }
-
-            this.body.validateStmt(type == StmtType.if_statement ? context.childScope() : context.skippableChildScope());
-            if (type == StmtType.if_statement && this.elseBody != null)
-                this.elseBody.validateStmt(context.childScope());
+    
+            MethodContext bodyScope = type == StmtType.if_statement ? context.childScope() : context.skippableChildScope();
+            this.body.validateStmt(bodyScope);
+            if (type == StmtType.if_statement && this.elseBody != null){
+                MethodContext elseScope = context.childScope();
+                this.elseBody.validateStmt(elseScope);
+                bodyScope.assignedLocals.forEach(var -> {
+                    if (elseScope.assignedLocals.contains(var))
+                        context.markAssigned(var);
+                });
+            }
             return;
         }
         if (type == StmtType.return_statement) {
@@ -201,6 +209,7 @@ public class StmtNode extends Node{
         if(type == StmtType.forEach_statement){
             MethodContext forContext = context.childScope();
             forContainerExpr.annotateTypes(forContext); //FIXME ? мб надо аннотировать после объявления переменной цикла
+            //forContext.assignedLocals.forEach(var -> context.markAssigned(var));
             if(!(forContainerExpr.annotatedType instanceof ListType)){
                 printError("The type '" + forContainerExpr.annotatedType + "' used in the 'for' loop must be a list type.", forContainerExpr.lineNum);
             }
@@ -294,6 +303,7 @@ public class StmtNode extends Node{
             if (!this.condition.makeAssignableTo(PlainType._bool(), context)) {
                 printError("Conditions must have a static type of 'bool'.", this.condition.lineNum);
             }
+            forContext.assignedLocals.forEach(var -> context.markAssigned(var));
             forPostExpr.forEach(exprNode -> exprNode.annotateTypes(forContext));
             body.validateStmt(forContext.skippableChildScope());
             return;
@@ -370,6 +380,7 @@ public class StmtNode extends Node{
             for (StmtNode stmt: blockStmts) {
                 stmt.toBytecode(bytecode);
             }
+            expectZero = blockStmts.isEmpty();
         }
         if (type == StmtType.expr_statement) {
             if(expr != null){

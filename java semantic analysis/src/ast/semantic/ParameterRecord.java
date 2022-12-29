@@ -24,12 +24,6 @@ public class ParameterRecord extends LocalVarRecord{
                 parameter.name(),
                 parameter.isField);
         
-        if(this.isField){
-            if(!Utils.filterByValue(containerMethod.containerClass.fields, f -> !f.isStatic).containsKey(this.name)){ //Не "nonStaticFields", потому что нельзя использовать унаследованные поля
-                printError("Undefined field name '"+ this.name +"'.", parameter.lineNum);
-            }
-        }
-        
         this.lineNum = parameter.lineNum;
     }
     

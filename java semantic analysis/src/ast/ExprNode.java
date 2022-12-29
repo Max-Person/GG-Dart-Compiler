@@ -207,8 +207,6 @@ public class ExprNode extends Node {
         ExprNode op = new ExprNode(this);
         this.type = ExprType.methodCall;
         this.operand = op;
-    
-        //TODO если делать нулл-сейфти то здесь надо избегать нуллов ???
         
         VariableType result;
         if(this.annotatedType.equals(VariableType._bool())){
@@ -301,6 +299,19 @@ public class ExprNode extends Node {
         }
     }
     
+    public void assertUsable(Context context){
+        assertNotVoid();
+        if(this.refInfo instanceof LocalVarRefInfo){
+            if(!(context instanceof MethodContext))
+                throw new IllegalStateException();
+    
+            if(this.annotatedType != null && !this.annotatedType.isNullable &&
+                    !((MethodContext) context).assignedLocals.contains(((LocalVarRefInfo) this.refInfo).localVar)){
+                printError("The non-nullable local variable '" + ((LocalVarRefInfo) this.refInfo).localVar.name + "' must be assigned before it can be used.", this.lineNum);
+            }
+        }
+    }
+    
     private boolean getterTransformsAllowed = true;
     public boolean isSynthetic = false;
     
@@ -344,7 +355,7 @@ public class ExprNode extends Node {
             VariableType element = null;
             for(ExprNode el: this.listValues){
                 el.annotateTypes(context);
-                el.assertNotVoid();
+                el.assertUsable(context);
                 el.makeAssignableTo(VariableType._Object(), context);
                 if(element == null)
                     element = el.annotatedType;
@@ -374,7 +385,7 @@ public class ExprNode extends Node {
         else if(this.type == ExprType.string_interpolation){
             this.operand.annotateTypes(context);
             this.operand2.annotateTypes(context);
-            operand2.assertNotVoid();
+            operand2.assertUsable(context);
             operand2.makeAssignableTo(VariableType._Object(), context);
             if(!operand2.annotatedType.equals(VariableType._String())){
                 ExprNode toString = new ExprNode(ExprType.methodCall, operand2.lineNum);
@@ -472,7 +483,6 @@ public class ExprNode extends Node {
             result = VariableType.from(constructed);
         }
         else if(this.type == ExprType.identifier){
-            //TODO вставить проверку на нуллабельность?
             NamedRecord foundRecord = context.lookup(this.identifierAccess.stringVal);
             if(foundRecord == null){
                 printError("Undefined name '"+ this.identifierAccess.stringVal +"'.", this.lineNum);
@@ -537,7 +547,6 @@ public class ExprNode extends Node {
             }
         }
         else if(this.type == ExprType.fieldAccess){
-            //TODO вставить проверку на нуллабельность?
             FieldRecord field = null;
             ClassRecord classRecord = null;
             if(operand.type == ExprType.identifier && context.lookupClass(operand.identifierAccess.stringVal) != null){
@@ -545,10 +554,23 @@ public class ExprNode extends Node {
                 field = classRecord.staticFields().get(this.identifierAccess.stringVal);
             }
             else {
-                operand.annotateTypes(context);
-                operand.assertNotVoid();
-                operand.makeAssignableTo(VariableType._Object(), context);
-                classRecord = operand.annotatedType.associatedClass();
+                if(operand.type == ExprType.super_pr){
+                    if(context instanceof MethodContext){
+                        classRecord = context.currentClass()._super;
+                    }
+                    else {
+                        printError("Invalid context for ‘super’ invocation.", operand.lineNum);
+                    }
+                }
+                else {
+                    operand.annotateTypes(context);
+                    operand.assertUsable(context);
+                    operand.makeAssignableTo(VariableType._Object(), context);
+                    classRecord = operand.annotatedType.associatedClass();
+                    if (operand.annotatedType.isNullable) {
+                        printError("The property '" + this.identifierAccess.stringVal + "' can't be unconditionally invoked because the receiver can be 'null'.", this.lineNum);
+                    }
+                }
                 field = classRecord.nonStaticFields().get(this.identifierAccess.stringVal);
             }
             if(field == null){
@@ -603,9 +625,12 @@ public class ExprNode extends Node {
                 }
                 else {
                     operand.annotateTypes(context);
-                    operand.assertNotVoid();
+                    operand.assertUsable(context);
                     operand.makeAssignableTo(VariableType._Object(), context);
                     classRecord = operand.annotatedType.associatedClass();
+                    if(!RTLClassRecord.object.methods.containsKey(this.identifierAccess.stringVal) && operand.annotatedType.isNullable){
+                        printError("The method '"+ this.identifierAccess.stringVal +"' can't be unconditionally invoked because the receiver can be 'null'.", this.lineNum);
+                    }
                 }
                 method = classRecord.nonStaticMethods().get(this.identifierAccess.stringVal);
             }
@@ -638,7 +663,7 @@ public class ExprNode extends Node {
         }
         else if(this.type == ExprType.type_cast || this.type == ExprType.type_check){
             operand.annotateTypes(context);
-            operand.assertNotVoid();
+            operand.assertUsable(context);
             operand.makeAssignableTo(VariableType._Object(), context);
             VariableType type = VariableType.from(context.classTable(), this.typeForCheckOrCast);
             if(type == null || type.equals(VariableType._void())){
@@ -700,6 +725,9 @@ public class ExprNode extends Node {
                 if(!operand2.makeAssignableTo(operand.annotatedType, context)){
                     printError("The value of type '" + operand2.annotatedType.toString() + "' can't be assigned to the value of type '"+operand.annotatedType.toString()+"'.", this.lineNum);
                 }
+                if(operand.refInfo instanceof LocalVarRefInfo){
+                    ((MethodContext) context).markAssigned(((LocalVarRefInfo) operand.refInfo).localVar);
+                }
                 result = operand2.annotatedType;
             }
             else {
@@ -714,9 +742,9 @@ public class ExprNode extends Node {
         }
         else if(this.isBinaryOp()){
             operand.annotateTypes(context);
-            operand.assertNotVoid();
+            operand.assertUsable(context);
             operand2.annotateTypes(context);
-            operand2.assertNotVoid();
+            operand2.assertUsable(context);
             if(this.type == ExprType.add || this.type == ExprType.sub || this.type == ExprType.mul || this.type == ExprType._div){
                 if(this.type == ExprType.add &&
                         operand.annotatedType.equals(VariableType._String()) &&
@@ -869,7 +897,7 @@ public class ExprNode extends Node {
             }
             
             operand.annotateTypes(context);
-            operand.assertNotVoid();
+            operand.assertUsable(context);
             if(this.type == ExprType._not){
                 if(!operand.makeAssignableTo(PlainType._bool(), context)){
                     printError("Cannot perform logic on type '"+ operand.annotatedType.toString() +"'.", operand.lineNum);
@@ -878,8 +906,13 @@ public class ExprNode extends Node {
             }
             else if(this.type == ExprType.bang){
                 operand.makeAssignableTo(VariableType._Object(), context);
-                result = operand.annotatedType.clone(); //TODO проверить
-                result.isNullable = false;
+                ExprNode bangCall = new ExprNode(ExprType.call, lineNum);
+                bangCall.identifierAccess = new IdentifierNode("!bang");
+                bangCall.callArguments = List.of(this.operand);
+                bangCall.annotatedType = operand.annotatedType.clone();
+                bangCall.annotatedType.isNullable = false;
+                this.mimic(bangCall);
+                return this.annotateTypes(context);
             }
             else if(this.type == ExprType.i2d){
                 operand.makeAssignableTo(PlainType._int(), context); //Как бы не нужно??
@@ -926,7 +959,7 @@ public class ExprNode extends Node {
         }
         if (this.annotatedType == null) {
             this.annotatedType = result;
-        } /*else if(this.annotatedType.equals(result)){
+        } /*else if(!this.annotatedType.equals(result)){
             System.out.println("Annotate Types WARN: stopped overwriting " + this.annotatedType + " with " + result);
         }*/
         return this.annotatedType;
@@ -944,7 +977,7 @@ public class ExprNode extends Node {
             VariableType paramType = method.parameters.get(i).varType;
             VariableType argType = argTypes.get(i);
             ExprNode arg = this.callArguments.get(i);
-            arg.assertNotVoid();
+            arg.assertUsable(context);
             if(!arg.makeAssignableTo(paramType, context)){
                 printError("The argument type '" + argType.toString() + "' can't be assigned to the parameter type '"+ paramType.toString()+"'.", this.lineNum);
             }
@@ -1186,9 +1219,6 @@ public class ExprNode extends Node {
                 bytecode.writeSimple(Bytecode.Instruction.iconst_1);
                 bytecode.write(Bytecode.jump(Bytecode.Instruction._goto, 3 + 1));
                 bytecode.writeSimple(Bytecode.Instruction.iconst_0);
-            }
-            else if(this.type == ExprType.bang){
-
             }
             else {
                 //Арифметические унарные
