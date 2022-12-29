@@ -145,7 +145,7 @@ public class SemanticCrawler {
     }
     
     public void checkInGlobalNamespace(String name, int lineNum){
-        if (VariableType.isStandartName(name) ||
+        if (VariableType.isStandartName(name) ||    //TODO? Здесь можно было бы сделать переопределение стандартных типов, но тогда сломаются Integer и тп. (int.valueOf(..)...)
                 classTable.containsKey(name) ||
                 classTable.get(ClassRecord.globalName).methods.containsKey(name) ||
                 classTable.get(ClassRecord.globalName).fields.containsKey(name)) {

@@ -180,11 +180,9 @@ public class MethodRecord implements NamedRecord, Cloneable{
         if(this.isStatic || other.isStatic)
             return false;
             
-        boolean override = other.returnType.isAssignableFrom(this.returnType) && this.name.equals(other.name) && this.parameters.size() == other.parameters.size();
+        boolean override = other.returnType.isExactlyAssignableFrom(this.returnType) && this.name.equals(other.name) && this.parameters.size() == other.parameters.size();
         for(int i = 0; override && i < other.parameters.size(); i++){
-            override = override &&
-                    other.parameters.get(i).varType.isAssignableFrom(this.parameters.get(i).varType) &&
-                    this.parameters.get(i).varType.isAssignableFrom(other.parameters.get(i).varType); //FIXME так ли это работает? Возможно просто надо сделать equals
+            override = override && this.parameters.get(i).varType.isExactlyAssignableFrom(other.parameters.get(i).varType);
         }
         
         return override;

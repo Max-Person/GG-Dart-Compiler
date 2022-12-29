@@ -23,10 +23,16 @@ public abstract class VariableType implements Cloneable {
             case _named -> {
                 ClassRecord clazz = ClassRecord.lookup(classTable, typeNode.name.stringVal);
                 if(clazz == null) {
-                    printError("Undefined class '" + typeNode.name.stringVal + "'", typeNode.lineNum);
-                    return null;
+                    if(isStandartName(typeNode.name.stringVal)){
+                        result = standartType(typeNode.name.stringVal);
+                    }
+                    else{
+                        printError("Undefined class '" + typeNode.name.stringVal + "'", typeNode.lineNum);
+                        return null;
+                    }
                 }
-                result = new ClassType(clazz.associatedInterface != null ? clazz.associatedInterface : clazz);
+                else
+                    result = new ClassType(clazz.associatedInterface != null ? clazz.associatedInterface : clazz);
             }
             case _list -> {
                 VariableType el = VariableType.from(classTable, typeNode.listValueType);
@@ -55,7 +61,7 @@ public abstract class VariableType implements Cloneable {
     }
     
     public static VariableType standartType(String name){
-        if(name.equals("Null")) return new PlainType("Null", "Null");
+        if(name.equals("Null")) return new PlainType("Null", "Ljava/lang/Object;");
         if(name.equals("void")) return new PlainType("void","V");
         if(name.equals("int")) return new ClassType(RTLClassRecord._integer);
         if(name.equals("double")) return new ClassType(RTLClassRecord._double);
@@ -82,8 +88,13 @@ public abstract class VariableType implements Cloneable {
     }
     
     public boolean isAssignableFrom(VariableType o){
-        return ((this.associatedClass() != null ? o.isSubtypeOf(this) : this.descriptor().equals(o.descriptor())) || o.descriptor().equals("Null")) &&
+        return ((this.associatedClass() != null ? o.isSubtypeOf(this) : this.descriptor().equals(o.descriptor())) || o.equals(VariableType._null())) &&
                 (this.isNullable || !o.isNullable);
+    }
+    
+    public boolean isExactlyAssignableFrom(VariableType o){
+        return (this.descriptor().equals(o.descriptor()) &&
+                (this.isNullable || !o.isNullable));
     }
     
     public static VariableType supertype(VariableType a, VariableType b){

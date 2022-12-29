@@ -309,7 +309,7 @@ public class ClassRecord implements NamedRecord{
             //Получить список всех наследуемых полей и убедиться, что все определенные в классе поля либо не переопределяют наследуемые, либо переопределяют их правильно
             for(FieldRecord inhField : this._super.nonStaticFields().values()){
                 if(this.fields.containsKey(inhField.name()) && !this.fields.get(inhField.name()).isValidOverrideOf(inhField)){
-                    printError("'" + this.name() + "." + inhField.name + "' isn’t a valid override of '" + _super.name() + "." + inhField.name + "'", this.declaration.lineNum());
+                    printError("'" + this.name() + "." + inhField.name + "' isn't a valid override of '" + _super.name() + "." + inhField.name + "'", this.declaration.lineNum());
                 }
             }
     
@@ -317,7 +317,7 @@ public class ClassRecord implements NamedRecord{
             // что все определенные в классе функции либо не переопределяют наследуемые, либо переопределяют их правильно
             for(MethodRecord inhMethod : this._super.nonStaticMethods().values()){
                 if(this.methods.containsKey(inhMethod.name()) && !this.methods.get(inhMethod.name()).isValidOverrideOf(inhMethod) && !this.isGlobal()){
-                    printError("'" + this.name() + "." + inhMethod.name + "' isn’t a valid override of '" + _super.name() + "." + inhMethod.name + "'", this.declaration.lineNum());
+                    printError("'" + this.name() + "." + inhMethod.name + "' isn't a valid override of '" + _super.name() + "." + inhMethod.name + "'", this.declaration.lineNum());
                 }
             }
         }
@@ -335,13 +335,16 @@ public class ClassRecord implements NamedRecord{
                 }
                 else {
                     for(MethodRecord m : mixin.nonStaticMethods().values()){
-                        if(mixinMethods.containsKey(m.name()) && m.isValidOverrideOf(mixinMethods.get(m.name()))){
+                        if(mixinMethods.containsKey(m.name())){
+                            if(!m.isValidOverrideOf(mixinMethods.get(m.name()))){
+                                printError("'" + mixin.name() + "." + m.name() + "' isn't a valid override of '" + mixinMethods.get(m.name()).containerClass.name() + "." + m.name() + "'", mixin.declaration.lineNum());
+                            }
                             if(!m.isAbstract()){
                                 mixinMethods.put(m.name(), m);
                             }
                         }
                         else {
-                            printError("'" + mixin.name() + "." + m.name() + "' isn’t a valid override of '" + mixinMethods.get(m.name()).containerClass.name() + "." + m.name() + "'", mixin.declaration.lineNum());
+                            mixinMethods.put(m.name(), m);
                         }
                     }
                 }
@@ -355,7 +358,7 @@ public class ClassRecord implements NamedRecord{
                             mixinFields.put(f.name(), f);
                         }
                         else {
-                            printError("'" + mixin.name() + "." + f.name() + "' isn’t a valid override of '" + mixinFields.get(f.name()).containerClass.name() + "." + f.name() + "'", mixin.declaration.lineNum());
+                            printError("'" + mixin.name() + "." + f.name() + "' isn't a valid override of '" + mixinFields.get(f.name()).containerClass.name() + "." + f.name() + "'", mixin.declaration.lineNum());
                         }
                     }
                 }
@@ -602,7 +605,7 @@ public class ClassRecord implements NamedRecord{
                     res.put(m.name(), m);
                 }
                 else if(!this.methods.get(m.name()).isValidOverrideOf(m)){
-                    printError("'" + this.name() + "." + m.name() + "' isn’t a valid override of '" + _super.name() + "." + m.name() + "'", _super.declaration.lineNum());
+                    printError("'" + this.name() + "." + m.name() + "' isn't a valid override of '" + _super.name() + "." + m.name() + "'", _super.declaration.lineNum());
                 }
             }
         }
@@ -616,7 +619,7 @@ public class ClassRecord implements NamedRecord{
                     res.add(m);
                 }
                 else if(!this.concreteMethods().get(m.name()).isValidOverrideOf(m)){
-                    printError("'" + this.name() + "." + m.name() + "' isn’t a valid override of '" + _super.name() + "." + m.name() + "'", _super.declaration.lineNum());
+                    printError("'" + this.name() + "." + m.name() + "' isn't a valid override of '" + _super.name() + "." + m.name() + "'", _super.declaration.lineNum());
                 }
             }
         }
@@ -627,7 +630,7 @@ public class ClassRecord implements NamedRecord{
                         res.add(m);
                     }
                     else if(!this.concreteMethods().get(m.name()).isValidOverrideOf(m)){
-                        printError("'" + this.name() + "." + m.name() + "' isn’t a valid override of '" + i.name() + "." + m.name() + "'", i.declaration.lineNum());
+                        printError("'" + this.name() + "." + m.name() + "' isn't a valid override of '" + i.name() + "." + m.name() + "'", i.declaration.lineNum());
                     }
                 }
             }
@@ -639,7 +642,7 @@ public class ClassRecord implements NamedRecord{
                         res.add(m);
                     }
                     else if(!this.concreteMethods().get(m.name()).isValidOverrideOf(m)){
-                        printError("'" + this.name() + "." + m.name() + "' isn’t a valid override of '" + i.name() + "." + m.name() + "'", i.declaration.lineNum());
+                        printError("'" + this.name() + "." + m.name() + "' isn't a valid override of '" + i.name() + "." + m.name() + "'", i.declaration.lineNum());
                     }
                 }
             }
